@@ -63,6 +63,38 @@ function normalizeAudioUrl(rawUrl?: string | null): string {
   return `${AUDIO_CDN_BASE}/${rawUrl.replace(/^\//, '')}`;
 }
 
+function buildUpstreamVersesParams(
+  incoming: URLSearchParams,
+  includePagination: boolean
+): URLSearchParams {
+  const qs = new URLSearchParams(incoming);
+
+  if (!qs.has('language')) qs.set('language', 'en');
+  if (!qs.has('words')) qs.set('words', 'false');
+  if (!qs.has('fields')) qs.set('fields', 'text_uthmani,text_indopak');
+
+  if (!qs.has('translations')) {
+    const translation = qs.get('translation') || '85';
+    qs.set('translations', translation);
+  }
+  qs.delete('translation');
+
+  if (!qs.has('audio')) {
+    const reciter = qs.get('reciter') || '7';
+    qs.set('audio', reciter);
+  }
+  qs.delete('reciter');
+
+  if (includePagination) {
+    const page = Math.max(1, Number(qs.get('page')) || 1);
+    const perPage = Math.min(50, Math.max(1, Number(qs.get('per_page')) || 30));
+    qs.set('page', String(page));
+    qs.set('per_page', String(perPage));
+  }
+
+  return qs;
+}
+
 export const onRequestGet = async (context: {
   request: Request;
   env: Env;
@@ -106,7 +138,7 @@ export const onRequestGet = async (context: {
     headers['x-client-id'] = clientId;
   }
 
-  // Special handling: merge both verse-by-verse and chapter reciters so all official voices are returned
+  // Merge official verse-by-verse and chapter reciters dynamically from upstream API
   if (subPath === 'recitations' || subPath === 'quran/resources/recitations') {
     try {
       const [verseResp, chapterResp] = await Promise.all([
@@ -114,7 +146,14 @@ export const onRequestGet = async (context: {
         fetch(`${baseUrl}/resources/chapter_reciters?language=en`, { headers }),
       ]);
       const verseJson = verseResp.ok
-        ? ((await verseResp.json()) as { recitations?: Array<{ id: number; reciter_name: string; style: string | null; translated_name?: unknown }> })
+        ? ((await verseResp.json()) as {
+            recitations?: Array<{
+              id: number;
+              reciter_name: string;
+              style: string | null;
+              translated_name?: unknown;
+            }>;
+          })
         : { recitations: [] };
       const chapterJson = chapterResp.ok
         ? ((await chapterResp.json()) as {
@@ -161,22 +200,84 @@ export const onRequestGet = async (context: {
           });
         }
       }
-      const priority = [7, 6, 2, 1, 3, 9, 8, 10, 4, 5, 11, 12, 97, 161, 168, 173];
-      const recitations = Array.from(merged.values()).sort((a, b) => {
-        const ia = priority.indexOf(Number(a.id));
-        const ib = priority.indexOf(Number(b.id));
-        if (ia !== -1 && ib !== -1) return ia - ib;
-        if (ia !== -1) return -1;
-        if (ib !== -1) return 1;
-        return Number(a.id) - Number(b.id);
-      });
+
+      const recitations = Array.from(merged.values());
       return new Response(
         JSON.stringify({ recitations, total: recitations.length, environment }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' } }
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+        }
       );
     } catch (e) {
       return new Response(
         JSON.stringify({ error: e instanceof Error ? e.message : 'Failed to load reciters' }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Handle /api/verses/keys?keys=1:1,2:255,...
+  if (subPath === 'verses/keys' || subPath === 'quran/verses/keys') {
+    const keysParam = url.searchParams.get('keys') || '';
+    const keys = keysParam
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => /^\d{1,3}:\d{1,3}$/.test(k))
+      .slice(0, 15);
+
+    if (keys.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Provide one or more valid verse keys.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const upstreamQs = buildUpstreamVersesParams(url.searchParams, false);
+    upstreamQs.delete('keys');
+
+    try {
+      const results = await Promise.all(
+        keys.map(async (key) => {
+          const chId = Number(key.split(':')[0]);
+          if (environment === 'prelive' && chId > 2) return null;
+          const resp = await fetch(`${baseUrl}/verses/by_key/${key}?${upstreamQs.toString()}`, {
+            headers,
+          });
+          if (!resp.ok) {
+            throw new Error(`Upstream error (${resp.status})`);
+          }
+          const d = (await resp.json()) as { verse?: Record<string, unknown> };
+          if (!d.verse) return null;
+          const audio = d.verse.audio as { url?: string } | undefined;
+          if (audio?.url) {
+            return { ...d.verse, audio: { ...audio, url: normalizeAudioUrl(audio.url) } };
+          }
+          return d.verse;
+        })
+      );
+
+      const filtered = results.filter(Boolean);
+      if (filtered.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: `Requested verses (${keys.join(', ')}) are awaiting Production API approval. The Pre-live developer sandbox provides Surahs 1 and 2.`,
+            code: 'PRELIVE_LIMITED',
+          }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ verses: filtered, environment }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+        }
+      );
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: e instanceof Error ? e.message : 'Failed to load requested verses' }),
         { status: 502, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -216,7 +317,8 @@ export const onRequestGet = async (context: {
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    upstreamPath = `/verses/by_chapter/${chapterId}${url.search}`;
+    const upstreamQs = buildUpstreamVersesParams(url.searchParams, true);
+    upstreamPath = `/verses/by_chapter/${chapterId}?${upstreamQs.toString()}`;
   } else if (subPath.startsWith('verses/by_juz/') || subPath.startsWith('quran/verses/juz/')) {
     const juzId = Number(subPath.replace('verses/by_juz/', '').replace('quran/verses/juz/', ''));
     if (environment === 'prelive' && juzId > 2) {
@@ -230,7 +332,8 @@ export const onRequestGet = async (context: {
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    upstreamPath = `/verses/by_juz/${juzId}${url.search}`;
+    const upstreamQs = buildUpstreamVersesParams(url.searchParams, true);
+    upstreamPath = `/verses/by_juz/${juzId}?${upstreamQs.toString()}`;
   } else if (subPath === 'juz' || subPath === 'juzs' || subPath === 'quran/juzs') {
     upstreamPath = `/juzs${url.search}`;
   } else if (subPath === 'translations' || subPath === 'quran/resources/translations') {
@@ -259,9 +362,13 @@ export const onRequestGet = async (context: {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
       });
     }
-    const verseSeqRes = await fetch(`${baseUrl}/recitations/${reciterId}/by_chapter/${chapterId}?per_page=300`, { headers });
+    const verseSeqRes = await fetch(`${baseUrl}/recitations/${reciterId}/by_chapter/${chapterId}?per_page=300`, {
+      headers,
+    });
     if (verseSeqRes.ok) {
-      const vJson = (await verseSeqRes.json()) as { audio_files?: Array<{ verse_key: string; url: string }> };
+      const vJson = (await verseSeqRes.json()) as {
+        audio_files?: Array<{ verse_key: string; url: string }>;
+      };
       return new Response(
         JSON.stringify({
           audio_file: null,
@@ -272,7 +379,10 @@ export const onRequestGet = async (context: {
           playback_type: 'verse_sequence',
           environment,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' } }
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+        }
       );
     }
     return new Response(JSON.stringify({ error: `Upstream error (${chapterRes.status})` }), {
@@ -304,11 +414,16 @@ export const onRequestGet = async (context: {
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    upstreamPath = `/verses/by_key/${key}${url.search}`;
+    const upstreamQs = buildUpstreamVersesParams(url.searchParams, false);
+    upstreamPath = `/verses/by_key/${key}?${upstreamQs.toString()}`;
   }
 
   try {
     const upstreamRes = await fetch(`${baseUrl}${upstreamPath}`, { headers });
+
+    if (upstreamRes.status === 401 && headers['x-auth-token']) {
+      tokenCache = null;
+    }
 
     if (!upstreamRes.ok) {
       const errText = await upstreamRes.text().catch(() => '');
@@ -349,6 +464,13 @@ export const onRequestGet = async (context: {
         }
         return v;
       });
+    }
+    if (json.verse && typeof json.verse === 'object') {
+      const v = json.verse as Record<string, unknown>;
+      const audio = v.audio as { url?: string } | undefined;
+      if (audio?.url) {
+        json.verse = { ...v, audio: { ...audio, url: normalizeAudioUrl(audio.url) } };
+      }
     }
     if (json.audio_file && typeof json.audio_file === 'object') {
       const af = json.audio_file as { audio_url?: string };
