@@ -1,0 +1,267 @@
+import { ArrowRight, BookOpen, Headphones, Layers } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { QuranNoorMark } from '../components/BrandLogo';
+import { ContinueReading } from '../components/ContinueReading';
+import { PopularSections } from '../components/PopularSections';
+import { QuranSearch } from '../components/QuranSearch';
+import { usePageMetadata } from '../hooks/usePageMetadata';
+
+export function HomePage() {
+  usePageMetadata({
+    title: 'QuranNoor – Read. Listen. Reflect.',
+    description:
+      'QuranNoor.com — Read, listen to, and reflect upon the Noble Quran with authentic Uthmani and IndoPak Arabic script, recognized English translations, Surah and Juz navigation, and curated recitations.',
+    canonicalPath: '/',
+  });
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 space-y-16 sm:space-y-20 pb-14">
+      {/* Hero Section */}
+      <section className="pt-12 sm:pt-16 lg:pt-20 text-center">
+        <div className="mx-auto mb-5 flex justify-center">
+          <QuranNoorMark size={40} />
+        </div>
+
+        <p
+          dir="rtl"
+          lang="ar"
+          translate="no"
+          className="notranslate font-quran-amiri-quran quran-arabic-text text-4xl sm:text-5xl lg:text-[3.75rem] leading-[1.75]"
+          style={{ color: 'var(--accent-text)' }}
+        >
+          الْقُرْآنُ الْكَرِيمُ
+        </p>
+
+        <h1
+          className="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight text-balance"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          The Noble Quran
+        </h1>
+
+        <p
+          className="mt-3 mx-auto max-w-xl text-base sm:text-lg font-medium tracking-[-0.01em]"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Read. Listen. Reflect.
+        </p>
+
+        {/* Subtle Gold Hairline Rule */}
+        <div className="mx-auto mt-6 flex items-center justify-center gap-3" aria-hidden="true">
+          <span className="h-px w-10" style={{ backgroundColor: 'var(--border-strong)' }} />
+          <span className="text-[11px]" style={{ color: 'var(--gold)' }}>
+            ✦
+          </span>
+          <span className="h-px w-10" style={{ backgroundColor: 'var(--border-strong)' }} />
+        </div>
+
+        {/* Prominent Quran Search */}
+        <QuranSearch className="mx-auto mt-8 max-w-xl" />
+
+        {/* Hero CTAs */}
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/surah/al-fatihah"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Read Quran</span>
+          </Link>
+
+          <Link
+            to="/listen"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-subtle)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <Headphones className="h-4 w-4" />
+            <span>Listen Quran</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Continue Reading */}
+      <ContinueReading />
+
+      {/* Browse Quran: Two Large Navigation Cards (Surah & Juz) + Statistics */}
+      <section aria-labelledby="browse-quran-heading" className="space-y-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+          <h2
+            id="browse-quran-heading"
+            className="text-xl sm:text-2xl font-semibold tracking-tight"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Browse Quran
+          </h2>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <p
+              className="text-sm font-medium tabular-nums"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              114 Surahs <span aria-hidden="true">·</span> 30 Juz{' '}
+              <span aria-hidden="true">·</span> 6,236 Ayahs
+            </p>
+            <Link
+              to="/quran"
+              className="inline-flex items-center gap-1 text-sm font-medium hover:underline underline-offset-4"
+              style={{ color: 'var(--accent-text)' }}
+            >
+              <span>Explore Directory</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Card 1: Surah */}
+          <Link
+            to="/surahs"
+            className="group flex flex-col justify-between rounded-2xl border p-6 sm:p-8 transition-colors hover:border-[#0E6B4B]/45 dark:hover:border-[#3FD09A]/40"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-subtle)',
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p
+                  className="text-xs font-medium tabular-nums"
+                  style={{ color: 'var(--gold)' }}
+                >
+                  114 Surahs · 6,236 Ayahs
+                </p>
+                <h3
+                  className="mt-2 text-2xl font-semibold tracking-tight"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Surah
+                </h3>
+                <p
+                  className="mt-2 max-w-md text-sm leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Explore all 114 chapters from Al-Fatihah to An-Nas with authentic Uthmani
+                  script, English translations, and verse-by-verse audio.
+                </p>
+              </div>
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-text)',
+                }}
+              >
+                <BookOpen className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div
+              className="mt-6 flex items-center gap-1.5 text-sm font-medium"
+              style={{ color: 'var(--accent-text)' }}
+            >
+              <span>Browse All Surahs</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </Link>
+
+          {/* Card 2: Juz */}
+          <Link
+            to="/juz"
+            className="group flex flex-col justify-between rounded-2xl border p-6 sm:p-8 transition-colors hover:border-[#0E6B4B]/45 dark:hover:border-[#3FD09A]/40"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-subtle)',
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p
+                  className="text-xs font-medium tabular-nums"
+                  style={{ color: 'var(--gold)' }}
+                >
+                  30 Juz · Structured Reading
+                </p>
+                <h3
+                  className="mt-2 text-2xl font-semibold tracking-tight"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Juz
+                </h3>
+                <p
+                  className="mt-2 max-w-md text-sm leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Navigate the Quran across its 30 traditional equal sections for daily reading,
+                  study plans, and continuous recitation.
+                </p>
+              </div>
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-text)',
+                }}
+              >
+                <Layers className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div
+              className="mt-6 flex items-center gap-1.5 text-sm font-medium"
+              style={{ color: 'var(--accent-text)' }}
+            >
+              <span>Explore All 30 Juz</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* Popular Quran Sections */}
+      <PopularSections />
+
+      {/* Trust & Methodology Strip */}
+      <section
+        aria-label="QuranNoor Sourcing and Information"
+        className="rounded-2xl border p-6 sm:p-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderColor: 'var(--border-subtle)',
+        }}
+      >
+        <div className="space-y-1 max-w-xl">
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Authentic Uthmani Script &amp; Scholarly Translations
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            QuranNoor preserves verified Arabic text without modification and attributes every
+            translation and recitation clearly.
+          </p>
+        </div>
+
+        <div
+          className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium shrink-0"
+          style={{ color: 'var(--accent-text)' }}
+        >
+          <Link to="/quran-text-and-translation-methodology" className="hover:underline underline-offset-4">
+            Text Methodology
+          </Link>
+          <Link to="/ayah/al-baqarah/255" className="hover:underline underline-offset-4">
+            Ayatul Kursi (2:255)
+          </Link>
+          <Link to="/about" className="hover:underline underline-offset-4">
+            About QuranNoor
+          </Link>
+          <Link to="/contact" className="hover:underline underline-offset-4">
+            Contact Us
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

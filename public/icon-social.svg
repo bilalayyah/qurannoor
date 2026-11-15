@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" fill="#FAF8F3" />
+  <circle cx="256" cy="256" r="228" fill="#0E6B4B" />
+  <circle cx="256" cy="256" r="212" stroke="#D4AC5E" stroke-opacity="0.32" stroke-width="2" />
+  <!-- Noor 8-point geometric star -->
+  <g transform="translate(256 144)">
+    <rect x="-36" y="-36" width="72" height="72" rx="5" stroke="#D4AC5E" stroke-width="11" />
+    <rect x="-36" y="-36" width="72" height="72" rx="5" transform="rotate(45)" stroke="#D4AC5E" stroke-width="11" />
+    <circle cx="0" cy="0" r="14" fill="#FAF8F3" />
+  </g>
+  <!-- Open Mushaf Pages -->
+  <path
+    d="M120 226C164 215 214 228 256 256V380C214 353 164 343 120 353V226Z"
+    stroke="#FAF8F3"
+    stroke-width="15"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M392 226C348 215 298 228 256 256V380C298 353 348 343 392 353V226Z"
+    stroke="#FAF8F3"
+    stroke-width="15"
+    stroke-linejoin="round"
+  />
+  <!-- Lower Cradle Line -->
+  <path
+    d="M104 388C158 377 212 386 256 412C300 386 354 377 408 388"
+    stroke="#D4AC5E"
+    stroke-width="13"
+    stroke-linecap="round"
+  />
+</svg>

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /search
+Disallow: /bookmarks
+Sitemap: https://qurannoor.com/sitemap.xml

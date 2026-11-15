@@ -1,0 +1,22 @@
+{
+  "name": "QuranNoor",
+  "short_name": "QuranNoor",
+  "description": "Read. Listen. Reflect. A calm digital sanctuary for the Noble Quran.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F3",
+  "theme_color": "#0E6B4B",
+  "icons": [
+    {
+      "src": "/icon-app.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ]
+}
