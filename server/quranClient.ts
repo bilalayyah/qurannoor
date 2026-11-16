@@ -289,4 +289,23 @@ export function filterEnglishTranslations<
   return translations;
 }
 
+export function deduplicateJuzs<
+  T extends { id?: number; juz_number: number }
+>(juzs: T[]): T[] {
+  const uniqueMap = new Map<number, T>();
+  for (const juz of juzs) {
+    if (juz.juz_number < 1 || juz.juz_number > 30) continue;
+    const existing = uniqueMap.get(juz.juz_number);
+    if (!existing) {
+      uniqueMap.set(juz.juz_number, juz);
+    } else if (
+      typeof juz.id === 'number' &&
+      (typeof existing.id !== 'number' || juz.id < existing.id)
+    ) {
+      uniqueMap.set(juz.juz_number, juz);
+    }
+  }
+  return Array.from(uniqueMap.values()).sort((a, b) => a.juz_number - b.juz_number);
+}
+
 export { chaptersCatalog, juzsCatalog };

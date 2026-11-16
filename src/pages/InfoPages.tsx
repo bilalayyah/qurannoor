@@ -163,16 +163,16 @@ export function MethodologyPage() {
             artificial intelligence.
           </p>
           <p>
-            In the current pre-live sandbox configuration, live verse retrieval covers{' '}
-            <Link to="/surah/al-fatihah" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              Surah Al-Fatihah (1)
-            </Link>{' '}
-            and{' '}
-            <Link to="/surah/al-baqarah" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              Surah Al-Baqarah (2)
+            QuranNoor&apos;s Production API integration is live and active, serving all{' '}
+            <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
+              114 Surahs
             </Link>
-            . Full access to Surahs 3 through 114 activates automatically once Production API
-            credentials are configured in deployment environment variables.
+            ,{' '}
+            <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
+              30 Juz
+            </Link>
+            , and 6,236 Ayahs live from the official Quran Foundation Content API without any
+            chapter restrictions.
           </p>
         </section>
 

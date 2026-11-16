@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import {
   chaptersCatalog,
+  deduplicateJuzs,
   fetchFromQuranApi,
   filterEnglishTranslations,
   getEnvConfig,
@@ -207,19 +208,12 @@ const handleJuzs = async (_req: express.Request, res: express.Response) => {
   const { env } = getEnvConfig();
   try {
     const data = await fetchFromQuranApi<{ juzs: Juz[] }>('/juzs', 1000 * 60 * 60);
-    const uniqueMap = new Map<number, Juz>();
-    for (const juz of data.juzs) {
-      if (juz.juz_number >= 1 && juz.juz_number <= 30 && !uniqueMap.has(juz.juz_number)) {
-        uniqueMap.set(juz.juz_number, juz);
-      }
-    }
-
-    let juzList = Array.from(uniqueMap.values()).sort((a, b) => a.juz_number - b.juz_number);
+    let juzList = deduplicateJuzs(data.juzs);
 
     // If pre-live only returns 3 juzs, merge with authentic 30 juz catalog so user can see all 30 Juz
     if (env === 'prelive' && juzsCatalog.length === 30) {
       const liveMap = new Map<number, Juz>(juzList.map((j) => [j.juz_number, j]));
-      juzList = juzsCatalog.map((jc) => {
+      juzList = deduplicateJuzs(juzsCatalog).map((jc) => {
         const live = liveMap.get(jc.juz_number);
         return {
           ...(live || jc),
@@ -231,7 +225,7 @@ const handleJuzs = async (_req: express.Request, res: express.Response) => {
     res.json({ juzs: juzList, environment: env });
   } catch (error) {
     if (juzsCatalog.length === 30) {
-      res.json({ juzs: juzsCatalog, environment: env, fallback: true });
+      res.json({ juzs: deduplicateJuzs(juzsCatalog), environment: env, fallback: true });
       return;
     }
     const message = error instanceof Error ? error.message : 'Failed to load Juz list';

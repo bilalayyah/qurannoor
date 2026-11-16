@@ -63,6 +63,26 @@ function normalizeAudioUrl(rawUrl?: string | null): string {
   return `${AUDIO_CDN_BASE}/${rawUrl.replace(/^\//, '')}`;
 }
 
+function deduplicateJuzs<T extends { id?: number; juz_number?: number }>(juzs: T[]): T[] {
+  const uniqueMap = new Map<number, T>();
+  for (const juz of juzs) {
+    const num = Number(juz.juz_number);
+    if (!Number.isInteger(num) || num < 1 || num > 30) continue;
+    const existing = uniqueMap.get(num);
+    if (!existing) {
+      uniqueMap.set(num, juz);
+    } else if (
+      typeof juz.id === 'number' &&
+      (typeof existing.id !== 'number' || juz.id < existing.id)
+    ) {
+      uniqueMap.set(num, juz);
+    }
+  }
+  return Array.from(uniqueMap.values()).sort(
+    (a, b) => Number(a.juz_number) - Number(b.juz_number)
+  );
+}
+
 function buildUpstreamVersesParams(
   incoming: URLSearchParams,
   includePagination: boolean
@@ -456,6 +476,11 @@ export const onRequestGet = async (context: {
     }
 
     const json = (await upstreamRes.json()) as Record<string, unknown>;
+    if (Array.isArray(json.juzs)) {
+      json.juzs = deduplicateJuzs(
+        json.juzs as Array<{ id?: number; juz_number?: number }>
+      );
+    }
     if (Array.isArray(json.verses)) {
       json.verses = json.verses.map((v: Record<string, unknown>) => {
         const audio = v.audio as { url?: string } | undefined;
