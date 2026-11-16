@@ -7,7 +7,6 @@ import { getArabicFontClass } from '../utils/text';
 import { ReciterSelector } from './ReciterSelector';
 
 const FONT_OPTIONS: Array<{ id: ArabicFontFamily; label: string; scriptHint: string }> = [
-  { id: 'amiri-quran', label: 'Amiri Quran', scriptHint: 'Uthmani Hafs' },
   { id: 'scheherazade', label: 'Scheherazade New', scriptHint: 'Classical Naskh' },
   { id: 'noto-naskh', label: 'Noto Naskh Arabic', scriptHint: 'Clean Naskh' },
   { id: 'lateef', label: 'Lateef', scriptHint: 'IndoPak Style' },

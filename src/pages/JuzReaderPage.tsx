@@ -298,7 +298,7 @@ export function JuzReaderPage() {
                       dir="rtl"
                       lang="ar"
                       translate="no"
-                      className="notranslate font-quran-amiri-quran quran-arabic-text text-2xl leading-[1.8]"
+                      className="notranslate font-quran-scheherazade quran-arabic-text text-2xl leading-[1.8]"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       {ch.name_arabic}

@@ -4,3 +4,4 @@ pages_build_output_dir = "dist"
 
 [vars]
 QURAN_ENV = "production"
+VITE_CONTACT_ENDPOINT = "https://formsubmit.co/ajax/bilalayyah@gmail.com"

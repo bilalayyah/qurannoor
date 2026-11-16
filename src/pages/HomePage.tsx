@@ -26,7 +26,7 @@ export function HomePage() {
           dir="rtl"
           lang="ar"
           translate="no"
-          className="notranslate font-quran-amiri-quran quran-arabic-text text-4xl sm:text-5xl lg:text-[3.75rem] leading-[1.75]"
+          className="notranslate font-quran-scheherazade quran-arabic-text text-4xl sm:text-5xl lg:text-[3.75rem] leading-[1.75]"
           style={{ color: 'var(--accent-text)' }}
         >
           الْقُرْآنُ الْكَرِيمُ
@@ -224,44 +224,6 @@ export function HomePage() {
 
       {/* Popular Quran Sections */}
       <PopularSections />
-
-      {/* Trust & Methodology Strip */}
-      <section
-        aria-label="QuranNoor Sourcing and Information"
-        className="rounded-2xl border p-6 sm:p-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-subtle)',
-        }}
-      >
-        <div className="space-y-1 max-w-xl">
-          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Authentic Uthmani Script &amp; Scholarly Translations
-          </p>
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            QuranNoor preserves verified Arabic text without modification and attributes every
-            translation and recitation clearly.
-          </p>
-        </div>
-
-        <div
-          className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium shrink-0"
-          style={{ color: 'var(--accent-text)' }}
-        >
-          <Link to="/quran-text-and-translation-methodology" className="hover:underline underline-offset-4">
-            Text Methodology
-          </Link>
-          <Link to="/ayah/al-baqarah/255" className="hover:underline underline-offset-4">
-            Ayatul Kursi (2:255)
-          </Link>
-          <Link to="/about" className="hover:underline underline-offset-4">
-            About QuranNoor
-          </Link>
-          <Link to="/contact" className="hover:underline underline-offset-4">
-            Contact Us
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

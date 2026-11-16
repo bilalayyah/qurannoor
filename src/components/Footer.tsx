@@ -28,7 +28,7 @@ export function Footer() {
 
   return (
     <footer
-      className="mt-24 border-t py-14"
+      className="border-t py-14"
       style={{
         borderColor: 'var(--border-subtle)',
         backgroundColor: 'var(--bg-canvas)',
@@ -46,18 +46,6 @@ export function Footer() {
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                 QuranNoor.com
               </span>
-              .
-            </p>
-            <p className="text-xs leading-relaxed max-w-sm" style={{ color: 'var(--text-tertiary)' }}>
-              Authentic Quranic Arabic text, English translations, and recitations powered by the{' '}
-              <a
-                href="https://api-docs.quran.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-4 hover:opacity-80"
-              >
-                Quran Foundation API
-              </a>
               .
             </p>
           </div>

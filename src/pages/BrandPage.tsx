@@ -332,7 +332,7 @@ export function BrandPage() {
               dir="rtl"
               lang="ar"
               translate="no"
-              className="notranslate font-quran-amiri-quran quran-arabic-text text-3xl leading-[2.2]"
+              className="notranslate font-quran-scheherazade quran-arabic-text text-3xl leading-[2.2]"
               style={{ color: 'var(--text-primary)' }}
             >
               ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ <span style={{ color: 'var(--gold)' }}>﴿٢﴾</span>

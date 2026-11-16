@@ -31,17 +31,15 @@ export function toArabicIndicDigits(num: number): string {
 }
 
 export function getArabicFontClass(
-  font: 'amiri-quran' | 'scheherazade' | 'noto-naskh' | 'lateef'
+  font: 'scheherazade' | 'noto-naskh' | 'lateef' | string
 ): string {
   switch (font) {
-    case 'scheherazade':
-      return 'font-quran-scheherazade';
     case 'noto-naskh':
       return 'font-quran-noto-naskh';
     case 'lateef':
       return 'font-quran-lateef';
-    case 'amiri-quran':
+    case 'scheherazade':
     default:
-      return 'font-quran-amiri-quran';
+      return 'font-quran-scheherazade';
   }
 }

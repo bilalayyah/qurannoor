@@ -1,9 +1,10 @@
 import { ArrowRight, Pause, Volume2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 import { POPULAR_SECTIONS } from '../utils/slugs';
 
 export function PopularSections() {
+  const navigate = useNavigate();
   const {
     isPlaying,
     playbackKind,
@@ -66,10 +67,24 @@ export function PopularSections() {
             }
           };
 
+          const handleCardNavigate = () => {
+            navigate(targetUrl);
+          };
+
           return (
             <div
               key={item.slug}
-              className="flex flex-col justify-between rounded-2xl border p-4 sm:p-5 transition-colors hover:border-[#0E6B4B]/45 dark:hover:border-[#3FD09A]/40"
+              role="link"
+              tabIndex={0}
+              aria-label={`Open ${item.title}`}
+              onClick={handleCardNavigate}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleCardNavigate();
+                }
+              }}
+              className="group cursor-pointer flex flex-col justify-between rounded-2xl border p-4 sm:p-5 transition-colors hover:border-[#0E6B4B]/45 dark:hover:border-[#3FD09A]/40 focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: isItemPlaying ? 'var(--accent)' : 'var(--border-subtle)',
@@ -81,14 +96,22 @@ export function PopularSections() {
                     dir="rtl"
                     lang="ar"
                     translate="no"
-                    className="notranslate font-quran-amiri-quran quran-arabic-text text-2xl leading-[1.85]"
+                    className="notranslate font-quran-scheherazade quran-arabic-text text-2xl leading-[1.85]"
                     style={{ color: 'var(--gold)' }}
                   >
                     {item.arabicTitle}
                   </p>
                   <button
                     type="button"
-                    onClick={handlePlayClick}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayClick();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
+                      }
+                    }}
                     aria-label={isItemPlaying ? `Pause ${item.title}` : `Listen to ${item.title}`}
                     title={isItemPlaying ? `Pause ${item.title}` : `Listen to ${item.title}`}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -128,14 +151,14 @@ export function PopularSections() {
                   {item.referenceLabel}
                 </span>
 
-                <Link
-                  to={targetUrl}
-                  className="inline-flex items-center gap-1 text-xs font-medium hover:underline whitespace-nowrap"
+                <span
+                  aria-hidden="true"
+                  className="inline-flex items-center gap-1 text-xs font-medium group-hover:underline whitespace-nowrap"
                   style={{ color: 'var(--accent-text)' }}
                 >
                   <span>Open</span>
                   <ArrowRight className="h-3 w-3" />
-                </Link>
+                </span>
               </div>
             </div>
           );

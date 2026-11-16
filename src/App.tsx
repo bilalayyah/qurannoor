@@ -4,7 +4,8 @@ import { AudioPlayer } from './components/AudioPlayer';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { ReaderSettings } from './components/ReaderSettings';
-import { AudioProvider } from './context/AudioContext';
+import { ScrollToTop } from './components/ScrollToTop';
+import { AudioProvider, useAudio } from './context/AudioContext';
 import { ReaderProvider, useReader } from './context/ReaderContext';
 
 const HomePage = lazy(() =>
@@ -84,9 +85,11 @@ function RouteFallback() {
 
 function AppShell() {
   const { toastMessage } = useReader();
+  const { isPlaying, isLoading, activeVerseKey, activeChapterId } = useAudio();
+  const hasActiveAudio = Boolean(activeVerseKey || activeChapterId || isPlaying || isLoading);
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
+    <div className={`flex min-h-screen flex-col overflow-x-hidden ${hasActiveAudio ? 'pb-16' : ''}`}>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:px-4 focus:py-2.5 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg"
@@ -97,7 +100,7 @@ function AppShell() {
 
       <Header />
 
-      <main id="main-content" tabIndex={-1} className="flex-1 pb-20 outline-none">
+      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -151,6 +154,7 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ReaderProvider>
         <AudioProvider>
           <AppShell />

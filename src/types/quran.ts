@@ -127,7 +127,7 @@ export interface SearchResponse {
 
 export type ThemeMode = 'light' | 'sepia' | 'dark';
 export type QuranScript = 'uthmani' | 'indopak';
-export type ArabicFontFamily = 'amiri-quran' | 'scheherazade' | 'noto-naskh' | 'lateef';
+export type ArabicFontFamily = 'scheherazade' | 'noto-naskh' | 'lateef';
 
 export interface ReaderSettings {
   theme: ThemeMode;

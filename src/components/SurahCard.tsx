@@ -60,7 +60,7 @@ export function SurahCard({ chapter }: { chapter: Chapter }) {
           dir="rtl"
           lang="ar"
           translate="no"
-          className="notranslate font-quran-amiri-quran quran-arabic-text text-xl leading-[1.85]"
+          className="notranslate font-quran-scheherazade quran-arabic-text text-xl leading-[1.85]"
           style={{ color: 'var(--text-primary)' }}
         >
           {chapter.name_arabic}

@@ -279,7 +279,7 @@ export function SurahReaderPage() {
                 dir="rtl"
                 lang="ar"
                 translate="no"
-                className="notranslate font-quran-amiri-quran quran-arabic-text text-4xl sm:text-5xl leading-[1.8]"
+                className="notranslate font-quran-scheherazade quran-arabic-text text-4xl sm:text-5xl leading-[1.8]"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {chapter.name_arabic}

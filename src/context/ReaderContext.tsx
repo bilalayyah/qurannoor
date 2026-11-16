@@ -31,7 +31,7 @@ const LEGACY_KEYS = {
 const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'light',
   script: 'uthmani',
-  arabicFont: 'amiri-quran',
+  arabicFont: 'scheherazade',
   arabicFontSize: 34,
   translationFontSize: 17,
   translationId: 85, // M.A.S. Abdel Haleem
@@ -80,10 +80,20 @@ function loadFromStorage<T>(key: string, legacyKey: string, fallback: T): T {
 }
 
 export function ReaderProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<ReaderSettings>(() => ({
-    ...DEFAULT_SETTINGS,
-    ...loadFromStorage<Partial<ReaderSettings>>(STORAGE_KEYS.SETTINGS, LEGACY_KEYS.SETTINGS, {}),
-  }));
+  const [settings, setSettings] = useState<ReaderSettings>(() => {
+    const stored = loadFromStorage<
+      Omit<Partial<ReaderSettings>, 'arabicFont'> & { arabicFont?: string }
+    >(STORAGE_KEYS.SETTINGS, LEGACY_KEYS.SETTINGS, {});
+    const normalizedFont: ReaderSettings['arabicFont'] =
+      stored.arabicFont === 'noto-naskh' || stored.arabicFont === 'lateef'
+        ? stored.arabicFont
+        : 'scheherazade';
+    return {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      arabicFont: normalizedFont,
+    };
+  });
 
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() =>
     loadFromStorage<BookmarkItem[]>(STORAGE_KEYS.BOOKMARKS, LEGACY_KEYS.BOOKMARKS, [])

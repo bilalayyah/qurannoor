@@ -148,7 +148,7 @@ export function PopularPassagePage() {
             dir="rtl"
             lang="ar"
             translate="no"
-            className="notranslate font-quran-amiri-quran quran-arabic-text text-3xl sm:text-4xl leading-[1.8]"
+            className="notranslate font-quran-scheherazade quran-arabic-text text-3xl sm:text-4xl leading-[1.8]"
             style={{ color: 'var(--text-primary)' }}
           >
             {section.arabicTitle}

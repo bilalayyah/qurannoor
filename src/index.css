@@ -103,20 +103,16 @@ textarea:focus-visible {
   font-family: 'Source Serif 4', Georgia, serif;
 }
 
-.font-quran-amiri-quran {
-  font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', 'Noto Naskh Arabic', serif;
-}
-
 .font-quran-scheherazade {
-  font-family: 'Scheherazade New', 'Amiri Quran', 'Noto Naskh Arabic', serif;
+  font-family: 'Scheherazade New', 'Noto Naskh Arabic', serif;
 }
 
 .font-quran-noto-naskh {
-  font-family: 'Noto Naskh Arabic', 'Amiri Quran', 'Scheherazade New', serif;
+  font-family: 'Noto Naskh Arabic', 'Scheherazade New', serif;
 }
 
 .font-quran-lateef {
-  font-family: 'Lateef', 'Scheherazade New', 'Amiri Quran', serif;
+  font-family: 'Lateef', 'Scheherazade New', serif;
 }
 
 .quran-arabic-text {

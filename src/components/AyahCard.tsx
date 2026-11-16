@@ -3,6 +3,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Image as ImageIcon,
   MoreHorizontal,
   Pause,
   Play,
@@ -21,6 +22,7 @@ import {
   stripHtmlTags,
   toArabicIndicDigits,
 } from '../utils/text';
+import { ShareAyahPhotoModal } from './ShareAyahPhotoModal';
 
 interface AyahCardProps {
   verse: Verse;
@@ -51,6 +53,7 @@ export function AyahCard({
   } = useAudio();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -237,6 +240,17 @@ export function AyahCard({
             {isThisArabicActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
 
+          <button
+            type="button"
+            onClick={() => setPhotoModalOpen(true)}
+            aria-label={`Share Ayah ${verse.verse_key} as Photo`}
+            title="Share as Photo"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            <ImageIcon className="h-4 w-4" />
+          </button>
+
           <div className="relative" ref={menuRef}>
             <button
               type="button"
@@ -275,6 +289,19 @@ export function AyahCard({
                 >
                   <Share2 className="h-3.5 w-3.5" />
                   <span>Share Ayah</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setPhotoModalOpen(true);
+                  }}
+                  className="flex w-full min-h-[38px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <span>Share as Photo</span>
                 </button>
 
                 <button
@@ -398,6 +425,16 @@ export function AyahCard({
           <span>Repeat</span>
         </button>
       </div>
+      {photoModalOpen && (
+        <ShareAyahPhotoModal
+          isOpen={photoModalOpen}
+          onClose={() => setPhotoModalOpen(false)}
+          verse={verse}
+          chapterName={chapterName}
+          arabicText={arabicText}
+          translationText={cleanTranslation}
+        />
+      )}
     </article>
   );
 }

@@ -2,5 +2,7 @@
   "name": "QuranNoor",
   "description": "QuranNoor — Read. Listen. Reflect. Premium Quran reading and listening app with authentic Uthmani Arabic script, English translations, and recitations from the official Quran Foundation API.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

@@ -297,7 +297,7 @@ export function ListenPage() {
                     dir="rtl"
                     lang="ar"
                     translate="no"
-                    className="notranslate font-quran-amiri-quran quran-arabic-text text-lg leading-[1.75]"
+                    className="notranslate font-quran-scheherazade quran-arabic-text text-lg leading-[1.75]"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {ch.name_arabic}
