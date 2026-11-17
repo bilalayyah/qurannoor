@@ -9,6 +9,7 @@ interface QuranSearchProps {
   placeholder?: string;
   onSubmitQuery?: (query: string) => void;
   className?: string;
+  compact?: boolean;
 }
 
 export function QuranSearch({
@@ -16,6 +17,7 @@ export function QuranSearch({
   placeholder = 'Search Surah, Ayah (e.g. 2:255), or keyword...',
   onSubmitQuery,
   className = '',
+  compact = false,
 }: QuranSearchProps) {
   const navigate = useNavigate();
   const { chapters } = useReader();
@@ -53,14 +55,16 @@ export function QuranSearch({
       className={className}
     >
       <div
-        className="flex items-center gap-2 rounded-2xl border p-1.5 transition-colors focus-within:border-[#0E6B4B] dark:focus-within:border-[#3FD09A]"
+        className={`flex items-center gap-2 border transition-colors focus-within:border-[#0E6B4B] dark:focus-within:border-[#3FD09A] ${
+          compact ? 'rounded-xl p-1' : 'rounded-2xl p-1.5'
+        }`}
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-subtle)',
         }}
       >
         <Search
-          className="ml-3 h-5 w-5 shrink-0"
+          className={`shrink-0 ${compact ? 'ml-2.5 h-4 w-4' : 'ml-3 h-5 w-5'}`}
           style={{ color: 'var(--text-tertiary)' }}
         />
         <input
@@ -69,12 +73,20 @@ export function QuranSearch({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
           aria-label="Search Quran"
-          className="w-full min-h-[44px] bg-transparent px-2 text-sm sm:text-base outline-none"
+          className={`w-full bg-transparent px-2 outline-none ${
+            compact
+              ? 'min-h-[34px] sm:min-h-[36px] text-xs sm:text-sm'
+              : 'min-h-[44px] text-sm sm:text-base'
+          }`}
           style={{ color: 'var(--text-primary)' }}
         />
         <button
           type="submit"
-          className="min-h-[40px] shrink-0 rounded-xl px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap"
+          className={`shrink-0 font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap ${
+            compact
+              ? 'min-h-[32px] sm:min-h-[34px] rounded-lg px-3.5 py-1 text-xs sm:text-sm'
+              : 'min-h-[40px] rounded-xl px-5 py-2 text-sm'
+          }`}
           style={{ backgroundColor: 'var(--accent)' }}
         >
           Search

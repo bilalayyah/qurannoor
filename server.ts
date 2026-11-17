@@ -12,6 +12,7 @@ import {
   juzsCatalog,
   mergeReciters,
   normalizeAudioUrl,
+  normalizeChapter,
   normalizeVersesAudio,
   type RawChapterReciter,
 } from './server/quranClient.ts';
@@ -45,6 +46,27 @@ app.get('/api/env-status', (_req, res) => {
   });
 });
 
+// Preview fallbacks for Web Push endpoints (Cloudflare Pages Functions handle live KV)
+app.get('/api/push/vapid-key', (_req, res) => {
+  res.json({ publicKey: null, preview: true });
+});
+
+app.post('/api/push/subscribe', (_req, res) => {
+  res.status(503).json({
+    ok: false,
+    preview: true,
+    error: 'Push backend not connected in preview.',
+  });
+});
+
+app.post('/api/push/unsubscribe', (_req, res) => {
+  res.status(503).json({
+    ok: false,
+    preview: true,
+    error: 'Push backend not connected in preview.',
+  });
+});
+
 // GET /api/chapters & GET /api/quran/chapters
 const handleChapters = async (_req: express.Request, res: express.Response) => {
   const { env } = getEnvConfig();
@@ -60,7 +82,7 @@ const handleChapters = async (_req: express.Request, res: express.Response) => {
       const liveMap = new Map<number, Chapter>(data.chapters.map((c) => [c.id, c]));
       allChapters = chaptersCatalog.map((ch) => {
         const live = liveMap.get(ch.id);
-        const resolved = live || ch;
+        const resolved = normalizeChapter(live || ch);
         return {
           ...resolved,
           slug: toSurahSlug(resolved.name_simple),
@@ -68,11 +90,14 @@ const handleChapters = async (_req: express.Request, res: express.Response) => {
         } as Chapter;
       });
     } else {
-      allChapters = data.chapters.map((ch) => ({
-        ...ch,
-        slug: toSurahSlug(ch.name_simple),
-        available_in_prelive: true,
-      }));
+      allChapters = data.chapters.map((ch) => {
+        const normalized = normalizeChapter(ch);
+        return {
+          ...normalized,
+          slug: toSurahSlug(normalized.name_simple),
+          available_in_prelive: true,
+        };
+      });
     }
 
     res.json({
@@ -134,10 +159,11 @@ const handleChapterDetails = async (req: express.Request, res: express.Response)
       ).catch(() => ({ chapter_info: undefined })),
     ]);
 
+    const normalizedChapter = normalizeChapter(chapterData.chapter);
     res.json({
       chapter: {
-        ...chapterData.chapter,
-        slug: toSurahSlug(chapterData.chapter.name_simple),
+        ...normalizedChapter,
+        slug: toSurahSlug(normalizedChapter.name_simple),
       },
       chapter_info: infoData.chapter_info ?? null,
       environment: env,
@@ -171,15 +197,21 @@ const handleVersesByChapter = async (req: express.Request, res: express.Response
 
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(50, Math.max(1, Number(req.query.per_page) || 30));
-  const translation = Number(req.query.translation) || 85;
+  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const translationIds = rawTranslations
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
     language: 'en',
-    words: 'false',
-    translations: String(translation),
+    words: 'true',
+    translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak',
+    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
     page: String(page),
     per_page: String(perPage),
   });
@@ -257,15 +289,21 @@ const handleVersesByJuz = async (req: express.Request, res: express.Response) =>
 
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(50, Math.max(1, Number(req.query.per_page) || 30));
-  const translation = Number(req.query.translation) || 85;
+  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const translationIds = rawTranslations
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
     language: 'en',
-    words: 'false',
-    translations: String(translation),
+    words: 'true',
+    translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak',
+    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
     page: String(page),
     per_page: String(perPage),
   });
@@ -506,7 +544,7 @@ const handleSearch = async (req: express.Request, res: express.Response) => {
           granted: false,
           missing_scope: 'content.search.read',
           message:
-            "The application 'Noor Quran' is authenticated with Quran Foundation Content Read scopes. Search scope is awaiting Production API approval. Ayah references (e.g. 1:1, 2:255) and Surah searches remain fully operational.",
+            'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic, English, and Urdu.',
         },
       });
       return;
@@ -538,15 +576,21 @@ const handleVerseByKey = async (req: express.Request, res: express.Response) => 
     return;
   }
 
-  const translation = Number(req.query.translation) || 85;
+  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const translationIds = rawTranslations
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
     language: 'en',
-    words: 'false',
-    translations: String(translation),
+    words: 'true',
+    translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak',
+    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
   });
 
   try {
@@ -579,15 +623,21 @@ const handleVersesByKeys = async (req: express.Request, res: express.Response) =
     return;
   }
 
-  const translation = Number(req.query.translation) || 85;
+  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const translationIds = rawTranslations
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
     language: 'en',
-    words: 'false',
-    translations: String(translation),
+    words: 'true',
+    translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak',
+    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
   });
 
   try {
@@ -623,6 +673,60 @@ const handleVersesByKeys = async (req: express.Request, res: express.Response) =
 };
 app.get('/api/verses/keys', handleVersesByKeys);
 app.get('/api/quran/verses/keys', handleVersesByKeys);
+
+// GET /api/tafsirs & GET /api/quran/resources/tafsirs
+const handleTafsirsList = async (_req: express.Request, res: express.Response) => {
+  const { env } = getEnvConfig();
+  try {
+    const data = await fetchFromQuranApi<{ tafsirs: unknown[] }>(
+      '/resources/tafsirs?language=en',
+      1000 * 60 * 60
+    );
+    res.json({ tafsirs: data.tafsirs || [], environment: env });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load tafsirs list';
+    res.status(502).json({ error: message });
+  }
+};
+app.get('/api/tafsirs', handleTafsirsList);
+app.get('/api/quran/resources/tafsirs', handleTafsirsList);
+
+// GET /api/tafsirs/:tafsirId/by_ayah/:verseKey
+const handleTafsirByAyah = async (req: express.Request, res: express.Response) => {
+  const { env } = getEnvConfig();
+  const tafsirId = Number(req.params.tafsirId) || 169;
+  const verseKey = String(req.params.verseKey || '');
+  if (!Number.isInteger(tafsirId) || tafsirId < 1 || !/^\d{1,3}:\d{1,3}$/.test(verseKey)) {
+    res.status(400).json({ error: 'Invalid tafsir ID or verse key format.' });
+    return;
+  }
+
+  const [chIdStr] = verseKey.split(':');
+  const chId = Number(chIdStr);
+  if (env === 'prelive' && chId > 2) {
+    res.status(404).json({
+      error: `Tafsir for ${verseKey} is not in the Pre-live sandbox. Production API approval is required for Surahs 3 to 114.`,
+      code: 'PRELIVE_LIMITED',
+    });
+    return;
+  }
+
+  try {
+    const data = await fetchFromQuranApi<{
+      tafsir?: Record<string, unknown>;
+      tafsirs?: Array<Record<string, unknown>>;
+    }>(`/tafsirs/${tafsirId}/by_ayah/${verseKey}`, 1000 * 60 * 30);
+    res.json({
+      tafsir: data.tafsir || (Array.isArray(data.tafsirs) ? data.tafsirs[0] : null) || null,
+      environment: env,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load tafsir';
+    res.status(502).json({ error: message });
+  }
+};
+app.get('/api/tafsirs/:tafsirId/by_ayah/:verseKey', handleTafsirByAyah);
+app.get('/api/quran/tafsirs/:tafsirId/by_ayah/:verseKey', handleTafsirByAyah);
 
 // SEO: robots.txt & sitemap.xml
 app.get('/robots.txt', (req, res) => {

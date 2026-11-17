@@ -2,7 +2,9 @@ import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Layers } from 'lucide-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AyahCard } from '../components/AyahCard';
+import { AyahTafsirSection } from '../components/AyahTafsirSection';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { HifzControlsBar } from '../components/HifzControlsBar';
 import { ErrorBanner, VerseListSkeleton } from '../components/StatusStates';
 import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
@@ -10,7 +12,7 @@ import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVerseByKey } from '../services/quranApi';
 import type { Verse } from '../types/quran';
 import { POPULAR_SECTIONS, resolveChapterIdFromParam, toSurahSlug } from '../utils/slugs';
-import { stripHtmlTags } from '../utils/text';
+import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
 
 export function AyahPage() {
   const { slug, ayahNumber } = useParams<{ slug: string; ayahNumber: string }>();
@@ -82,10 +84,12 @@ export function AyahPage() {
         verseNumber: verse.verse_number,
         chapterName: chapter.name_simple,
         audioUrl: verse.audio?.url,
-        translationText: stripHtmlTags(verse.translations?.[0]?.text || ''),
+        translationText: stripHtmlTags(
+          getEnglishTranslation(verse.translations, settings.translationId)?.text || ''
+        ),
       },
     ];
-  }, [verse, chapter]);
+  }, [verse, chapter, settings.translationId]);
 
   useEffect(() => {
     if (queue.length > 0) updateQueue(queue);
@@ -133,7 +137,7 @@ export function AyahPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[850px] px-4 py-8 sm:px-6 sm:py-12 space-y-8">
+    <div className="mx-auto max-w-[850px] px-2.5 py-6 sm:px-6 sm:py-10 space-y-8">
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
@@ -176,7 +180,7 @@ export function AyahPage() {
             dir="rtl"
             lang="ar"
             translate="no"
-            className="notranslate font-quran-scheherazade quran-arabic-text text-3xl sm:text-4xl leading-[1.8]"
+            className="notranslate font-quran-scheherazade quran-arabic-text text-xl sm:text-2xl leading-[1.55] !py-0"
             style={{ color: 'var(--text-primary)' }}
           >
             {chapter.name_arabic}
@@ -228,15 +232,24 @@ export function AyahPage() {
       ) : loading ? (
         <VerseListSkeleton count={1} />
       ) : verse ? (
-        <div
-          className="rounded-2xl border overflow-hidden"
-          style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
-        >
-          <AyahCard
-            verse={verse}
-            chapterName={chapter?.name_simple || `Surah ${chapterId}`}
-            chapterArabicName={chapter?.name_arabic || ''}
-            queue={queue}
+        <div className="space-y-6">
+          <HifzControlsBar queue={queue} />
+          <div
+            className="rounded-2xl border overflow-hidden"
+            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+          >
+            <AyahCard
+              verse={verse}
+              chapterName={chapter?.name_simple || `Surah ${chapterId}`}
+              chapterArabicName={chapter?.name_arabic || ''}
+              queue={queue}
+              showTafsirToggle={false}
+            />
+          </div>
+          <AyahTafsirSection
+            verseKey={verse.verse_key}
+            isExpanded
+            standaloneCard
           />
         </div>
       ) : null}

@@ -34,19 +34,25 @@ export function SurahCard({ chapter }: { chapter: Chapter }) {
           >
             {chapter.name_simple}
           </h3>
+          {chapter.translated_name?.name && (
+            <p
+              className="mt-0.5 truncate text-xs"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {chapter.translated_name.name}
+            </p>
+          )}
           <p
-            className="mt-0.5 truncate text-xs"
+            className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] tabular-nums"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            {chapter.translated_name?.name}
-            <span aria-hidden="true"> · </span>
-            <span className="tabular-nums">{chapter.verses_count} Ayahs</span>
-            <span aria-hidden="true"> · </span>
-            <span>{revelationLabel}</span>
+            <span>{chapter.verses_count} Ayahs</span>
+            <span aria-hidden="true">·</span>
+            <span className="whitespace-nowrap">{revelationLabel}</span>
             {chapter.available_in_prelive === false && (
               <>
-                <span aria-hidden="true"> · </span>
-                <span style={{ color: 'var(--gold)' }} className="font-medium">
+                <span aria-hidden="true">·</span>
+                <span style={{ color: 'var(--gold)' }} className="font-medium whitespace-nowrap">
                   Pending Prod API
                 </span>
               </>
@@ -60,7 +66,7 @@ export function SurahCard({ chapter }: { chapter: Chapter }) {
           dir="rtl"
           lang="ar"
           translate="no"
-          className="notranslate font-quran-scheherazade quran-arabic-text text-xl leading-[1.85]"
+          className="notranslate font-quran-scheherazade quran-arabic-text text-base sm:text-lg leading-[1.6] !py-0"
           style={{ color: 'var(--text-primary)' }}
         >
           {chapter.name_arabic}

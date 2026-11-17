@@ -115,6 +115,12 @@ textarea:focus-visible {
   font-family: 'Lateef', 'Scheherazade New', serif;
 }
 
+.font-urdu {
+  font-family: 'Noto Nastaliq Urdu', serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
 .quran-arabic-text {
   direction: rtl;
   unicode-bidi: isolate;
@@ -141,4 +147,103 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Official Quran Foundation API Tajweed Rule Colors */
+.tajweed-ham_wasl,
+.tajweed-slnt,
+.tajweed-laam_shamsiyah,
+.tajweed-idgham_wo_ghunnah {
+  color: #9A9E99;
+}
+
+.tajweed-madda_normal {
+  color: #A16207;
+}
+
+.tajweed-madda_permissible {
+  color: #D97706;
+}
+
+.tajweed-madda_obligatory,
+.tajweed-madda_obligatory_monfasel,
+.tajweed-madda_obligatory_mottasel {
+  color: #DC2626;
+}
+
+.tajweed-madda_necessary {
+  color: #991B1B;
+}
+
+.tajweed-qalaqah {
+  color: #0284C7;
+}
+
+.tajweed-ghunnah {
+  color: #15803D;
+}
+
+.tajweed-ikhafa,
+.tajweed-ikhafa_shafawi {
+  color: #0D9488;
+}
+
+.tajweed-idgham_ghunnah,
+.tajweed-idgham_shafawi,
+.tajweed-idgham_mutajanisayn,
+.tajweed-idgham_mutaqaribayn {
+  color: #059669;
+}
+
+.tajweed-iqlab {
+  color: #7C3AED;
+}
+
+.dark .tajweed-ham_wasl,
+.dark .tajweed-slnt,
+.dark .tajweed-laam_shamsiyah,
+.dark .tajweed-idgham_wo_ghunnah {
+  color: #7D8881;
+}
+
+.dark .tajweed-madda_normal {
+  color: #EAB308;
+}
+
+.dark .tajweed-madda_permissible {
+  color: #FB923C;
+}
+
+.dark .tajweed-madda_obligatory,
+.dark .tajweed-madda_obligatory_monfasel,
+.dark .tajweed-madda_obligatory_mottasel {
+  color: #F87171;
+}
+
+.dark .tajweed-madda_necessary {
+  color: #EF4444;
+}
+
+.dark .tajweed-qalaqah {
+  color: #38BDF8;
+}
+
+.dark .tajweed-ghunnah {
+  color: #4ADE80;
+}
+
+.dark .tajweed-ikhafa,
+.dark .tajweed-ikhafa_shafawi {
+  color: #2DD4BF;
+}
+
+.dark .tajweed-idgham_ghunnah,
+.dark .tajweed-idgham_shafawi,
+.dark .tajweed-idgham_mutajanisayn,
+.dark .tajweed-idgham_mutaqaribayn {
+  color: #34D399;
+}
+
+.dark .tajweed-iqlab {
+  color: #A78BFA;
 }

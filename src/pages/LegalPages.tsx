@@ -175,9 +175,9 @@ export function PrivacyPolicyPage() {
             and streamed from verified Quran Foundation media endpoints.
           </li>
           <li>
-            <strong>Google Fonts:</strong> Typography files (Amiri Quran, Scheherazade New, Noto
-            Naskh Arabic, Lateef, Plus Jakarta Sans, and Source Serif 4) are requested by your
-            browser from Google Fonts CDN.
+            <strong>Google Fonts:</strong> Typography files (Scheherazade New, Noto Naskh Arabic,
+            Lateef, Noto Nastaliq Urdu, Plus Jakarta Sans, and Source Serif 4) are requested by
+            your browser from Google Fonts CDN.
           </li>
           <li>
             <strong>Browser Speech Synthesis:</strong> Optional spoken English translation playback
@@ -451,9 +451,9 @@ export function CopyrightPage() {
 
       <LegalSection heading="3. Open-Source Typography Licensing">
         <p>
-          Arabic Quranic fonts (Amiri Quran, Scheherazade New, Noto Naskh Arabic, and Lateef) and
-          English typefaces (Plus Jakarta Sans and Source Serif 4) are served under open-source
-          SIL Open Font License (OFL 1.1) terms.
+          Arabic and Urdu Quranic fonts (Scheherazade New, Noto Naskh Arabic, Lateef, and Noto
+          Nastaliq Urdu) and English typefaces (Plus Jakarta Sans and Source Serif 4) are served
+          under open-source SIL Open Font License (OFL 1.1) terms.
         </p>
       </LegalSection>
 
@@ -543,9 +543,10 @@ export function AccessibilityPage() {
             Sepia Parchment, and Dark Forest themes designed for comfortable low-glare reading.
           </li>
           <li>
-            <strong>Scalable Arabic &amp; English Typography:</strong> Reader Settings allow direct
-            adjustment of Arabic script sizes (24px–54px) and English translation sizes (14px–24px),
-            alongside four authentic Arabic scripts.
+            <strong>Scalable Arabic &amp; Translation Typography:</strong> Reader Settings allow direct
+            adjustment of Arabic script sizes (16px–48px, default 21px) and translation sizes
+            (14px–24px, default 17px), alongside Uthmani (Hafs) and IndoPak scripts across three
+            Arabic fonts (Scheherazade New, Noto Naskh Arabic, and Lateef).
           </li>
           <li>
             <strong>RTL &amp; Reduced Motion:</strong> Strict right-to-left{' '}

@@ -5,12 +5,13 @@ import {
   fetchVerseByKey,
   fetchVersesByKeys,
 } from '../services/quranApi';
-import type { Verse } from '../types/quran';
-import { stripHtmlTags } from '../utils/text';
+import type { AyahRepeatRange, RepeatMode, Verse } from '../types/quran';
+import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
+import { getUrduAyahAudioUrl } from '../utils/urduAudio';
 import { useReader } from './ReaderContext';
 
-export type AudioMode = 'arabic' | 'english';
-export type PlaybackKind = 'ayah' | 'surah' | 'translation';
+export type AudioMode = 'arabic' | 'english' | 'urdu';
+export type PlaybackKind = 'ayah' | 'surah' | 'translation' | 'urdu' | 'urdu_followup';
 
 export interface PlayableAyah {
   verseKey: string;
@@ -35,6 +36,13 @@ interface SurahSequenceState {
   index: number;
 }
 
+export interface QueueEndContext {
+  mode: AudioMode;
+  lastAyah: PlayableAyah;
+}
+
+export type QueueEndHandler = (ctx: QueueEndContext) => boolean;
+
 interface AudioContextValue {
   isPlaying: boolean;
   isLoading: boolean;
@@ -50,10 +58,17 @@ interface AudioContextValue {
   error: string | null;
   ttsSupported: boolean;
   availableVoices: SpeechSynthesisVoice[];
+  repeatMode: RepeatMode;
+  repeatIteration: number;
+  repeatRange: AyahRepeatRange | null;
+  setRepeatMode: (mode: RepeatMode) => void;
+  setRepeatRange: (range: AyahRepeatRange | null) => void;
   playAyah: (ayah: PlayableAyah, queue?: PlayableAyah[]) => void;
+  playAyahRange: (startKey: string, endKey: string, queue: PlayableAyah[]) => void;
   playVerseKeys: (keys: string[], title: string) => void;
   playFullSurah: (chapterId: number, chapterName: string) => void;
   playEnglishTranslation: (ayah: PlayableAyah, queue?: PlayableAyah[]) => void;
+  playUrduTranslation: (ayah: PlayableAyah, queue?: PlayableAyah[]) => void;
   togglePlayPause: () => void;
   stopAudio: () => void;
   playNext: () => void;
@@ -63,12 +78,15 @@ interface AudioContextValue {
   toggleMute: () => void;
   setAudioMode: (mode: AudioMode) => void;
   updateQueue: (queue: PlayableAyah[]) => void;
+  setQueueEndHandler: (handler: QueueEndHandler | null) => void;
+  continueAfterPageAdvance: (newQueue: PlayableAyah[]) => void;
+  cancelPageAdvance: () => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const { settings, showToast } = useReader();
+  const { settings, updateSettings, showToast } = useReader();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -84,14 +102,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [repeatMode, setRepeatModeState] = useState<RepeatMode>(() =>
+    settings.repeatAyah ? 'loop' : 1
+  );
+  const [repeatIteration, setRepeatIteration] = useState(1);
+  const [repeatRange, setRepeatRangeState] = useState<AyahRepeatRange | null>(null);
 
   const queueRef = useRef<PlayableAyah[]>([]);
   const activeIndexRef = useRef<number>(-1);
+  const audioModeRef = useRef<AudioMode>('arabic');
+  audioModeRef.current = audioMode;
   const playbackKindRef = useRef<PlaybackKind | null>(null);
   playbackKindRef.current = playbackKind;
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+
+  const repeatModeRef = useRef<RepeatMode>(repeatMode);
+  repeatModeRef.current = repeatMode;
+  const repeatIterationRef = useRef<number>(1);
+  const repeatRangeRef = useRef<AyahRepeatRange | null>(repeatRange);
+  repeatRangeRef.current = repeatRange;
 
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
@@ -99,10 +130,56 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   isMutedRef.current = isMuted;
 
   const playbackRequestIdRef = useRef(0);
+  const pendingAdvanceRef = useRef<{ reqId: number; mode: AudioMode } | null>(null);
+  const queueEndHandlerRef = useRef<QueueEndHandler | null>(null);
   const activeSegmentRef = useRef<ActiveSegment | null>(null);
   const segmentAdvancingRef = useRef(false);
   const surahSequenceRef = useRef<SurahSequenceState | null>(null);
   const segmentCacheRef = useRef<Map<string, ChapterAudioResponse>>(new Map());
+
+  // Sync repeatMode when settings.repeatAyah toggles externally (e.g. AyahCard/AudioPlayer)
+  useEffect(() => {
+    if (settings.repeatAyah && repeatModeRef.current !== 'loop') {
+      repeatModeRef.current = 'loop';
+      setRepeatModeState('loop');
+    } else if (!settings.repeatAyah && repeatModeRef.current === 'loop') {
+      repeatModeRef.current = 1;
+      setRepeatModeState(1);
+    }
+  }, [settings.repeatAyah]);
+
+  // Clear Hifz-only repeat range when Hifz Mode is turned off
+  useEffect(() => {
+    if (!settings.hifzMode) {
+      repeatRangeRef.current = null;
+      setRepeatRangeState(null);
+      if (repeatModeRef.current === 3 || repeatModeRef.current === 5) {
+        repeatModeRef.current = 1;
+        setRepeatModeState(1);
+        repeatIterationRef.current = 1;
+        setRepeatIteration(1);
+      }
+    }
+  }, [settings.hifzMode]);
+
+  const setRepeatMode = useCallback(
+    (mode: RepeatMode) => {
+      repeatModeRef.current = mode;
+      setRepeatModeState(mode);
+      repeatIterationRef.current = 1;
+      setRepeatIteration(1);
+      const shouldLoop = mode === 'loop';
+      if (settingsRef.current.repeatAyah !== shouldLoop) {
+        updateSettings({ repeatAyah: shouldLoop });
+      }
+    },
+    [updateSettings]
+  );
+
+  const setRepeatRange = useCallback((range: AyahRepeatRange | null) => {
+    repeatRangeRef.current = range;
+    setRepeatRangeState(range);
+  }, []);
 
   const ttsSupported =
     typeof window !== 'undefined' &&
@@ -124,11 +201,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ttsSupported]);
 
+  const ttsFallbackTimerRef = useRef<number | null>(null);
+
+  const clearTtsFallbackTimer = useCallback(() => {
+    if (ttsFallbackTimerRef.current !== null) {
+      window.clearTimeout(ttsFallbackTimerRef.current);
+      ttsFallbackTimerRef.current = null;
+    }
+  }, []);
+
   const stopSpeech = useCallback(() => {
+    clearTtsFallbackTimer();
     if (ttsSupported) {
       window.speechSynthesis.cancel();
     }
-  }, [ttsSupported]);
+  }, [clearTtsFallbackTimer, ttsSupported]);
 
   const clearAudioElement = useCallback(() => {
     activeSegmentRef.current = null;
@@ -145,6 +232,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const stopAudio = useCallback(() => {
     playbackRequestIdRef.current += 1;
+    pendingAdvanceRef.current = null;
     clearAudioElement();
     stopSpeech();
     setIsPlaying(false);
@@ -224,7 +312,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       if (startSec !== null && startSec >= 0) {
         audio.currentTime = startSec;
-      } else if (!isSameSource) {
+      } else if (!isSameSource || audio.ended) {
         audio.currentTime = 0;
       }
 
@@ -233,15 +321,51 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const shouldRepeatCurrentAyah = useCallback((): boolean => {
+    if (settingsRef.current.repeatAyah || repeatModeRef.current === 'loop') {
+      repeatIterationRef.current += 1;
+      setRepeatIteration(repeatIterationRef.current);
+      return true;
+    }
+    const mode = repeatModeRef.current;
+    if (typeof mode === 'number' && mode > 1 && repeatIterationRef.current < mode) {
+      repeatIterationRef.current += 1;
+      setRepeatIteration(repeatIterationRef.current);
+      return true;
+    }
+    repeatIterationRef.current = 1;
+    setRepeatIteration(1);
+    return false;
+  }, []);
+
+  const getNextRangeIndex = useCallback((currentIdx: number): number | null => {
+    const range = repeatRangeRef.current;
+    if (!range || queueRef.current.length === 0) return null;
+    const startIdx = queueRef.current.findIndex((q) => q.verseKey === range.startKey);
+    const endIdx = queueRef.current.findIndex((q) => q.verseKey === range.endKey);
+    if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) return null;
+    if (currentIdx < startIdx || currentIdx >= endIdx) {
+      return startIdx;
+    }
+    return currentIdx + 1;
+  }, []);
+
   const speakAyahTranslation = useCallback(
-    (ayah: PlayableAyah, indexInQueue: number) => {
+    (ayah: PlayableAyah, indexInQueue: number, isRepeatPass = false) => {
       if (!ttsSupported) {
-        setError('English Speech Synthesis is not supported in this browser.');
+        const msg = 'No English speech voice is available in this browser. Please try listening on a phone.';
+        setError(msg);
+        showToast(msg);
         return;
       }
 
       clearAudioElement();
       window.speechSynthesis.cancel();
+
+      if (!isRepeatPass) {
+        repeatIterationRef.current = 1;
+        setRepeatIteration(1);
+      }
 
       const text = stripHtmlTags(ayah.translationText || '');
       if (!text) {
@@ -271,38 +395,87 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (chosen) utterance.voice = chosen;
       }
 
+      clearTtsFallbackTimer();
+      let settled = false;
+
       utterance.onstart = () => {
+        settled = true;
+        clearTtsFallbackTimer();
         setIsPlaying(true);
       };
 
       utterance.onend = () => {
-        if (settingsRef.current.repeatAyah) {
-          speakAyahTranslation(ayah, indexInQueue);
+        settled = true;
+        clearTtsFallbackTimer();
+        if (shouldRepeatCurrentAyah()) {
+          speakAyahTranslation(ayah, indexInQueue, true);
+          return;
+        }
+        const rangeNextIdx = getNextRangeIndex(indexInQueue);
+        if (rangeNextIdx !== null && queueRef.current[rangeNextIdx]) {
+          speakAyahTranslation(queueRef.current[rangeNextIdx], rangeNextIdx);
           return;
         }
         const nextIdx = indexInQueue + 1;
         if (settingsRef.current.autoPlayNext && nextIdx < queueRef.current.length) {
           speakAyahTranslation(queueRef.current[nextIdx], nextIdx);
-        } else {
-          setIsPlaying(false);
+          return;
         }
+        const lastAyah = queueRef.current[queueRef.current.length - 1];
+        if (settingsRef.current.autoPlayNext && lastAyah && queueEndHandlerRef.current) {
+          const reqId = ++playbackRequestIdRef.current;
+          pendingAdvanceRef.current = { reqId, mode: 'english' };
+          const willAdvance = queueEndHandlerRef.current({ mode: 'english', lastAyah });
+          if (willAdvance) {
+            setIsPlaying(false);
+            setIsLoading(true);
+            return;
+          }
+          pendingAdvanceRef.current = null;
+        }
+        setIsPlaying(false);
       };
 
       utterance.onerror = (ev) => {
+        settled = true;
+        clearTtsFallbackTimer();
         if (ev.error === 'interrupted' || ev.error === 'canceled') return;
         setIsPlaying(false);
-        setError('Unable to play English translation speech.');
+        const msg =
+          'No English speech voice is available on this device or browser. Please try listening on a phone.';
+        setError(msg);
+        showToast(msg);
       };
 
       window.speechSynthesis.speak(utterance);
+
+      // Some desktop browsers have 0 system TTS voices and neither start nor error on speak()
+      ttsFallbackTimerRef.current = window.setTimeout(() => {
+        if (settled) return;
+        const voices = window.speechSynthesis.getVoices();
+        if (!window.speechSynthesis.speaking && voices.length === 0) {
+          window.speechSynthesis.cancel();
+          setIsPlaying(false);
+          const msg =
+            'No English speech voice is available on this device or browser. Please try listening on a phone.';
+          setError(msg);
+          showToast(msg);
+        }
+      }, 1500);
     },
-    [clearAudioElement, ttsSupported]
+    [clearAudioElement, clearTtsFallbackTimer, getNextRangeIndex, shouldRepeatCurrentAyah, showToast, ttsSupported]
   );
 
   const startArabicAyahPlayback = useCallback(
-    async (ayah: PlayableAyah, indexInQueue: number) => {
+    async (ayah: PlayableAyah, indexInQueue: number, isRepeatPass = false) => {
       const reqId = ++playbackRequestIdRef.current;
+      pendingAdvanceRef.current = null;
       const reciterId = settingsRef.current.reciterId;
+
+      if (!isRepeatPass) {
+        repeatIterationRef.current = 1;
+        setRepeatIteration(1);
+      }
 
       stopSpeech();
       surahSequenceRef.current = null;
@@ -332,7 +505,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               audioUrl,
               translationText:
                 queueRef.current[indexInQueue].translationText ||
-                stripHtmlTags(freshVerse.translations?.[0]?.text || ''),
+                stripHtmlTags(
+                  getEnglishTranslation(freshVerse.translations, settingsRef.current.translationId)?.text || ''
+                ),
             };
           }
         } catch {
@@ -409,6 +584,58 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     [getCachedChapterSegments, playUrlFromOffset, stopSpeech]
   );
 
+  const startUrduAyahPlayback = useCallback(
+    async (
+      ayah: PlayableAyah,
+      indexInQueue: number,
+      kind: 'urdu' | 'urdu_followup' = 'urdu',
+      isRepeatPass = false
+    ) => {
+      const reqId = ++playbackRequestIdRef.current;
+      pendingAdvanceRef.current = null;
+
+      if (kind === 'urdu' && !isRepeatPass) {
+        repeatIterationRef.current = 1;
+        setRepeatIteration(1);
+      }
+
+      stopSpeech();
+      activeSegmentRef.current = null;
+      segmentAdvancingRef.current = false;
+      surahSequenceRef.current = null;
+      setAudioModeState('urdu');
+      setPlaybackKind(kind);
+      setActiveVerseKey(ayah.verseKey);
+      setActiveChapterId(ayah.chapterId);
+      setActiveChapterName(ayah.chapterName);
+      activeIndexRef.current = indexInQueue;
+      setError(null);
+      setIsLoading(true);
+
+      const urduUrl = getUrduAyahAudioUrl(ayah.chapterId, ayah.verseNumber);
+      if (!urduUrl) {
+        if (reqId !== playbackRequestIdRef.current) return;
+        setIsLoading(false);
+        setIsPlaying(false);
+        setError('Urdu audio unavailable for this Ayah.');
+        return;
+      }
+
+      try {
+        await playUrlFromOffset(urduUrl, null, reqId);
+        if (reqId !== playbackRequestIdRef.current) return;
+        setIsPlaying(true);
+        setIsLoading(false);
+      } catch {
+        if (reqId !== playbackRequestIdRef.current) return;
+        setIsPlaying(false);
+        setIsLoading(false);
+        setError('Urdu audio stream unavailable. Click play to retry.');
+      }
+    },
+    [playUrlFromOffset, stopSpeech]
+  );
+
   const playAyah = useCallback(
     (ayah: PlayableAyah, queue?: PlayableAyah[]) => {
       if (queue && queue.length > 0) {
@@ -423,6 +650,25 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const idx = queueRef.current.findIndex((item) => item.verseKey === ayah.verseKey);
       const resolvedIdx = idx >= 0 ? idx : 0;
       startArabicAyahPlayback(queueRef.current[resolvedIdx], resolvedIdx);
+    },
+    [startArabicAyahPlayback]
+  );
+
+  const playAyahRange = useCallback(
+    (startKey: string, endKey: string, queue: PlayableAyah[]) => {
+      if (queue.length === 0) return;
+      queueRef.current = queue;
+      const sIdx = queue.findIndex((item) => item.verseKey === startKey);
+      const eIdx = queue.findIndex((item) => item.verseKey === endKey);
+      if (sIdx === -1 || eIdx === -1) return;
+      const [fromIdx, toIdx] = sIdx <= eIdx ? [sIdx, eIdx] : [eIdx, sIdx];
+      const nextRange: AyahRepeatRange = {
+        startKey: queue[fromIdx].verseKey,
+        endKey: queue[toIdx].verseKey,
+      };
+      repeatRangeRef.current = nextRange;
+      setRepeatRangeState(nextRange);
+      startArabicAyahPlayback(queue[fromIdx], fromIdx);
     },
     [startArabicAyahPlayback]
   );
@@ -447,7 +693,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             verseNumber: v.verse_number,
             chapterName: title,
             audioUrl: v.audio?.url,
-            translationText: stripHtmlTags(v.translations?.[0]?.text || ''),
+            translationText: stripHtmlTags(
+              getEnglishTranslation(v.translations, settingsRef.current.translationId)?.text || ''
+            ),
           };
         });
         if (items.length > 0) {
@@ -477,6 +725,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       speakAyahTranslation(queueRef.current[resolvedIdx], resolvedIdx);
     },
     [speakAyahTranslation]
+  );
+
+  const playUrduTranslation = useCallback(
+    (ayah: PlayableAyah, queue?: PlayableAyah[]) => {
+      if (queue && queue.length > 0) {
+        queueRef.current = queue;
+      } else if (
+        queueRef.current.length === 0 ||
+        !queueRef.current.some((item) => item.verseKey === ayah.verseKey)
+      ) {
+        queueRef.current = [ayah];
+      }
+      const idx = queueRef.current.findIndex((item) => item.verseKey === ayah.verseKey);
+      const resolvedIdx = idx >= 0 ? idx : 0;
+      startUrduAyahPlayback(queueRef.current[resolvedIdx], resolvedIdx, 'urdu');
+    },
+    [startUrduAyahPlayback]
   );
 
   const playFullSurah = useCallback(
@@ -563,11 +828,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (nextIdx >= 0 && nextIdx < queueRef.current.length) {
       if (audioMode === 'english') {
         speakAyahTranslation(queueRef.current[nextIdx], nextIdx);
+      } else if (playbackKindRef.current === 'urdu') {
+        startUrduAyahPlayback(queueRef.current[nextIdx], nextIdx, 'urdu');
       } else {
         startArabicAyahPlayback(queueRef.current[nextIdx], nextIdx);
       }
     }
-  }, [audioMode, playUrlFromOffset, speakAyahTranslation, startArabicAyahPlayback]);
+  }, [audioMode, playUrlFromOffset, speakAyahTranslation, startArabicAyahPlayback, startUrduAyahPlayback]);
 
   const playPrevious = useCallback(() => {
     if (playbackKindRef.current === 'surah' && surahSequenceRef.current) {
@@ -597,13 +864,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (prevIdx >= 0 && prevIdx < queueRef.current.length) {
       if (audioMode === 'english') {
         speakAyahTranslation(queueRef.current[prevIdx], prevIdx);
+      } else if (playbackKindRef.current === 'urdu') {
+        startUrduAyahPlayback(queueRef.current[prevIdx], prevIdx, 'urdu');
       } else {
         startArabicAyahPlayback(queueRef.current[prevIdx], prevIdx);
       }
     }
-  }, [audioMode, playUrlFromOffset, speakAyahTranslation, startArabicAyahPlayback]);
+  }, [audioMode, playUrlFromOffset, speakAyahTranslation, startArabicAyahPlayback, startUrduAyahPlayback]);
 
   const togglePlayPause = useCallback(async () => {
+    if (pendingAdvanceRef.current) {
+      playbackRequestIdRef.current += 1;
+      pendingAdvanceRef.current = null;
+      setIsLoading(false);
+      setIsPlaying(false);
+      return;
+    }
+
     if (audioMode === 'english') {
       if (!ttsSupported) return;
       if (isPlaying) {
@@ -630,7 +907,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (playbackKindRef.current === 'surah' && activeChapterId) {
         await playFullSurah(activeChapterId, activeChapterName);
       } else if (activeIndexRef.current >= 0 && queueRef.current[activeIndexRef.current]) {
-        await startArabicAyahPlayback(queueRef.current[activeIndexRef.current], activeIndexRef.current);
+        if (audioMode === 'urdu') {
+          const kind = playbackKindRef.current === 'urdu_followup' ? 'urdu_followup' : 'urdu';
+          await startUrduAyahPlayback(queueRef.current[activeIndexRef.current], activeIndexRef.current, kind);
+        } else {
+          await startArabicAyahPlayback(queueRef.current[activeIndexRef.current], activeIndexRef.current);
+        }
       }
       return;
     }
@@ -649,6 +931,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     playFullSurah,
     speakAyahTranslation,
     startArabicAyahPlayback,
+    startUrduAyahPlayback,
     ttsSupported,
   ]);
 
@@ -673,11 +956,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (!currentItem) return;
       if (mode === 'english') {
         speakAyahTranslation(currentItem, activeIndexRef.current);
+      } else if (mode === 'urdu') {
+        startUrduAyahPlayback(currentItem, activeIndexRef.current, 'urdu');
       } else {
         startArabicAyahPlayback(currentItem, activeIndexRef.current);
       }
     },
-    [speakAyahTranslation, startArabicAyahPlayback]
+    [speakAyahTranslation, startArabicAyahPlayback, startUrduAyahPlayback]
   );
 
   const updateQueue = useCallback(
@@ -689,6 +974,63 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [activeVerseKey]
+  );
+
+  const setQueueEndHandler = useCallback((handler: QueueEndHandler | null) => {
+    queueEndHandlerRef.current = handler;
+  }, []);
+
+  const cancelPageAdvance = useCallback(() => {
+    if (pendingAdvanceRef.current) {
+      playbackRequestIdRef.current += 1;
+      pendingAdvanceRef.current = null;
+      setIsLoading(false);
+    }
+  }, []);
+
+  const continueAfterPageAdvance = useCallback(
+    (newQueue: PlayableAyah[]) => {
+      const pending = pendingAdvanceRef.current;
+      if (!pending || pending.reqId !== playbackRequestIdRef.current) {
+        return;
+      }
+      pendingAdvanceRef.current = null;
+      if (newQueue.length === 0) {
+        setIsLoading(false);
+        setIsPlaying(false);
+        return;
+      }
+      queueRef.current = newQueue;
+      if (pending.mode === 'english') {
+        speakAyahTranslation(newQueue[0], 0);
+      } else if (pending.mode === 'urdu') {
+        startUrduAyahPlayback(newQueue[0], 0, 'urdu');
+      } else {
+        startArabicAyahPlayback(newQueue[0], 0);
+      }
+    },
+    [speakAyahTranslation, startArabicAyahPlayback, startUrduAyahPlayback]
+  );
+
+  const tryHandleQueueEnd = useCallback(
+    (mode: AudioMode): boolean => {
+      if (!settingsRef.current.autoPlayNext || !queueEndHandlerRef.current) {
+        return false;
+      }
+      const lastAyah = queueRef.current[queueRef.current.length - 1];
+      if (!lastAyah) return false;
+      const reqId = ++playbackRequestIdRef.current;
+      pendingAdvanceRef.current = { reqId, mode };
+      const willAdvance = queueEndHandlerRef.current({ mode, lastAyah });
+      if (willAdvance) {
+        setIsPlaying(false);
+        setIsLoading(true);
+        return true;
+      }
+      pendingAdvanceRef.current = null;
+      return false;
+    },
+    []
   );
 
   useEffect(() => {
@@ -707,9 +1049,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         if (audio.currentTime >= seg.endSec - 0.05 && !segmentAdvancingRef.current) {
           segmentAdvancingRef.current = true;
-          if (settingsRef.current.repeatAyah) {
+          const currentAyah = queueRef.current[seg.indexInQueue];
+          if (settingsRef.current.autoPlayUrduAfterArabic && currentAyah) {
+            audio.pause();
+            startUrduAyahPlayback(currentAyah, seg.indexInQueue, 'urdu_followup');
+            return;
+          }
+          if (shouldRepeatCurrentAyah()) {
             audio.currentTime = seg.startSec;
             segmentAdvancingRef.current = false;
+            return;
+          }
+          const rangeNextIdx = getNextRangeIndex(seg.indexInQueue);
+          if (rangeNextIdx !== null && queueRef.current[rangeNextIdx]) {
+            startArabicAyahPlayback(queueRef.current[rangeNextIdx], rangeNextIdx);
             return;
           }
           const nextIdx = seg.indexInQueue + 1;
@@ -717,7 +1070,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             startArabicAyahPlayback(queueRef.current[nextIdx], nextIdx);
           } else {
             audio.pause();
-            setIsPlaying(false);
+            if (!tryHandleQueueEnd('arabic')) {
+              setIsPlaying(false);
+            }
             segmentAdvancingRef.current = false;
           }
         }
@@ -739,15 +1094,25 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const handleEnded = () => {
       if (activeSegmentRef.current) {
         const seg = activeSegmentRef.current;
-        if (settingsRef.current.repeatAyah) {
+        const currentAyah = queueRef.current[seg.indexInQueue];
+        if (settingsRef.current.autoPlayUrduAfterArabic && currentAyah) {
+          startUrduAyahPlayback(currentAyah, seg.indexInQueue, 'urdu_followup');
+          return;
+        }
+        if (shouldRepeatCurrentAyah()) {
           audio.currentTime = seg.startSec;
           audio.play().catch(() => setIsPlaying(false));
+          return;
+        }
+        const rangeNextIdx = getNextRangeIndex(seg.indexInQueue);
+        if (rangeNextIdx !== null && queueRef.current[rangeNextIdx]) {
+          startArabicAyahPlayback(queueRef.current[rangeNextIdx], rangeNextIdx);
           return;
         }
         const nextIdx = seg.indexInQueue + 1;
         if (settingsRef.current.autoPlayNext && nextIdx < queueRef.current.length) {
           startArabicAyahPlayback(queueRef.current[nextIdx], nextIdx);
-        } else {
+        } else if (!tryHandleQueueEnd('arabic')) {
           setIsPlaying(false);
         }
         return;
@@ -786,16 +1151,67 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (settingsRef.current.repeatAyah) {
+      // Standalone Urdu playback auto-advances through the Surah/Juz queue and across page boundaries
+      if (playbackKindRef.current === 'urdu') {
+        if (shouldRepeatCurrentAyah()) {
+          const currentAyah =
+            activeIndexRef.current >= 0 ? queueRef.current[activeIndexRef.current] : null;
+          if (currentAyah) {
+            startUrduAyahPlayback(currentAyah, activeIndexRef.current, 'urdu', true);
+            return;
+          }
+          audio.currentTime = 0;
+          audio.play().catch(() => setIsPlaying(false));
+          return;
+        }
+
+        const rangeNextIdx = getNextRangeIndex(activeIndexRef.current);
+        if (rangeNextIdx !== null && queueRef.current[rangeNextIdx]) {
+          startUrduAyahPlayback(queueRef.current[rangeNextIdx], rangeNextIdx, 'urdu');
+          return;
+        }
+
+        const nextIdx = activeIndexRef.current + 1;
+        if (settingsRef.current.autoPlayNext && nextIdx < queueRef.current.length) {
+          startUrduAyahPlayback(queueRef.current[nextIdx], nextIdx, 'urdu');
+        } else if (!tryHandleQueueEnd('urdu')) {
+          setIsPlaying(false);
+        }
+        return;
+      }
+
+      // When 'Play Urdu translation after Arabic' is ON, play this ayah's Urdu audio after Arabic finishes
+      if (playbackKindRef.current === 'ayah' && settingsRef.current.autoPlayUrduAfterArabic) {
+        const currentAyah =
+          activeIndexRef.current >= 0 ? queueRef.current[activeIndexRef.current] : null;
+        if (currentAyah) {
+          startUrduAyahPlayback(currentAyah, activeIndexRef.current, 'urdu_followup');
+          return;
+        }
+      }
+
+      const wasUrduFollowup = playbackKindRef.current === 'urdu_followup';
+
+      if (shouldRepeatCurrentAyah()) {
+        if (wasUrduFollowup && activeIndexRef.current >= 0 && queueRef.current[activeIndexRef.current]) {
+          startArabicAyahPlayback(queueRef.current[activeIndexRef.current], activeIndexRef.current, true);
+          return;
+        }
         audio.currentTime = 0;
         audio.play().catch(() => setIsPlaying(false));
+        return;
+      }
+
+      const rangeNextIdx = getNextRangeIndex(activeIndexRef.current);
+      if (rangeNextIdx !== null && queueRef.current[rangeNextIdx]) {
+        startArabicAyahPlayback(queueRef.current[rangeNextIdx], rangeNextIdx);
         return;
       }
 
       const nextIdx = activeIndexRef.current + 1;
       if (settingsRef.current.autoPlayNext && nextIdx < queueRef.current.length) {
         startArabicAyahPlayback(queueRef.current[nextIdx], nextIdx);
-      } else {
+      } else if (!tryHandleQueueEnd('arabic')) {
         setIsPlaying(false);
       }
     };
@@ -818,7 +1234,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [playUrlFromOffset, startArabicAyahPlayback]);
+  }, [
+    getNextRangeIndex,
+    playUrlFromOffset,
+    shouldRepeatCurrentAyah,
+    startArabicAyahPlayback,
+    startUrduAyahPlayback,
+    tryHandleQueueEnd,
+  ]);
 
   // Whenever reciter changes: immediately stop stale audio, clear all queued verse URLs,
   // and restart active Arabic playback with the newly selected reciter.
@@ -880,10 +1303,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         error,
         ttsSupported,
         availableVoices,
+        repeatMode,
+        repeatIteration,
+        repeatRange,
+        setRepeatMode,
+        setRepeatRange,
         playAyah,
+        playAyahRange,
         playVerseKeys,
         playFullSurah,
         playEnglishTranslation,
+        playUrduTranslation,
         togglePlayPause,
         stopAudio,
         playNext,
@@ -893,6 +1323,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         toggleMute,
         setAudioMode,
         updateQueue,
+        setQueueEndHandler,
+        continueAfterPageAdvance,
+        cancelPageAdvance,
       }}
     >
       {children}

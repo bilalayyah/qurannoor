@@ -6,20 +6,22 @@ import {
   Play,
   SlidersHorizontal,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AyahCard } from '../components/AyahCard';
 import { BismillahHeader } from '../components/BismillahHeader';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { HifzControlsBar } from '../components/HifzControlsBar';
 import { ReciterSelector } from '../components/ReciterSelector';
 import { ErrorBanner, VerseListSkeleton } from '../components/StatusStates';
 import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
+import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchChapterDetails, fetchVersesByChapter } from '../services/quranApi';
 import type { Chapter, PaginationInfo, Verse } from '../types/quran';
 import { POPULAR_SECTIONS, resolveChapterIdFromParam, toSurahSlug } from '../utils/slugs';
-import { stripHtmlTags } from '../utils/text';
+import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
 
 const PER_PAGE = 30;
 
@@ -33,7 +35,15 @@ export function SurahReaderPage() {
     saveReadingProgress,
     setIsSettingsOpen,
   } = useReader();
-  const { playFullSurah, playAyah, updateQueue, activeVerseKey } = useAudio();
+  const {
+    playFullSurah,
+    playAyah,
+    updateQueue,
+    activeVerseKey,
+    setQueueEndHandler,
+    continueAfterPageAdvance,
+    cancelPageAdvance,
+  } = useAudio();
 
   const targetAyahParam = Number(searchParams.get('ayah') || ayahNumber || 0) || null;
 
@@ -51,14 +61,34 @@ export function SurahReaderPage() {
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [jumpAyahInput, setJumpAyahInput] = useState('');
+  const [loadedPageKey, setLoadedPageKey] = useState('');
+  const pendingAutoAdvancePageRef = useRef<number | null>(null);
+  const prevChapterIdRef = useRef<number | null>(chapterId);
+  const skipTargetResetRef = useRef(false);
+  const { isVerseBlurred, revealVerse } = useHifzReader(
+    verses,
+    activeVerseKey,
+    settings.hifzMode
+  );
 
   useEffect(() => {
+    const chapterChanged = prevChapterIdRef.current !== chapterId;
+    prevChapterIdRef.current = chapterId;
+
+    if (!chapterChanged && skipTargetResetRef.current) {
+      skipTargetResetRef.current = false;
+      return;
+    }
+
+    pendingAutoAdvancePageRef.current = null;
+    cancelPageAdvance();
+
     if (targetAyahParam && targetAyahParam > 0) {
       setCurrentPage(Math.ceil(targetAyahParam / PER_PAGE));
     } else {
       setCurrentPage(1);
     }
-  }, [chapterId, targetAyahParam]);
+  }, [chapterId, targetAyahParam, cancelPageAdvance]);
 
   const loadSurah = useCallback(async () => {
     if (!chapterId) {
@@ -88,6 +118,7 @@ export function SurahReaderPage() {
       setChapterInfoText(details.chapter_info?.short_text || '');
       setVerses(versesData.verses);
       setPagination(versesData.pagination);
+      setLoadedPageKey(`${details.chapter.id}:${currentPage}`);
 
       const firstVerse = versesData.verses[0];
       if (firstVerse && details.chapter) {
@@ -107,6 +138,8 @@ export function SurahReaderPage() {
         });
       }
     } catch (err: unknown) {
+      pendingAutoAdvancePageRef.current = null;
+      cancelPageAdvance();
       const errObj = err as { message?: string; code?: string };
       const msg = errObj?.message || 'Unable to load Surah.';
       setError(msg);
@@ -122,6 +155,7 @@ export function SurahReaderPage() {
     settings.reciterId,
     saveReadingProgress,
     targetAyahParam,
+    cancelPageAdvance,
   ]);
 
   useEffect(() => {
@@ -163,15 +197,79 @@ export function SurahReaderPage() {
       verseNumber: v.verse_number,
       chapterName: chapter.name_simple,
       audioUrl: v.audio?.url,
-      translationText: stripHtmlTags(v.translations?.[0]?.text || ''),
+      translationText: stripHtmlTags(
+        getEnglishTranslation(v.translations, settings.translationId)?.text || ''
+      ),
     }));
-  }, [verses, chapter]);
+  }, [verses, chapter, settings.translationId]);
 
   useEffect(() => {
-    if (queue.length > 0) {
+    if (!loading && chapterId && loadedPageKey === `${chapterId}:${currentPage}` && queue.length > 0) {
       updateQueue(queue);
     }
-  }, [queue, updateQueue]);
+  }, [loading, loadedPageKey, chapterId, currentPage, queue, updateQueue]);
+
+  useEffect(() => {
+    setQueueEndHandler(({ lastAyah }) => {
+      if (
+        loading ||
+        !chapterId ||
+        loadedPageKey !== `${chapterId}:${currentPage}` ||
+        !pagination ||
+        currentPage >= pagination.total_pages ||
+        verses.length === 0 ||
+        lastAyah.chapterId !== chapterId ||
+        verses[verses.length - 1].verse_key !== lastAyah.verseKey
+      ) {
+        return false;
+      }
+
+      const nextPage = currentPage + 1;
+      pendingAutoAdvancePageRef.current = nextPage;
+      if (searchParams.has('ayah')) {
+        skipTargetResetRef.current = true;
+        setSearchParams({}, { replace: true });
+      }
+      setCurrentPage(nextPage);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      return true;
+    });
+
+    return () => {
+      setQueueEndHandler(null);
+    };
+  }, [
+    loading,
+    chapterId,
+    loadedPageKey,
+    currentPage,
+    pagination,
+    verses,
+    searchParams,
+    setSearchParams,
+    setQueueEndHandler,
+  ]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !chapterId ||
+      loadedPageKey !== `${chapterId}:${currentPage}` ||
+      pendingAutoAdvancePageRef.current !== currentPage ||
+      queue.length === 0
+    ) {
+      return;
+    }
+    pendingAutoAdvancePageRef.current = null;
+    continueAfterPageAdvance(queue);
+  }, [loading, loadedPageKey, chapterId, currentPage, queue, continueAfterPageAdvance]);
+
+  useEffect(() => {
+    return () => {
+      pendingAutoAdvancePageRef.current = null;
+      cancelPageAdvance();
+    };
+  }, [cancelPageAdvance]);
 
   usePageMetadata({
     title: chapter
@@ -196,6 +294,8 @@ export function SurahReaderPage() {
     if (!chapter) return;
     const num = Number(jumpAyahInput);
     if (!Number.isInteger(num) || num < 1 || num > chapter.verses_count) return;
+    pendingAutoAdvancePageRef.current = null;
+    cancelPageAdvance();
     setSearchParams({ ayah: String(num) });
     setCurrentPage(Math.ceil(num / PER_PAGE));
     setJumpAyahInput('');
@@ -222,7 +322,7 @@ export function SurahReaderPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[850px] px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-[850px] px-2.5 py-6 sm:px-6 sm:py-10">
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
@@ -279,7 +379,7 @@ export function SurahReaderPage() {
                 dir="rtl"
                 lang="ar"
                 translate="no"
-                className="notranslate font-quran-scheherazade quran-arabic-text text-4xl sm:text-5xl leading-[1.8]"
+                className="notranslate font-quran-scheherazade quran-arabic-text text-xl sm:text-3xl leading-[1.5] !py-0"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {chapter.name_arabic}
@@ -321,7 +421,7 @@ export function SurahReaderPage() {
                 <span>Play Ayahs</span>
               </button>
 
-              <ReciterSelector id="surah-reciter" compact className="max-w-[235px]" />
+              <ReciterSelector id="surah-reciter" compact className="w-full sm:w-auto sm:max-w-[310px]" />
             </div>
 
             <div className="flex items-center gap-2">
@@ -437,6 +537,7 @@ export function SurahReaderPage() {
         <VerseListSkeleton count={5} />
       ) : (
         <div>
+          <HifzControlsBar queue={queue} />
           {verses.map((verse) => (
             <AyahCard
               key={verse.verse_key}
@@ -445,6 +546,8 @@ export function SurahReaderPage() {
               chapterArabicName={chapter?.name_arabic || ''}
               queue={queue}
               isHighlighted={targetAyahParam === verse.verse_number}
+              isHifzBlurred={isVerseBlurred(verse.verse_key)}
+              onRevealHifz={() => revealVerse(verse.verse_key)}
             />
           ))}
         </div>
@@ -459,6 +562,8 @@ export function SurahReaderPage() {
             type="button"
             disabled={currentPage <= 1}
             onClick={() => {
+              pendingAutoAdvancePageRef.current = null;
+              cancelPageAdvance();
               setSearchParams({});
               setCurrentPage((p) => Math.max(1, p - 1));
               window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -482,6 +587,8 @@ export function SurahReaderPage() {
             type="button"
             disabled={currentPage >= pagination.total_pages}
             onClick={() => {
+              pendingAutoAdvancePageRef.current = null;
+              cancelPageAdvance();
               setSearchParams({});
               setCurrentPage((p) => Math.min(pagination.total_pages, p + 1));
               window.scrollTo({ top: 0, behavior: 'smooth' });

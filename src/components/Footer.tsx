@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { usePWAInstall } from '../utils/pwaInstall';
 import { QuranNoorLogo } from './BrandLogo';
 
 const EXPLORE_LINKS = [
@@ -6,6 +7,8 @@ const EXPLORE_LINKS = [
   { to: '/surahs', label: 'All 114 Surahs' },
   { to: '/juz', label: 'All 30 Juz' },
   { to: '/listen', label: 'Listen Quran' },
+  { to: '/khatm', label: '30-Day Khatm Tracker' },
+  { to: '/prayer-times', label: 'Prayer Times & Qibla' },
   { to: '/popular/ayatul-kursi', label: 'Ayatul Kursi (2:255)' },
   { to: '/quran-text-and-translation-methodology', label: 'Text & Translation Methodology' },
   { to: '/brand', label: 'Brand Identity' },
@@ -25,6 +28,7 @@ const LEGAL_TRUST_LINKS = [
 
 export function Footer() {
   const year = new Date().getFullYear();
+  const { installed, handleInstallClick } = usePWAInstall();
 
   return (
     <footer
@@ -65,6 +69,16 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => void handleInstallClick()}
+                  className="text-left hover:underline underline-offset-4"
+                  style={{ color: installed ? 'var(--accent-text)' : undefined }}
+                >
+                  {installed ? 'Installed ✓' : 'Install App'}
+                </button>
+              </li>
             </ul>
           </nav>
 

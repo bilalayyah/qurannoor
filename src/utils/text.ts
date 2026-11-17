@@ -43,3 +43,26 @@ export function getArabicFontClass(
       return 'font-quran-scheherazade';
   }
 }
+
+export const URDU_RESOURCE_ID = 234;
+
+export function getEnglishTranslation<
+  T extends { resource_id: number; text: string }
+>(translations?: T[] | null, preferredId?: number): T | undefined {
+  if (!translations || translations.length === 0) return undefined;
+  if (preferredId && preferredId !== URDU_RESOURCE_ID) {
+    const exact = translations.find((t) => t.resource_id === preferredId);
+    if (exact) return exact;
+  }
+  return (
+    translations.find((t) => t.resource_id !== URDU_RESOURCE_ID) ||
+    translations[0]
+  );
+}
+
+export function getUrduTranslation<
+  T extends { resource_id: number; text: string }
+>(translations?: T[] | null): T | undefined {
+  if (!translations || translations.length === 0) return undefined;
+  return translations.find((t) => t.resource_id === URDU_RESOURCE_ID);
+}

@@ -1,18 +1,20 @@
 import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Play, SlidersHorizontal } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AyahCard } from '../components/AyahCard';
 import { BismillahHeader } from '../components/BismillahHeader';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { HifzControlsBar } from '../components/HifzControlsBar';
 import { ReciterSelector } from '../components/ReciterSelector';
 import { ErrorBanner, VerseListSkeleton } from '../components/StatusStates';
 import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
+import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVersesByJuz } from '../services/quranApi';
 import type { PaginationInfo, Verse } from '../types/quran';
 import { toSurahSlug } from '../utils/slugs';
-import { stripHtmlTags } from '../utils/text';
+import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
 
 const PER_PAGE = 30;
 
@@ -30,7 +32,14 @@ export function JuzReaderPage() {
   });
 
   const { chapters, juzs, settings, setIsSettingsOpen } = useReader();
-  const { playAyah, updateQueue } = useAudio();
+  const {
+    playAyah,
+    updateQueue,
+    activeVerseKey,
+    setQueueEndHandler,
+    continueAfterPageAdvance,
+    cancelPageAdvance,
+  } = useAudio();
 
   const [verses, setVerses] = useState<Verse[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -38,10 +47,19 @@ export function JuzReaderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [loadedPageKey, setLoadedPageKey] = useState('');
+  const pendingAutoAdvancePageRef = useRef<number | null>(null);
+  const { isVerseBlurred, revealVerse } = useHifzReader(
+    verses,
+    activeVerseKey,
+    settings.hifzMode
+  );
 
   useEffect(() => {
+    pendingAutoAdvancePageRef.current = null;
+    cancelPageAdvance();
     setCurrentPage(1);
-  }, [juzId]);
+  }, [juzId, cancelPageAdvance]);
 
   const loadJuz = useCallback(async () => {
     if (!isValidJuz) {
@@ -63,7 +81,10 @@ export function JuzReaderPage() {
       });
       setVerses(data.verses);
       setPagination(data.pagination);
+      setLoadedPageKey(`${juzId}:${currentPage}`);
     } catch (err: unknown) {
+      pendingAutoAdvancePageRef.current = null;
+      cancelPageAdvance();
       const errObj = err as { message?: string; code?: string };
       const msg = errObj?.message || 'Unable to load Juz verses.';
       setError(msg);
@@ -71,7 +92,7 @@ export function JuzReaderPage() {
     } finally {
       setLoading(false);
     }
-  }, [isValidJuz, juzId, currentPage, settings.translationId, settings.reciterId]);
+  }, [isValidJuz, juzId, currentPage, settings.translationId, settings.reciterId, cancelPageAdvance]);
 
   useEffect(() => {
     loadJuz();
@@ -94,14 +115,65 @@ export function JuzReaderPage() {
         verseNumber: v.verse_number,
         chapterName: ch?.name_simple || `Surah ${v.verse_key.split(':')[0]}`,
         audioUrl: v.audio?.url,
-        translationText: stripHtmlTags(v.translations?.[0]?.text || ''),
+        translationText: stripHtmlTags(
+          getEnglishTranslation(v.translations, settings.translationId)?.text || ''
+        ),
       };
     });
-  }, [verses, getChapterForVerse]);
+  }, [verses, getChapterForVerse, settings.translationId]);
 
   useEffect(() => {
-    if (queue.length > 0) updateQueue(queue);
-  }, [queue, updateQueue]);
+    if (!loading && isValidJuz && loadedPageKey === `${juzId}:${currentPage}` && queue.length > 0) {
+      updateQueue(queue);
+    }
+  }, [loading, isValidJuz, loadedPageKey, juzId, currentPage, queue, updateQueue]);
+
+  useEffect(() => {
+    setQueueEndHandler(({ lastAyah }) => {
+      if (
+        loading ||
+        !isValidJuz ||
+        loadedPageKey !== `${juzId}:${currentPage}` ||
+        !pagination ||
+        currentPage >= pagination.total_pages ||
+        verses.length === 0 ||
+        verses[verses.length - 1].verse_key !== lastAyah.verseKey
+      ) {
+        return false;
+      }
+
+      const nextPage = currentPage + 1;
+      pendingAutoAdvancePageRef.current = nextPage;
+      setCurrentPage(nextPage);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      return true;
+    });
+
+    return () => {
+      setQueueEndHandler(null);
+    };
+  }, [loading, isValidJuz, loadedPageKey, juzId, currentPage, pagination, verses, setQueueEndHandler]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !isValidJuz ||
+      loadedPageKey !== `${juzId}:${currentPage}` ||
+      pendingAutoAdvancePageRef.current !== currentPage ||
+      queue.length === 0
+    ) {
+      return;
+    }
+    pendingAutoAdvancePageRef.current = null;
+    continueAfterPageAdvance(queue);
+  }, [loading, isValidJuz, loadedPageKey, juzId, currentPage, queue, continueAfterPageAdvance]);
+
+  useEffect(() => {
+    return () => {
+      pendingAutoAdvancePageRef.current = null;
+      cancelPageAdvance();
+    };
+  }, [cancelPageAdvance]);
 
   const juzMeta = juzs.find((j) => j.juz_number === juzId);
 
@@ -119,7 +191,7 @@ export function JuzReaderPage() {
   }, [juzMeta, chapters]);
 
   return (
-    <div className="mx-auto max-w-[850px] px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-[850px] px-2.5 py-6 sm:px-6 sm:py-10">
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
@@ -163,7 +235,7 @@ export function JuzReaderPage() {
               <span>Play Juz</span>
             </button>
 
-            <ReciterSelector id="juz-reciter" compact className="max-w-[225px]" />
+            <ReciterSelector id="juz-reciter" compact className="w-full sm:w-auto sm:max-w-[300px]" />
 
             <button
               type="button"
@@ -265,6 +337,7 @@ export function JuzReaderPage() {
         <VerseListSkeleton count={5} />
       ) : (
         <div>
+          <HifzControlsBar queue={queue} />
           {verses.map((verse, idx) => {
             const ch = getChapterForVerse(verse.verse_key);
             const prevVerse = idx > 0 ? verses[idx - 1] : null;
@@ -298,7 +371,7 @@ export function JuzReaderPage() {
                       dir="rtl"
                       lang="ar"
                       translate="no"
-                      className="notranslate font-quran-scheherazade quran-arabic-text text-2xl leading-[1.8]"
+                      className="notranslate font-quran-scheherazade quran-arabic-text text-lg sm:text-xl leading-[1.55] !py-0"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       {ch.name_arabic}
@@ -314,6 +387,8 @@ export function JuzReaderPage() {
                   chapterArabicName={ch?.name_arabic || ''}
                   queue={queue}
                   showChapterLink
+                  isHifzBlurred={isVerseBlurred(verse.verse_key)}
+                  onRevealHifz={() => revealVerse(verse.verse_key)}
                 />
               </Fragment>
             );
@@ -330,6 +405,8 @@ export function JuzReaderPage() {
             type="button"
             disabled={currentPage <= 1}
             onClick={() => {
+              pendingAutoAdvancePageRef.current = null;
+              cancelPageAdvance();
               setCurrentPage((p) => Math.max(1, p - 1));
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
@@ -352,6 +429,8 @@ export function JuzReaderPage() {
             type="button"
             disabled={currentPage >= pagination.total_pages}
             onClick={() => {
+              pendingAutoAdvancePageRef.current = null;
+              cancelPageAdvance();
               setCurrentPage((p) => Math.min(pagination.total_pages, p + 1));
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}

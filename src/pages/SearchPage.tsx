@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronLeft, ChevronRight, Info, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -6,12 +6,18 @@ import { ErrorBanner, VerseListSkeleton } from '../components/StatusStates';
 import { SurahCard } from '../components/SurahCard';
 import { useReader } from '../context/ReaderContext';
 import { usePageMetadata } from '../hooks/usePageMetadata';
-import { fetchVerseByKey, searchQuran, type SearchApiResult } from '../services/quranApi';
-import type { SearchResult, Verse } from '../types/quran';
+import { fetchVerseByKey } from '../services/quranApi';
+import type { Verse } from '../types/quran';
+import {
+  MAX_LOCAL_SEARCH_RESULTS,
+  searchLocalQuran,
+  type LocalQuranSearchMatch,
+} from '../utils/localSearch';
 import { toSurahSlug } from '../utils/slugs';
 import {
-  formatTranslationHtmlToText,
   getArabicFontClass,
+  getEnglishTranslation,
+  getUrduTranslation,
   stripHtmlTags,
   toArabicIndicDigits,
 } from '../utils/text';
@@ -25,7 +31,7 @@ export function SearchPage() {
       ? `Search: ${initialQuery} – QuranNoor`
       : 'Search the Noble Quran – QuranNoor',
     description:
-      'Search the Noble Quran on QuranNoor.com by Surah name, Ayah reference (e.g. 2:255), Arabic text, or English translation keywords.',
+      'Search the Noble Quran on QuranNoor.com by Surah name, Ayah reference (e.g. 2:255), Arabic text, English, or Urdu keywords.',
     canonicalPath: '/search',
     noindex: true,
   });
@@ -34,13 +40,11 @@ export function SearchPage() {
 
   const [inputValue, setInputValue] = useState(initialQuery);
   const [activeQuery, setActiveQuery] = useState(initialQuery);
-  const [page, setPage] = useState(1);
 
   const [directVerse, setDirectVerse] = useState<Verse | null>(null);
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [totalResults, setTotalResults] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [scopeStatus, setScopeStatus] = useState<SearchApiResult['scope_status'] | null>(null);
+  const [results, setResults] = useState<LocalQuranSearchMatch[]>([]);
+  const [totalMatches, setTotalMatches] = useState(0);
+  const [isCapped, setIsCapped] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,14 +63,13 @@ export function SearchPage() {
   }, [chapters, activeQuery]);
 
   const executeSearch = useCallback(
-    async (q: string, pageNum: number) => {
+    async (q: string) => {
       const trimmed = q.trim();
       if (!trimmed) {
         setDirectVerse(null);
         setResults([]);
-        setTotalResults(0);
-        setTotalPages(0);
-        setScopeStatus(null);
+        setTotalMatches(0);
+        setIsCapped(false);
         return;
       }
 
@@ -75,8 +78,8 @@ export function SearchPage() {
       setDirectVerse(null);
 
       try {
-        // Check if query is an exact Surah:Ayah reference like 2:255
-        if (/^\d{1,3}:\d{1,3}$/.test(trimmed)) {
+        const isVerseKeyQuery = /^\d{1,3}:\d{1,3}$/.test(trimmed);
+        if (isVerseKeyQuery) {
           try {
             const verse = await fetchVerseByKey({
               verseKey: trimmed,
@@ -85,20 +88,17 @@ export function SearchPage() {
             });
             setDirectVerse(verse);
           } catch {
-            // Fall through to normal search if verse key doesn't exist
+            // Invalid verse key falls through cleanly
           }
         }
 
-        const data = await searchQuran({
-          query: trimmed,
-          page: pageNum,
-          size: 20,
-        });
+        const localRes = isVerseKeyQuery
+          ? { results: [], totalMatches: 0, capped: false }
+          : await searchLocalQuran(trimmed, MAX_LOCAL_SEARCH_RESULTS);
 
-        setResults(data?.results || []);
-        setTotalResults(data?.total_results || 0);
-        setTotalPages(data?.total_pages || 0);
-        setScopeStatus(data?.scope_status || null);
+        setResults(localRes.results);
+        setTotalMatches(localRes.totalMatches);
+        setIsCapped(localRes.capped);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
       } finally {
@@ -112,23 +112,24 @@ export function SearchPage() {
     const qParam = searchParams.get('q') || '';
     setInputValue(qParam);
     setActiveQuery(qParam);
-    setPage(1);
     if (qParam) {
-      executeSearch(qParam, 1);
+      executeSearch(qParam);
+    } else {
+      setDirectVerse(null);
+      setResults([]);
+      setTotalMatches(0);
+      setIsCapped(false);
     }
   }, [searchParams, executeSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setSearchParams({});
+      return;
+    }
     setSearchParams({ q: trimmed });
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    executeSearch(activeQuery, newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -143,7 +144,7 @@ export function SearchPage() {
           Search the Quran
         </h1>
         <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Search by Surah name, Ayah reference (e.g. 2:255), Arabic text, or English keywords.
+          Search by Surah name, Ayah reference (e.g. 2:255), Arabic text, English, or Urdu keywords.
         </p>
       </div>
 
@@ -251,30 +252,51 @@ export function SearchPage() {
                   dir="rtl"
                   lang="ar"
                   translate="no"
-                  className={`notranslate quran-arabic-text text-2xl sm:text-3xl leading-[2.2] ${getArabicFontClass(
+                  className={`notranslate quran-arabic-text w-full text-right leading-[1.9] [word-spacing:0.02em] ${getArabicFontClass(
                     settings.arabicFont
                   )}`}
-                  style={{ color: 'var(--text-primary)' }}
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontSize: `${settings.arabicFontSize}px`,
+                  }}
                 >
                   {settings.script === 'indopak' && directVerse.text_indopak
                     ? directVerse.text_indopak
                     : directVerse.text_uthmani}{' '}
                   <span
-                    className="inline-block select-none px-1.5 text-[0.74em] font-normal"
+                    className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}
                     aria-label={`Ayah ${directVerse.verse_number}`}
                   >
                     ﴿{toArabicIndicDigits(directVerse.verse_number)}﴾
                   </span>
                 </p>
-                {directVerse.translations?.[0] && (
-                  <p
-                    className="mt-4 font-editorial text-base leading-relaxed"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {stripHtmlTags(directVerse.translations[0].text)}
-                  </p>
-                )}
+                {(() => {
+                  const enTr = getEnglishTranslation(directVerse.translations, settings.translationId);
+                  const urTr = getUrduTranslation(directVerse.translations);
+                  return (
+                    <>
+                      {enTr && (
+                        <p
+                          className="mt-4 font-editorial text-base leading-relaxed"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {stripHtmlTags(enTr.text)}
+                        </p>
+                      )}
+                      {urTr && (
+                        <p
+                          dir="rtl"
+                          lang="ur"
+                          className="mt-3 font-urdu w-full text-right text-[15px] leading-[2.05] [word-spacing:0.06em]"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {stripHtmlTags(urTr.text)}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -283,96 +305,80 @@ export function SearchPage() {
 
       {/* Search Results */}
       {error ? (
-        <ErrorBanner message={error} onRetry={() => executeSearch(activeQuery, page)} />
+        <ErrorBanner message={error} onRetry={() => executeSearch(activeQuery)} />
       ) : loading ? (
         <VerseListSkeleton count={4} />
       ) : activeQuery && results.length === 0 && !directVerse && matchingSurahs.length === 0 ? (
-        scopeStatus && !scopeStatus.granted ? (
+        <div
+          className="rounded-2xl border p-8 sm:p-10 text-center"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-subtle)',
+          }}
+        >
           <div
-            className="rounded-2xl border p-8 sm:p-10 text-center"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
+            style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-tertiary)' }}
           >
-            <div
-              className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl mb-4"
-              style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent-text)' }}
-            >
-              <Info className="h-6 w-6" />
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              Full-Text Search Awaiting Production API Scope
-            </h2>
-            <p className="mt-2 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              The developer application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">Noor Quran</span>) is authenticated with pre-live read scopes for chapters, verses, translations, and audio recitations. Full-text keyword search (<code className="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-xs">content.search.read</code>) will become active once approved in Production.
-            </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                You can still search by:
-              </span>
-              <button
-                type="button"
-                onClick={() => setSearchParams({ q: '2:255' })}
-                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ borderColor: 'var(--border-subtle)', color: 'var(--accent-text)' }}
-              >
-                Ayatul Kursi (2:255)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchParams({ q: 'Al-Fatihah' })}
-                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ borderColor: 'var(--border-subtle)', color: 'var(--accent-text)' }}
-              >
-                Surah Al-Fatihah
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchParams({ q: 'Al-Baqarah' })}
-                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ borderColor: 'var(--border-subtle)', color: 'var(--accent-text)' }}
-              >
-                Surah Al-Baqarah
-              </button>
-            </div>
+            <Search className="h-5 w-5" />
           </div>
-        ) : (
-          <div
-            className="rounded-2xl border p-10 text-center"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          >
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              No verses matched “{activeQuery}”. Try another keyword or Surah:Ayah reference.
-            </p>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            No results found for “{activeQuery}”
+          </h2>
+          <p className="mt-2 mx-auto max-w-md text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            No matching Surahs or Ayahs were found. Try a different keyword in English, Arabic, or
+            Urdu, search by Surah name, or jump directly to an Ayah reference such as 2:255.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              Suggestions:
+            </span>
+            {[
+              { label: 'Ayatul Kursi (2:255)', query: '2:255' },
+              { label: 'Surah Al-Fatihah', query: 'Al-Fatihah' },
+              { label: 'Mercy', query: 'Mercy' },
+              { label: 'Patience', query: 'Patience' },
+            ].map((s) => (
+              <button
+                key={s.query}
+                type="button"
+                onClick={() => setSearchParams({ q: s.query })}
+                className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ borderColor: 'var(--border-subtle)', color: 'var(--accent-text)' }}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
-        )
+        </div>
       ) : results.length > 0 ? (
         <section>
-          <p className="mb-4 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-            Showing {results.length} of {totalResults.toLocaleString()} verse results for “{activeQuery}”
-          </p>
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Matching Ayahs
+            </h2>
+            <p className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+              {isCapped
+                ? `Showing top ${results.length} of ${totalMatches.toLocaleString()} matching Ayahs for “${activeQuery}”`
+                : `Showing ${results.length} matching ${results.length === 1 ? 'Ayah' : 'Ayahs'} for “${activeQuery}”`}
+            </p>
+          </div>
 
           <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
             {results.map((item) => {
-              const [chIdStr, ayahStr] = item.verse_key.split(':');
-              const ch = chapters.find((c) => c.id === Number(chIdStr));
-              const translation = item.translations?.[0];
+              const ch = chapters.find((c) => c.id === item.chapterId);
 
               return (
-                <article key={`${item.verse_key}-${item.verse_id}`} className="py-7">
+                <article key={item.verseKey} className="py-7">
                   <div className="mb-3 flex items-center justify-between gap-4">
                     <span
                       className="text-sm font-semibold tabular-nums"
                       style={{ color: 'var(--accent-text)' }}
                     >
-                      {ch ? `${ch.name_simple} · ${item.verse_key}` : item.verse_key}
+                      {ch ? `${ch.name_simple} · ${item.verseKey}` : item.verseKey}
                     </span>
                     <Link
-                      to={`/surah/${ch ? toSurahSlug(ch.name_simple) : chIdStr}?ayah=${ayahStr}`}
+                      to={`/surah/${ch ? toSurahSlug(ch.name_simple) : item.chapterId}?ayah=${item.verseNumber}`}
                       className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
                       style={{
                         borderColor: 'var(--border-subtle)',
@@ -388,72 +394,52 @@ export function SearchPage() {
                     dir="rtl"
                     lang="ar"
                     translate="no"
-                    className={`notranslate quran-arabic-text text-2xl sm:text-3xl leading-[2.2] ${getArabicFontClass(
+                    className={`notranslate quran-arabic-text w-full text-right leading-[1.9] [word-spacing:0.02em] ${getArabicFontClass(
                       settings.arabicFont
                     )}`}
-                    style={{ color: 'var(--text-primary)' }}
+                    style={{
+                      color: 'var(--text-primary)',
+                      fontSize: `${settings.arabicFontSize}px`,
+                    }}
                   >
-                    {item.text}
+                    {item.textArabic}{' '}
+                    <span
+                      className="inline-block select-none px-1 text-[0.76em] font-normal"
+                      style={{ color: 'var(--gold)' }}
+                      aria-label={`Ayah ${item.verseNumber}`}
+                    >
+                      ﴿{toArabicIndicDigits(item.verseNumber)}﴾
+                    </span>
                   </p>
 
-                  {translation && (
-                    <div className="mt-4 max-w-3xl space-y-1">
+                  {item.englishSnippet && (
+                    <div className="mt-3 max-w-3xl space-y-1">
                       <p
                         className="font-editorial text-base leading-relaxed"
                         style={{ color: 'var(--text-secondary)' }}
                       >
-                        {formatTranslationHtmlToText(translation.text)}
+                        {item.englishSnippet}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {translation.name}
+                        Saheeh International
                       </p>
                     </div>
+                  )}
+
+                  {(item.matchedField === 'urdu' || settings.showTranslation) && item.textUrdu && (
+                    <p
+                      dir="rtl"
+                      lang="ur"
+                      className="mt-3 font-urdu w-full text-right text-[15px] leading-[2.05] [word-spacing:0.06em]"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {item.textUrdu}
+                    </p>
                   )}
                 </article>
               );
             })}
           </div>
-
-          {totalPages > 1 && (
-            <div
-              className="mt-8 flex items-center justify-between border-t pt-6"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => handlePageChange(page - 1)}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-4 text-sm font-medium disabled:opacity-40"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  borderColor: 'var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span>Previous</span>
-              </button>
-
-              <span className="text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
-                Page {page} of {totalPages}
-              </span>
-
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => handlePageChange(page + 1)}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-4 text-sm font-medium disabled:opacity-40"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  borderColor: 'var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                <span>Next</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
         </section>
       ) : null}
     </div>

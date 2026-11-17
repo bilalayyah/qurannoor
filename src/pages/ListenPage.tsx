@@ -7,6 +7,7 @@ import { ErrorBanner } from '../components/StatusStates';
 import { useAudio } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
 import { usePageMetadata } from '../hooks/usePageMetadata';
+import { getReciterArabicName, getReciterStyleTags } from '../utils/reciters';
 import { toSurahSlug } from '../utils/slugs';
 
 export function ListenPage() {
@@ -88,7 +89,7 @@ export function ListenPage() {
             >
               Reciter
             </label>
-            <ReciterSelector id="listen-reciter" className="w-full sm:w-auto" />
+            <ReciterSelector id="listen-reciter" className="w-full sm:w-[350px]" />
           </div>
 
           <div className="flex flex-col gap-1 w-full sm:w-auto">
@@ -134,10 +135,36 @@ export function ListenPage() {
               <p className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
                 Active Reciter
               </p>
-              <p className="mt-0.5 text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {activeReciter.reciter_name}
-                {activeReciter.style ? ` · ${activeReciter.style}` : ''}
-                {activeReciter.qirat ? ` · ${activeReciter.qirat}` : ''}
+              <p className="mt-0.5 text-base font-semibold flex flex-wrap items-center gap-x-2 gap-y-1" style={{ color: 'var(--text-primary)' }}>
+                <span>{activeReciter.reciter_name}</span>
+                {getReciterArabicName(activeReciter) && (
+                  <>
+                    <span aria-hidden="true" style={{ color: 'var(--gold)' }}>—</span>
+                    <span
+                      dir="rtl"
+                      lang="ar"
+                      translate="no"
+                      className="notranslate font-quran-noto-naskh text-base font-normal"
+                      style={{ color: 'var(--accent-text)' }}
+                    >
+                      {getReciterArabicName(activeReciter)}
+                    </span>
+                  </>
+                )}
+                {getReciterStyleTags(activeReciter).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-none"
+                    style={{ backgroundColor: 'var(--gold-soft)', color: 'var(--gold)' }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {activeReciter.qirat ? (
+                  <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                    · {activeReciter.qirat}
+                  </span>
+                ) : null}
               </p>
               {activeReciter.audio_capabilities && (
                 <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -172,7 +199,8 @@ export function ListenPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {reciters.map((r) => {
                   const isActive = r.id === activeReciter.id;
-                  const meta = [r.style, r.qirat].filter(Boolean).join(' · ');
+                  const arabicName = getReciterArabicName(r);
+                  const tags = getReciterStyleTags(r);
                   return (
                     <Link
                       key={r.id}
@@ -185,14 +213,29 @@ export function ListenPage() {
                       }}
                     >
                       <span>{r.reciter_name}</span>
-                      {meta && (
+                      {arabicName && (
                         <span
-                          className="text-[11px] font-normal"
-                          style={{ color: 'var(--text-tertiary)' }}
+                          dir="rtl"
+                          lang="ar"
+                          translate="no"
+                          className="notranslate font-quran-noto-naskh text-[13px] leading-none"
+                          style={{ color: isActive ? 'var(--accent-text)' : 'var(--text-tertiary)' }}
                         >
-                          ({meta})
+                          — {arabicName}
                         </span>
                       )}
+                      {tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded px-1 py-0.5 text-[10px] font-semibold leading-none"
+                          style={{
+                            backgroundColor: 'var(--gold-soft)',
+                            color: 'var(--gold)',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </Link>
                   );
                 })}
@@ -297,7 +340,7 @@ export function ListenPage() {
                     dir="rtl"
                     lang="ar"
                     translate="no"
-                    className="notranslate font-quran-scheherazade quran-arabic-text text-lg leading-[1.75]"
+                    className="notranslate font-quran-scheherazade quran-arabic-text text-base leading-[1.55] !py-0"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {ch.name_arabic}

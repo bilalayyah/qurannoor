@@ -34,10 +34,28 @@ const responseCache = new Map<string, CacheEntry<unknown>>();
 let chaptersCatalog: Chapter[] = [];
 let juzsCatalog: Juz[] = [];
 
+export function normalizeChapter<T extends Chapter>(chapter: T): T {
+  if (chapter.id === 86 && chapter.translated_name?.name === 'The Nightcommer') {
+    return {
+      ...chapter,
+      translated_name: {
+        ...chapter.translated_name,
+        name: 'The Nightcomer',
+      },
+    };
+  }
+  return chapter;
+}
+
+export function normalizeReciterName(name: string): string {
+  return name.replace(/([^\s])\(/g, '$1 (');
+}
+
 try {
   const chPath = path.join(__dirname, 'chaptersCatalog.json');
   if (fs.existsSync(chPath)) {
-    chaptersCatalog = JSON.parse(fs.readFileSync(chPath, 'utf8'));
+    const rawCatalog = JSON.parse(fs.readFileSync(chPath, 'utf8')) as Chapter[];
+    chaptersCatalog = rawCatalog.map(normalizeChapter);
   }
   const jPath = path.join(__dirname, 'juzsCatalog.json');
   if (fs.existsSync(jPath)) {
@@ -139,7 +157,10 @@ export async function fetchFromQuranApi<T>(
     }
   }
 
-  const response = await fetch(targetUrl, { headers });
+  const response = await fetch(targetUrl, {
+    headers,
+    signal: AbortSignal.timeout(15_000),
+  });
 
   if (response.status === 401 && headers['x-auth-token']) {
     oauthTokenCache = null;
@@ -222,10 +243,12 @@ export function mergeReciters(
   for (const r of verseRecitations) {
     merged.set(r.id, {
       id: r.id,
-      reciter_name: r.reciter_name,
+      reciter_name: normalizeReciterName(r.reciter_name),
       style: r.style ?? null,
       qirat: r.qirat ?? null,
-      translated_name: r.translated_name,
+      translated_name: r.translated_name
+        ? { ...r.translated_name, name: normalizeReciterName(r.translated_name.name) }
+        : undefined,
       audio_capabilities: {
         verse_by_verse: true,
         full_surah: false,
@@ -237,6 +260,9 @@ export function mergeReciters(
     const existing = merged.get(cr.id);
     const crStyle = cr.style?.name || null;
     const crQirat = cr.qirat?.name || null;
+    const crTranslated = cr.translated_name
+      ? { ...cr.translated_name, name: normalizeReciterName(cr.translated_name.name) }
+      : undefined;
 
     if (existing) {
       merged.set(cr.id, {
@@ -251,10 +277,10 @@ export function mergeReciters(
     } else {
       merged.set(cr.id, {
         id: cr.id,
-        reciter_name: cr.name,
+        reciter_name: normalizeReciterName(cr.name),
         style: crStyle,
         qirat: crQirat,
-        translated_name: cr.translated_name,
+        translated_name: crTranslated,
         audio_capabilities: {
           verse_by_verse: false,
           full_surah: true,

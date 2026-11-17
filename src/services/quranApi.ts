@@ -5,6 +5,7 @@ import type {
   PaginationInfo,
   Reciter,
   SearchResponse,
+  TafsirContent,
   TranslationResource,
   Verse,
 } from '../types/quran';
@@ -17,8 +18,27 @@ export interface QuranApiError extends Error {
   environment?: string;
 }
 
-async function apiGet<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+const DEFAULT_API_TIMEOUT_MS = 15_000;
+
+async function apiGet<T>(url: string, timeoutMs = DEFAULT_API_TIMEOUT_MS): Promise<T> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      const timeoutErr = new Error('Request timed out. Please try again.') as QuranApiError;
+      timeoutErr.status = 408;
+      timeoutErr.code = 'TIMEOUT';
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timer);
+  }
+
   if (!res.ok) {
     let errorMsg = `Request failed (${res.status})`;
     let code: string | undefined;
@@ -65,9 +85,41 @@ export async function fetchEnvStatus(): Promise<{
   return apiGet('/api/env-status');
 }
 
+function normalizeChapterMetadata(ch: Chapter): Chapter {
+  if (ch.id === 86 && ch.translated_name?.name === 'The Nightcommer') {
+    return {
+      ...ch,
+      translated_name: {
+        ...ch.translated_name,
+        name: 'The Nightcomer',
+      },
+    };
+  }
+  return ch;
+}
+
+function normalizeReciterDisplayName(name: string): string {
+  return name.replace(/([^\s])\(/g, '$1 (');
+}
+
+function normalizeReciterMetadata(reciter: Reciter): Reciter {
+  const fixedName = normalizeReciterDisplayName(reciter.reciter_name);
+  const fixedTranslated = reciter.translated_name
+    ? {
+        ...reciter.translated_name,
+        name: normalizeReciterDisplayName(reciter.translated_name.name),
+      }
+    : undefined;
+  return {
+    ...reciter,
+    reciter_name: fixedName,
+    ...(fixedTranslated ? { translated_name: fixedTranslated } : {}),
+  };
+}
+
 export async function fetchChapters(): Promise<Chapter[]> {
   const data = await apiGet<{ chapters: Chapter[] }>('/api/chapters');
-  return data.chapters;
+  return data.chapters.map(normalizeChapterMetadata);
 }
 
 export async function fetchChapterDetails(id: number): Promise<{
@@ -75,12 +127,31 @@ export async function fetchChapterDetails(id: number): Promise<{
   chapter_info: { short_text?: string; source?: string } | null;
   environment?: string;
 }> {
-  return apiGet(`/api/chapters/${id}`);
+  const data = await apiGet<{
+    chapter: Chapter;
+    chapter_info: { short_text?: string; source?: string } | null;
+    environment?: string;
+  }>(`/api/chapters/${id}`);
+  return {
+    ...data,
+    chapter: normalizeChapterMetadata(data.chapter),
+  };
 }
 
 export async function fetchJuzs(): Promise<Juz[]> {
   const data = await apiGet<{ juzs: Juz[] }>('/api/juz');
   return data.juzs;
+}
+
+export const DEFAULT_ENGLISH_TRANSLATION_ID = 20;
+export const URDU_TRANSLATION_ID = 234;
+
+function buildTranslationsParam(translationId: number): string {
+  const enId =
+    Number.isInteger(translationId) && translationId > 0
+      ? translationId
+      : DEFAULT_ENGLISH_TRANSLATION_ID;
+  return enId === URDU_TRANSLATION_ID ? String(enId) : `${enId},${URDU_TRANSLATION_ID}`;
 }
 
 export async function fetchVersesByChapter(params: {
@@ -93,7 +164,7 @@ export async function fetchVersesByChapter(params: {
   const qs = new URLSearchParams({
     page: String(params.page ?? 1),
     per_page: String(params.perPage ?? 30),
-    translation: String(params.translationId),
+    translation: buildTranslationsParam(params.translationId),
     reciter: String(params.reciterId),
   });
   return apiGet(`/api/verses/by_chapter/${params.chapterId}?${qs.toString()}`);
@@ -109,7 +180,7 @@ export async function fetchVersesByJuz(params: {
   const qs = new URLSearchParams({
     page: String(params.page ?? 1),
     per_page: String(params.perPage ?? 30),
-    translation: String(params.translationId),
+    translation: buildTranslationsParam(params.translationId),
     reciter: String(params.reciterId),
   });
   return apiGet(`/api/verses/by_juz/${params.juzNumber}?${qs.toString()}`);
@@ -121,7 +192,7 @@ export async function fetchVerseByKey(params: {
   reciterId: number;
 }): Promise<Verse> {
   const qs = new URLSearchParams({
-    translation: String(params.translationId),
+    translation: buildTranslationsParam(params.translationId),
     reciter: String(params.reciterId),
   });
   const data = await apiGet<{ verse: Verse }>(
@@ -137,7 +208,7 @@ export async function fetchVersesByKeys(params: {
 }): Promise<Verse[]> {
   const qs = new URLSearchParams({
     keys: params.keys.join(','),
-    translation: String(params.translationId),
+    translation: buildTranslationsParam(params.translationId),
     reciter: String(params.reciterId),
   });
   const data = await apiGet<{ verses: Verse[] }>(`/api/verses/keys?${qs.toString()}`);
@@ -149,9 +220,32 @@ export async function fetchTranslations(): Promise<TranslationResource[]> {
   return data.translations;
 }
 
+export const DEFAULT_TAFSIR_ID = 169; // Ibn Kathir (Abridged)
+
+export async function fetchVerseTafsir(
+  verseKey: string,
+  tafsirId: number = DEFAULT_TAFSIR_ID
+): Promise<TafsirContent> {
+  const data = await apiGet<{
+    tafsir?: TafsirContent | null;
+    tafsirs?: TafsirContent[];
+    text?: string;
+  }>(`/api/tafsirs/${tafsirId}/by_ayah/${encodeURIComponent(verseKey)}`, DEFAULT_API_TIMEOUT_MS);
+
+  const resolved =
+    data.tafsir ||
+    (Array.isArray(data.tafsirs) ? data.tafsirs[0] : undefined) ||
+    (typeof data.text === 'string' ? (data as unknown as TafsirContent) : undefined);
+
+  if (!resolved || typeof resolved.text !== 'string') {
+    throw new Error('Tafsir unavailable for this Ayah.');
+  }
+  return resolved;
+}
+
 export async function fetchRecitations(): Promise<Reciter[]> {
   const data = await apiGet<{ recitations: Reciter[] }>('/api/recitations');
-  return data.recitations;
+  return data.recitations.map(normalizeReciterMetadata);
 }
 
 export interface ChapterAudioResponse {

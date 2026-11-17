@@ -4,14 +4,16 @@ import { Link, useParams } from 'react-router-dom';
 import { AyahCard } from '../components/AyahCard';
 import { BismillahHeader } from '../components/BismillahHeader';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { HifzControlsBar } from '../components/HifzControlsBar';
 import { ErrorBanner, VerseListSkeleton } from '../components/StatusStates';
 import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
+import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVersesByChapter, fetchVersesByKeys } from '../services/quranApi';
 import type { Verse } from '../types/quran';
 import { POPULAR_SECTIONS, toSurahSlug } from '../utils/slugs';
-import { stripHtmlTags } from '../utils/text';
+import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
 
 export function PopularPassagePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -26,12 +28,17 @@ export function PopularPassagePage() {
   });
 
   const { chapters, settings } = useReader();
-  const { playAyah, updateQueue } = useAudio();
+  const { playAyah, updateQueue, activeVerseKey } = useAudio();
 
   const [verses, setVerses] = useState<Verse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const { isVerseBlurred, revealVerse } = useHifzReader(
+    verses,
+    activeVerseKey,
+    settings.hifzMode
+  );
 
   const chapter = section ? chapters.find((c) => c.id === section.chapterId) : undefined;
 
@@ -86,9 +93,11 @@ export function PopularPassagePage() {
       verseNumber: v.verse_number,
       chapterName: chapter?.name_simple || section.title,
       audioUrl: v.audio?.url,
-      translationText: stripHtmlTags(v.translations?.[0]?.text || ''),
+      translationText: stripHtmlTags(
+        getEnglishTranslation(v.translations, settings.translationId)?.text || ''
+      ),
     }));
-  }, [verses, section, chapter]);
+  }, [verses, section, chapter, settings.translationId]);
 
   useEffect(() => {
     if (queue.length > 0) updateQueue(queue);
@@ -112,7 +121,7 @@ export function PopularPassagePage() {
   }
 
   return (
-    <div className="mx-auto max-w-[850px] px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-[850px] px-2.5 py-6 sm:px-6 sm:py-10">
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
@@ -148,7 +157,7 @@ export function PopularPassagePage() {
             dir="rtl"
             lang="ar"
             translate="no"
-            className="notranslate font-quran-scheherazade quran-arabic-text text-3xl sm:text-4xl leading-[1.8]"
+            className="notranslate font-quran-scheherazade quran-arabic-text text-xl sm:text-2xl leading-[1.55] !py-0"
             style={{ color: 'var(--text-primary)' }}
           >
             {section.arabicTitle}
@@ -256,6 +265,7 @@ export function PopularPassagePage() {
         <VerseListSkeleton count={section.verseKeys?.length || 4} />
       ) : (
         <div>
+          <HifzControlsBar queue={queue} />
           {verses.map((verse) => (
             <AyahCard
               key={verse.verse_key}
@@ -264,6 +274,8 @@ export function PopularPassagePage() {
               chapterArabicName={chapter?.name_arabic || section.arabicTitle}
               queue={queue}
               showChapterLink
+              isHifzBlurred={isVerseBlurred(verse.verse_key)}
+              onRevealHifz={() => revealVerse(verse.verse_key)}
             />
           ))}
         </div>

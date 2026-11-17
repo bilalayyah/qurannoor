@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
+import { getReciterArabicName } from '../utils/reciters';
+import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
 
 function formatSeconds(sec: number): string {
@@ -34,6 +36,9 @@ export function AudioPlayer() {
     volume,
     isMuted,
     error,
+    repeatMode,
+    repeatIteration,
+    setRepeatMode,
     playNext,
     playPrevious,
     togglePlayPause,
@@ -50,6 +55,7 @@ export function AudioPlayer() {
   if (!hasActiveTrack) return null;
 
   const activeReciter = reciters.find((r) => r.id === settings.reciterId);
+  const activeReciterArabic = activeReciter ? getReciterArabicName(activeReciter) : '';
   const progressPct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   return (
@@ -63,7 +69,7 @@ export function AudioPlayer() {
       }}
     >
       {/* Playback Progress Bar */}
-      {audioMode === 'arabic' && duration > 0 && (
+      {audioMode !== 'english' && duration > 0 && (
         <div
           className="group relative h-1 w-full cursor-pointer"
           style={{ backgroundColor: 'var(--bg-muted)' }}
@@ -96,14 +102,20 @@ export function AudioPlayer() {
               </span>
             )}
           </div>
-          <p className="truncate text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          <p
+            className="truncate text-xs"
+            style={{ color: error ? '#B45309' : 'var(--text-tertiary)' }}
+            title={error || undefined}
+          >
             {error
               ? error
               : audioMode === 'english'
               ? 'English Translation · Speech Synthesis'
+              : audioMode === 'urdu'
+              ? URDU_AUDIO_CREDIT
               : `Arabic Recitation · ${activeReciter?.reciter_name || 'Reciter'}${
-                  activeReciter?.style ? ` (${activeReciter.style})` : ''
-                }`}
+                  activeReciterArabic ? ` — ${activeReciterArabic}` : ''
+                }${activeReciter?.style ? ` (${activeReciter.style})` : ''}`}
           </p>
         </div>
 
@@ -152,7 +164,7 @@ export function AudioPlayer() {
 
         {/* Right: Mode Switch, Reciter Selector, Volume, Repeat, Close */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {audioMode === 'arabic' && duration > 0 && (
+          {audioMode !== 'english' && duration > 0 && (
             <span
               className="hidden lg:inline-block text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
@@ -161,7 +173,7 @@ export function AudioPlayer() {
             </span>
           )}
 
-          {/* Mode Toggle: Arabic Recitation vs English Translation */}
+          {/* Mode Toggle: Arabic Recitation, English Translation, Urdu Audio */}
           {playbackKind !== 'surah' && (
             <div
               className="hidden md:inline-flex rounded-lg p-0.5"
@@ -191,13 +203,31 @@ export function AudioPlayer() {
               >
                 English
               </button>
+              <button
+                type="button"
+                onClick={() => setAudioMode('urdu')}
+                title={URDU_AUDIO_CREDIT}
+                className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap"
+                style={{
+                  backgroundColor: audioMode === 'urdu' ? 'var(--bg-surface)' : 'transparent',
+                  color: audioMode === 'urdu' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                }}
+              >
+                Urdu
+              </button>
             </div>
           )}
 
           {/* Quick Reciter Selector on Desktop */}
           {audioMode === 'arabic' && (
             <div className="hidden xl:block">
-              <ReciterSelector id="player-reciter-select" compact className="max-w-[175px]" />
+              <ReciterSelector
+                id="player-reciter-select"
+                compact
+                placement="top"
+                align="right"
+                className="w-[240px]"
+              />
             </div>
           )}
 
@@ -228,20 +258,55 @@ export function AudioPlayer() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => updateSettings({ repeatAyah: !settings.repeatAyah })}
-            aria-label="Repeat Ayah"
-            aria-pressed={settings.repeatAyah}
-            title="Repeat Ayah"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-            style={{
-              backgroundColor: settings.repeatAyah ? 'var(--accent-soft)' : 'transparent',
-              color: settings.repeatAyah ? 'var(--accent-text)' : 'var(--text-tertiary)',
-            }}
-          >
-            <Repeat className="h-4 w-4" />
-          </button>
+          {settings.hifzMode && playbackKind !== 'surah' ? (
+            <div
+              className="inline-flex items-center rounded-lg p-0.5"
+              style={{ backgroundColor: 'var(--bg-muted)' }}
+              role="group"
+              aria-label="Repeat Ayah Count"
+            >
+              {([1, 3, 5, 'loop'] as const).map((mode) => {
+                const active = repeatMode === mode;
+                const label =
+                  mode === 'loop'
+                    ? '∞'
+                    : active && typeof mode === 'number' && mode > 1
+                    ? `${repeatIteration}/${mode}`
+                    : `${mode}x`;
+                return (
+                  <button
+                    key={String(mode)}
+                    type="button"
+                    onClick={() => setRepeatMode(mode)}
+                    aria-label={`Repeat ${mode === 'loop' ? 'Loop' : `${mode}x`}`}
+                    aria-pressed={active}
+                    className="rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums transition-colors"
+                    style={{
+                      backgroundColor: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#FFFFFF' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => updateSettings({ repeatAyah: !settings.repeatAyah })}
+              aria-label="Repeat Ayah"
+              aria-pressed={settings.repeatAyah}
+              title="Repeat Ayah"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+              style={{
+                backgroundColor: settings.repeatAyah ? 'var(--accent-soft)' : 'transparent',
+                color: settings.repeatAyah ? 'var(--accent-text)' : 'var(--text-tertiary)',
+              }}
+            >
+              <Repeat className="h-4 w-4" />
+            </button>
+          )}
 
           <button
             type="button"

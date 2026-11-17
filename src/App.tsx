@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AudioPlayer } from './components/AudioPlayer';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
+import { InstallAppModal } from './components/InstallAppModal';
+import { InstallPrompt } from './components/InstallPrompt';
 import { ReaderSettings } from './components/ReaderSettings';
 import { ScrollToTop } from './components/ScrollToTop';
 import { AudioProvider, useAudio } from './context/AudioContext';
@@ -40,6 +42,12 @@ const SearchPage = lazy(() =>
 );
 const BookmarksPage = lazy(() =>
   import('./pages/BookmarksPage').then((m) => ({ default: m.BookmarksPage }))
+);
+const KhatmPage = lazy(() =>
+  import('./pages/KhatmPage').then((m) => ({ default: m.KhatmPage }))
+);
+const PrayerTimesPage = lazy(() =>
+  import('./pages/PrayerTimesPage').then((m) => ({ default: m.PrayerTimesPage }))
 );
 const AboutPage = lazy(() =>
   import('./pages/InfoPages').then((m) => ({ default: m.AboutPage }))
@@ -115,6 +123,9 @@ function AppShell() {
             <Route path="/listen" element={<ListenPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
+            <Route path="/khatm" element={<KhatmPage />} />
+            <Route path="/prayer-times" element={<PrayerTimesPage />} />
+            <Route path="/qibla" element={<Navigate to="/prayer-times" replace />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
@@ -136,6 +147,8 @@ function AppShell() {
       <Footer />
       <ReaderSettings />
       <AudioPlayer />
+      <InstallPrompt />
+      <InstallAppModal />
 
       {toastMessage && (
         <div

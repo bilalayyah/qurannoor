@@ -326,19 +326,19 @@ export function BrandPage() {
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
           >
             <p className="text-xs font-medium" style={{ color: 'var(--gold)' }}>
-              Arabic Quran Script · Amiri Quran (Primary Uthmani)
+              Arabic Quran Script · Scheherazade New (Default)
             </p>
             <p
               dir="rtl"
               lang="ar"
               translate="no"
-              className="notranslate font-quran-scheherazade quran-arabic-text text-3xl leading-[2.2]"
+              className="notranslate font-quran-scheherazade quran-arabic-text text-xl leading-[1.85]"
               style={{ color: 'var(--text-primary)' }}
             >
               ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ <span style={{ color: 'var(--gold)' }}>﴿٢﴾</span>
             </p>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-              Secondary Arabic options in Reader Settings: Scheherazade New, Noto Naskh Arabic, and Lateef (IndoPak).
+              Additional Arabic options in Reader Settings: Noto Naskh Arabic and Lateef (IndoPak).
             </p>
           </div>
 

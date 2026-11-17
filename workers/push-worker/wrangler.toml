@@ -1,0 +1,12 @@
+name = "qurannoor-push-worker"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Fixed daily reminder at 07:00 Dubai time (UTC+4) = 03:00 UTC
+[triggers]
+crons = ["0 3 * * *"]
+
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "REPLACE_WITH_PUSH_KV_NAMESPACE_ID"

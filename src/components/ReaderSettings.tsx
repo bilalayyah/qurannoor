@@ -3,7 +3,9 @@ import { useEffect } from 'react';
 import { useAudio } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
 import type { ArabicFontFamily, QuranScript, ThemeMode } from '../types/quran';
+import { usePushNotifications } from '../utils/pushNotifications';
 import { getArabicFontClass } from '../utils/text';
+import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
 
 const FONT_OPTIONS: Array<{ id: ArabicFontFamily; label: string; scriptHint: string }> = [
@@ -20,9 +22,18 @@ export function ReaderSettings() {
     translations,
     isSettingsOpen,
     setIsSettingsOpen,
+    currentStreak,
+    dailyGoal,
+    showToast,
   } = useReader();
 
   const { ttsSupported, availableVoices } = useAudio();
+  const {
+    status: pushStatus,
+    busy: pushBusy,
+    enable: enablePush,
+    disable: disablePush,
+  } = usePushNotifications();
 
   useEffect(() => {
     if (!isSettingsOpen) return;
@@ -136,6 +147,70 @@ export function ReaderSettings() {
                 );
               })}
             </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <span className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Tajweed colors
+                </span>
+                <span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Color Arabic letters by Quran Foundation tajweed rules
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-label="Tajweed colors"
+                aria-checked={settings.tajweedColors}
+                onClick={() =>
+                  updateSettings({ tajweedColors: !settings.tajweedColors })
+                }
+                className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.tajweedColors
+                    ? 'var(--accent)'
+                    : 'var(--border-strong)',
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    settings.tajweedColors ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <span className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Hifz Mode (Memorisation)
+                </span>
+                <span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Blur the next ayah until tapped and enable repeat controls
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-label="Hifz Mode (Memorisation)"
+                aria-checked={settings.hifzMode}
+                onClick={() =>
+                  updateSettings({ hifzMode: !settings.hifzMode })
+                }
+                className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.hifzMode
+                    ? 'var(--accent)'
+                    : 'var(--border-strong)',
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    settings.hifzMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </section>
 
           {/* Arabic Font & Size */}
@@ -196,7 +271,7 @@ export function ReaderSettings() {
                   type="button"
                   onClick={() =>
                     updateSettings({
-                      arabicFontSize: Math.max(24, settings.arabicFontSize - 2),
+                      arabicFontSize: Math.max(16, settings.arabicFontSize - 2),
                     })
                   }
                   aria-label="Decrease Arabic font size"
@@ -212,7 +287,7 @@ export function ReaderSettings() {
                   type="button"
                   onClick={() =>
                     updateSettings({
-                      arabicFontSize: Math.min(54, settings.arabicFontSize + 2),
+                      arabicFontSize: Math.min(48, settings.arabicFontSize + 2),
                     })
                   }
                   aria-label="Increase Arabic font size"
@@ -261,7 +336,7 @@ export function ReaderSettings() {
                     className="block text-xs font-medium"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
-                    English Translation
+                    Translation
                   </label>
                   <select
                     id="settings-translation-select"
@@ -370,6 +445,40 @@ export function ReaderSettings() {
               </button>
             </div>
 
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <span className="block text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Play Urdu translation after Arabic
+                </span>
+                <span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {URDU_AUDIO_CREDIT}
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-label="Play Urdu translation after Arabic"
+                aria-checked={settings.autoPlayUrduAfterArabic}
+                onClick={() =>
+                  updateSettings({
+                    autoPlayUrduAfterArabic: !settings.autoPlayUrduAfterArabic,
+                  })
+                }
+                className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.autoPlayUrduAfterArabic
+                    ? 'var(--accent)'
+                    : 'var(--border-strong)',
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    settings.autoPlayUrduAfterArabic ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {ttsSupported && (
               <div className="space-y-2.5 pt-2">
                 <label
@@ -399,6 +508,64 @@ export function ReaderSettings() {
                 </select>
               </div>
             )}
+          </section>
+
+          {/* Daily Reminder Notifications */}
+          <section className="space-y-3 border-t pt-6" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Daily Reminder
+                </h3>
+                <p className="mt-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {pushStatus === 'denied'
+                    ? 'Blocked — re-enable in browser site settings'
+                    : pushStatus === 'preview_unavailable'
+                    ? 'Push backend not connected in preview'
+                    : pushStatus === 'unsupported'
+                    ? 'Not supported in this browser'
+                    : pushStatus === 'enabled'
+                    ? 'Daily 7:00 AM Dubai time reminder active'
+                    : 'Daily 7:00 AM reminder for your reading goal'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-label="Daily Reminder notifications"
+                aria-checked={pushStatus === 'enabled'}
+                disabled={pushBusy || pushStatus === 'denied' || pushStatus === 'unsupported'}
+                onClick={async () => {
+                  if (pushStatus === 'enabled') {
+                    await disablePush();
+                    showToast('Daily reading reminder turned off');
+                  } else {
+                    const next = await enablePush({
+                      streak: currentStreak,
+                      goalTarget: dailyGoal.target,
+                      goalUnit: dailyGoal.unit,
+                    });
+                    if (next.status === 'enabled') {
+                      showToast('Daily reading reminder enabled');
+                    } else if (next.status === 'preview_unavailable') {
+                      showToast('Push backend not connected in preview');
+                    }
+                  }
+                }}
+                className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-45"
+                style={{
+                  backgroundColor:
+                    pushStatus === 'enabled' ? 'var(--accent)' : 'var(--border-strong)',
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    pushStatus === 'enabled' ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </section>
         </div>
       </aside>

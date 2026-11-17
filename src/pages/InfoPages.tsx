@@ -163,7 +163,7 @@ export function MethodologyPage() {
             artificial intelligence.
           </p>
           <p>
-            QuranNoor&apos;s Production API integration is live and active, serving all{' '}
+            QuranNoor&apos;s Production content and audio integrations are live and active, serving all{' '}
             <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
               114 Surahs
             </Link>
@@ -171,8 +171,11 @@ export function MethodologyPage() {
             <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
               30 Juz
             </Link>
-            , and 6,236 Ayahs live from the official Quran Foundation Content API without any
-            chapter restrictions.
+            , and 6,236 Ayahs—alongside translations, Ibn Kathir tafsir, and audio recitations—without
+            any chapter restrictions. Because the separate upstream search endpoint (
+            <code className="font-ui text-xs">content.search.read</code>) is not active on this
+            client, keyword search runs locally in the browser across the complete Arabic text,
+            English (Saheeh International), and Urdu (Fateh Muhammad Jalandhari) translations.
           </p>
         </section>
 
@@ -181,10 +184,11 @@ export function MethodologyPage() {
             2. Authentic Uthmani Typography &amp; Browser Protection
           </h2>
           <p>
-            Quranic Arabic verses are rendered using <strong>Amiri Quran</strong> (default Uthmani
-            script) and optional <strong>Scheherazade New</strong>, <strong>Noto Naskh Arabic</strong>,
-            and <strong>Lateef</strong> (IndoPak style) fonts licensed under the open-source SIL
-            Open Font License (OFL 1.1). Every Arabic verse enforces right-to-left Unicode isolation (
+            Quranic Arabic verses are rendered using <strong>Scheherazade New</strong> (default
+            classical Naskh / Uthmani script) alongside optional <strong>Noto Naskh Arabic</strong>{' '}
+            and <strong>Lateef</strong> (IndoPak style) fonts, with Urdu rendered in{' '}
+            <strong>Noto Nastaliq Urdu</strong>—all licensed under the open-source SIL Open Font
+            License (OFL 1.1). Every Arabic verse enforces right-to-left Unicode isolation (
             <code className="font-ui text-xs">dir="rtl"</code>) and carries{' '}
             <code className="font-ui text-xs">translate="no"</code> attributes to prevent automated
             browser translation extensions from altering sacred text.

@@ -63,6 +63,24 @@ function normalizeAudioUrl(rawUrl?: string | null): string {
   return `${AUDIO_CDN_BASE}/${rawUrl.replace(/^\//, '')}`;
 }
 
+function normalizeReciterName(name: string): string {
+  return name.replace(/([^\s])\(/g, '$1 (');
+}
+
+function normalizeChapterRecord(ch: Record<string, unknown>): Record<string, unknown> {
+  const tn = ch.translated_name as { name?: string; language_name?: string } | undefined;
+  if (Number(ch.id) === 86 && tn?.name === 'The Nightcommer') {
+    return {
+      ...ch,
+      translated_name: {
+        ...tn,
+        name: 'The Nightcomer',
+      },
+    };
+  }
+  return ch;
+}
+
 function deduplicateJuzs<T extends { id?: number; juz_number?: number }>(juzs: T[]): T[] {
   const uniqueMap = new Map<number, T>();
   for (const juz of juzs) {
@@ -94,7 +112,7 @@ function buildUpstreamVersesParams(
   if (!qs.has('fields')) qs.set('fields', 'text_uthmani,text_indopak');
 
   if (!qs.has('translations')) {
-    const translation = qs.get('translation') || '85';
+    const translation = qs.get('translation') || '20,234';
     qs.set('translations', translation);
   }
   qs.delete('translation');
@@ -189,12 +207,13 @@ export const onRequestGet = async (context: {
 
       const merged = new Map<number, Record<string, unknown>>();
       for (const r of verseJson.recitations || []) {
+        const tn = r.translated_name as { name?: string; language_name?: string } | undefined;
         merged.set(r.id, {
           id: r.id,
-          reciter_name: r.reciter_name,
+          reciter_name: normalizeReciterName(r.reciter_name),
           style: r.style ?? null,
           qirat: null,
-          translated_name: r.translated_name,
+          translated_name: tn?.name ? { ...tn, name: normalizeReciterName(tn.name) } : r.translated_name,
           audio_capabilities: { verse_by_verse: true, full_surah: false },
         });
       }
@@ -202,6 +221,7 @@ export const onRequestGet = async (context: {
         const existing = merged.get(cr.id);
         const crStyle = cr.style?.name || null;
         const crQirat = cr.qirat?.name || null;
+        const tn = cr.translated_name as { name?: string; language_name?: string } | undefined;
         if (existing) {
           merged.set(cr.id, {
             ...existing,
@@ -212,10 +232,10 @@ export const onRequestGet = async (context: {
         } else {
           merged.set(cr.id, {
             id: cr.id,
-            reciter_name: cr.name,
+            reciter_name: normalizeReciterName(cr.name),
             style: crStyle,
             qirat: crQirat,
-            translated_name: cr.translated_name,
+            translated_name: tn?.name ? { ...tn, name: normalizeReciterName(tn.name) } : cr.translated_name,
             audio_capabilities: { verse_by_verse: false, full_surah: true, verse_via_segments: true },
           });
         }
@@ -357,7 +377,9 @@ export const onRequestGet = async (context: {
   } else if (subPath === 'juz' || subPath === 'juzs' || subPath === 'quran/juzs') {
     upstreamPath = `/juzs${url.search}`;
   } else if (subPath === 'translations' || subPath === 'quran/resources/translations') {
-    upstreamPath = `/resources/translations${url.search}`;
+    const tQs = new URLSearchParams(url.searchParams);
+    if (!tQs.has('language')) tQs.set('language', 'en');
+    upstreamPath = `/resources/translations?${tQs.toString()}`;
   } else if (subPath.startsWith('audio/chapter/') || subPath.startsWith('quran/audio/chapter/')) {
     const rest = subPath.replace('audio/chapter/', '').replace('quran/audio/chapter/', '');
     const [reciterId, chapterIdStr] = rest.split('/');
@@ -462,7 +484,7 @@ export const onRequestGet = async (context: {
                 granted: false,
                 missing_scope: 'content.search.read',
                 message:
-                  "Search scope is awaiting Production API approval. Pre-live credentials provide Content Read scopes. Direct Surah and Ayah navigation remain fully operational.",
+                  'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic, English, and Urdu.',
               },
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -476,6 +498,21 @@ export const onRequestGet = async (context: {
     }
 
     const json = (await upstreamRes.json()) as Record<string, unknown>;
+    if (Array.isArray(json.chapters)) {
+      json.chapters = (json.chapters as Array<Record<string, unknown>>).map(normalizeChapterRecord);
+    }
+    if (json.chapter && typeof json.chapter === 'object') {
+      json.chapter = normalizeChapterRecord(json.chapter as Record<string, unknown>);
+    }
+    if (Array.isArray(json.translations)) {
+      const list = json.translations as Array<{ id?: number; language_name?: string }>;
+      const englishOnly = list.filter(
+        (t) => t.language_name?.toLowerCase() === 'english' || t.id === 85 || t.id === 20
+      );
+      if (englishOnly.length > 0) {
+        json.translations = englishOnly;
+      }
+    }
     if (Array.isArray(json.juzs)) {
       json.juzs = deduplicateJuzs(
         json.juzs as Array<{ id?: number; juz_number?: number }>

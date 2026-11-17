@@ -150,14 +150,17 @@ export function BookmarksPage() {
                   dir="rtl"
                   lang="ar"
                   translate="no"
-                  className={`notranslate quran-arabic-text text-2xl sm:text-3xl leading-[2.2] ${getArabicFontClass(
+                  className={`notranslate quran-arabic-text w-full text-right leading-[1.9] [word-spacing:0.02em] ${getArabicFontClass(
                     settings.arabicFont
                   )}`}
-                  style={{ color: 'var(--text-primary)' }}
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontSize: `${settings.arabicFontSize}px`,
+                  }}
                 >
                   {item.textArabic}{' '}
                   <span
-                    className="inline-block select-none px-1.5 text-[0.74em] font-normal"
+                    className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}
                     aria-label={`Ayah ${item.verseNumber}`}
                   >

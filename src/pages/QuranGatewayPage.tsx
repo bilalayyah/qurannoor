@@ -8,7 +8,7 @@ import { POPULAR_SECTIONS } from '../utils/slugs';
 const WEBSITE_FAQ = [
   {
     q: 'Which Arabic scripts and fonts does QuranNoor use?',
-    a: 'QuranNoor defaults to Uthmani (Hafs) script rendered with Amiri Quran, and also supports IndoPak script and Scheherazade New, Noto Naskh Arabic, and Lateef fonts inside Reader Settings.',
+    a: 'QuranNoor defaults to Uthmani (Hafs) script rendered with Scheherazade New, and also supports IndoPak script alongside Noto Naskh Arabic and Lateef fonts inside Reader Settings.',
   },
   {
     q: 'Are English translations customizable?',
@@ -175,7 +175,7 @@ export function QuranGatewayPage() {
                 dir="rtl"
                 lang="ar"
                 translate="no"
-                className="notranslate font-quran-scheherazade quran-arabic-text text-xl leading-[1.85]"
+                className="notranslate font-quran-scheherazade quran-arabic-text text-base sm:text-lg leading-[1.6] !py-0"
                 style={{ color: 'var(--gold)' }}
               >
                 {item.arabicTitle}

@@ -6,14 +6,14 @@ export function BismillahHeader() {
 
   return (
     <div
-      className="border-b py-9 text-center"
+      className="border-b py-5 text-center"
       style={{ borderColor: 'var(--border-subtle)' }}
     >
       <p
         dir="rtl"
         lang="ar"
         translate="no"
-        className={`notranslate quran-arabic-text text-3xl sm:text-4xl leading-[2.1] ${getArabicFontClass(
+        className={`notranslate quran-arabic-text text-xl sm:text-2xl leading-[1.7] ${getArabicFontClass(
           settings.arabicFont
         )}`}
         style={{ color: 'var(--text-primary)' }}

@@ -96,7 +96,7 @@ export function PopularSections() {
                     dir="rtl"
                     lang="ar"
                     translate="no"
-                    className="notranslate font-quran-scheherazade quran-arabic-text text-2xl leading-[1.85]"
+                    className="notranslate font-quran-scheherazade quran-arabic-text text-base sm:text-lg leading-[1.6] !py-0"
                     style={{ color: 'var(--gold)' }}
                   >
                     {item.arabicTitle}

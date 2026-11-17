@@ -30,6 +30,25 @@ export interface VerseAudio {
   segments?: Array<[number, number, number, number]>;
 }
 
+export interface VerseWord {
+  id: number;
+  position: number;
+  audio_url?: string | null;
+  char_type_name: 'word' | 'end' | string;
+  text_uthmani?: string;
+  text_indopak?: string;
+  text_uthmani_tajweed?: string;
+  text?: string;
+  translation?: {
+    text: string;
+    language_name?: string;
+  } | null;
+  transliteration?: {
+    text: string;
+    language_name?: string;
+  } | null;
+}
+
 export interface Verse {
   id: number;
   verse_number: number;
@@ -41,10 +60,21 @@ export interface Verse {
   sajdah_number: number | null;
   text_uthmani: string;
   text_indopak?: string;
+  text_uthmani_tajweed?: string;
   page_number: number;
   juz_number: number;
   audio?: VerseAudio;
+  words?: VerseWord[];
   translations?: VerseTranslation[];
+}
+
+export interface TafsirContent {
+  resource_id: number;
+  resource_name: string;
+  slug?: string;
+  language_id?: number;
+  translated_name?: TranslatedName;
+  text: string;
 }
 
 export interface PaginationInfo {
@@ -129,6 +159,13 @@ export type ThemeMode = 'light' | 'sepia' | 'dark';
 export type QuranScript = 'uthmani' | 'indopak';
 export type ArabicFontFamily = 'scheherazade' | 'noto-naskh' | 'lateef';
 
+export type RepeatMode = 1 | 3 | 5 | 'loop';
+
+export interface AyahRepeatRange {
+  startKey: string;
+  endKey: string;
+}
+
 export interface ReaderSettings {
   theme: ThemeMode;
   script: QuranScript;
@@ -139,7 +176,10 @@ export interface ReaderSettings {
   reciterId: number;
   showTranslation: boolean;
   autoPlayNext: boolean;
+  autoPlayUrduAfterArabic: boolean;
   repeatAyah: boolean;
+  hifzMode: boolean;
+  tajweedColors: boolean;
   ttsRate: number;
   ttsVoiceURI: string;
 }
@@ -167,6 +207,17 @@ export interface ReadingProgress {
   updatedAt: number;
 }
 
+export interface LastReadAyah {
+  chapterId: number;
+  chapterName: string;
+  chapterArabicName: string;
+  chapterSlug: string;
+  verseNumber: number;
+  verseKey: string;
+  totalVerses: number;
+  updatedAt: number;
+}
+
 export interface PopularSectionItem {
   slug: string;
   title: string;
@@ -176,4 +227,23 @@ export interface PopularSectionItem {
   type: 'chapter' | 'verse' | 'range';
   chapterId: number;
   verseKeys?: string[];
+}
+
+export type DailyGoalUnit = 'ayahs' | 'pages';
+
+export interface DailyGoalConfig {
+  unit: DailyGoalUnit;
+  target: number;
+}
+
+export interface DailyActivityRecord {
+  ayahKeys: string[];
+  pages: number[];
+  manualAyahs?: number;
+  manualPages?: number;
+}
+
+export interface DailyReadingData {
+  goal: DailyGoalConfig;
+  history: Record<string, DailyActivityRecord>;
 }
