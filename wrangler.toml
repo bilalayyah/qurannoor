@@ -5,3 +5,7 @@ pages_build_output_dir = "dist"
 [vars]
 QURAN_ENV = "production"
 VITE_CONTACT_ENDPOINT = "https://formsubmit.co/ajax/bilalayyah@gmail.com"
+
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "1468946869394dcc803dec2a6d5cb3d6"
