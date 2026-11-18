@@ -4,7 +4,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { useReader } from '../context/ReaderContext';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 
-const LAST_UPDATED = 'November 15, 2026';
+const LAST_UPDATED = 'November 18, 2026';
 
 interface LegalLayoutProps {
   title: string;
@@ -113,12 +113,16 @@ export function PrivacyPolicyPage() {
           bookmarks on our servers.
         </p>
         <p>
-          If a live contact form handler is enabled in the future via{' '}
+          Our{' '}
           <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
             Contact Us
-          </Link>
-          , the name, email address, subject, and message you voluntarily submit will be used solely
-          to respond to your inquiry.
+          </Link>{' '}
+          form is live. When you submit it, the name, email address, subject, and message you
+          voluntarily provide are sent to the third-party form service FormSubmit, which delivers
+          your message to us by email so we can respond to your inquiry. We use the information
+          you submit solely for that purpose and retain it only as long as needed to handle your
+          inquiry; FormSubmit&apos;s own handling of the submission is governed by its privacy
+          policy.
         </p>
       </LegalSection>
 
@@ -163,6 +167,11 @@ export function PrivacyPolicyPage() {
           be updated before any advertising script is activated, and advertising cookies will
           only operate as described in the Cookie Policy.
         </p>
+        <p>
+          A legacy <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>ads.txt</code> file
+          remains published on the site from a previous, now-removed advertising setup. It does
+          not serve or enable any advertising, and no advertising runs on QuranNoor.com.
+        </p>
       </LegalSection>
 
       <LegalSection heading="6. Third-Party Services">
@@ -171,6 +180,30 @@ export function PrivacyPolicyPage() {
             <strong>Quran Foundation Content API &amp; Audio CDN:</strong> Quranic Arabic verses,
             translations, and recitation audio streams are retrieved through our server-side proxy
             and streamed from verified Quran Foundation media endpoints.
+          </li>
+          <li>
+            <strong>FormSubmit:</strong> Our live contact form sends the name, email address,
+            subject, and message you submit to FormSubmit, which delivers your message to us by
+            email. See section 1 above for what is sent and how it is retained.
+          </li>
+          <li>
+            <strong>Aladhan Prayer Times API:</strong> When you use the prayer-times feature, your
+            latitude and longitude are sent to Aladhan to calculate prayer times and the Qibla
+            bearing for your location.
+          </li>
+          <li>
+            <strong>BigDataCloud and Nominatim (OpenStreetMap):</strong> When your location is
+            detected for prayer times, your latitude and longitude are sent to BigDataCloud
+            (with Nominatim as a fallback) for reverse geocoding, so we can display a readable
+            place name such as a city and country instead of raw coordinates.
+          </li>
+          <li>
+            <strong>IP-based location services (ipapi.co, ipwho.is, and geojs.io):</strong> If
+            precise device location is unavailable, the prayer-times feature falls back to
+            estimating your location from your IP address. Each of these services is queried in
+            turn until one responds, and each receives your IP address when it is queried. They
+            return only an approximate city-level location, which is then used to fetch prayer
+            times from Aladhan.
           </li>
           <li>
             <strong>Google Fonts:</strong> Typography files (Scheherazade New, Noto Naskh Arabic,
@@ -182,12 +215,19 @@ export function PrivacyPolicyPage() {
             runs locally inside your device&apos;s browser using built-in Web Speech synthesis.
           </li>
         </ul>
+        <p>
+          Your detected location — including its latitude and longitude — is also saved in your
+          own browser&apos;s local storage (prayer preferences and prayer-times cache) so prayer
+          times can be shown again without re-detecting your location. The cached prayer-times
+          entry is keyed to your coordinates rounded to three decimal places (about 100&nbsp;m).
+          Clearing your browser&apos;s site data removes this stored location.
+        </p>
       </LegalSection>
 
       <LegalSection heading="7. Data Retention, Security & Privacy Rights">
         <p>
           Because reader preferences and bookmarks reside solely on your device, you hold direct
-          control over retention and deletion. Where future contact submissions or server logs are
+          control over retention and deletion. Where contact submissions or server logs are
           processed, data is retained only as long as operationally necessary. Depending on your
           applicable laws (such as GDPR or CCPA/CPRA), you may request access, correction, or
           deletion of any personal correspondence via our{' '}
@@ -371,16 +411,42 @@ export function CookiePolicyPage() {
           </code>{' '}
           strictly on your device for essential reader state:
         </p>
+        <p>
+          The site stores the following kinds of information in your browser&apos;s{' '}
+          <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>
+            localStorage
+          </code>{' '}
+          strictly on your device. No single list here is exhaustive, because keys may be added
+          or retired as features change; the categories below describe everything the site
+          currently stores:
+        </p>
         <ul className="list-disc pl-6 space-y-2 font-ui text-sm">
           <li>
-            <code>qurannoor_reader_settings_v1</code> — Theme (Light, Sepia, Dark), Uthmani/IndoPak
-            script, font sizes, selected translation, and reciter choice.
+            <strong>Reader settings</strong> — Theme (Light, Sepia, Dark), Uthmani/IndoPak
+            script, font sizes, selected translation, and reciter choice, plus one-time
+            font-size migration flags.
           </li>
           <li>
-            <code>qurannoor_reading_progress_v1</code> — Last read Surah, Ayah, and Juz position.
+            <strong>Bookmarks and reading progress</strong> — Your locally saved Ayah bookmarks,
+            last-read Surah/Ayah/Juz position, and last-read Ayah.
           </li>
           <li>
-            <code>qurannoor_bookmarks_v1</code> — Your locally saved Ayah bookmarks.
+            <strong>Prayer location and cache</strong> — Your detected prayer location (including
+            latitude and longitude) and cached prayer times for that location and date.
+          </li>
+          <li>
+            <strong>Tafsir and Qibla preferences</strong> — Your preferred tafsir language and
+            whether the Qibla compass sound is muted.
+          </li>
+          <li>
+            <strong>App-install and notification preferences</strong> — Whether the app has been
+            installed, when an install prompt was last dismissed, and whether daily-reminder
+            push notifications are enabled.
+          </li>
+          <li>
+            <strong>Legacy keys</strong> — Older keys from the site&apos;s previous name
+            (prefixed <code>bayan_</code>) are only read, where present, to carry over settings,
+            bookmarks, and progress saved before the rename; no new data is written to them.
           </li>
         </ul>
       </LegalSection>
