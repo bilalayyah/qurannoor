@@ -101,7 +101,6 @@ function RouteFallback() {
 function AppShell() {
   const { toastMessage } = useReader();
   const { isPlaying, isLoading, activeVerseKey, activeChapterId } = useAudio();
-  const location = useLocation();
   const hasActiveAudio = Boolean(activeVerseKey || activeChapterId || isPlaying || isLoading);
 
   return (
@@ -118,7 +117,6 @@ function AppShell() {
 
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Suspense fallback={<RouteFallback />}>
-          <ErrorBoundary resetKey={location.pathname}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/quran" element={<QuranGatewayPage />} />
@@ -151,7 +149,6 @@ function AppShell() {
             <Route path="/terms" element={<Navigate to="/terms-and-conditions" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-          </ErrorBoundary>
         </Suspense>
       </main>
 
@@ -175,13 +172,30 @@ function AppShell() {
   );
 }
 
+/**
+ * Wraps the whole app shell — header, footer, audio player, reader settings,
+ * install prompt and routes — in the ErrorBoundary, so a render crash in a
+ * persistent chrome component shows the friendly fallback instead of blanking
+ * the app. The boundary still resets when the pathname changes, exactly as it
+ * did when it wrapped only <Routes>. This must live inside <BrowserRouter>
+ * so useLocation() works.
+ */
+function AppShellWithErrorBoundary() {
+  const location = useLocation();
+  return (
+    <ErrorBoundary resetKey={location.pathname}>
+      <AppShell />
+    </ErrorBoundary>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <ReaderProvider>
         <AudioProvider>
-          <AppShell />
+          <AppShellWithErrorBoundary />
         </AudioProvider>
       </ReaderProvider>
     </BrowserRouter>

@@ -4,7 +4,10 @@ pages_build_output_dir = "dist"
 
 [vars]
 QURAN_ENV = "production"
-VITE_CONTACT_ENDPOINT = "https://formsubmit.co/ajax/bilalayyah@gmail.com"
+# Contact delivery: the destination endpoint is NOT set here. Set the
+# CONTACT_ENDPOINT environment variable in the Cloudflare Pages dashboard
+# (server-side only) — see functions/api/contact.ts. Never put an email
+# address or form endpoint URL in this committed file.
 
 [[kv_namespaces]]
 binding = "PUSH_KV"

@@ -21,8 +21,6 @@ interface FormErrors {
   message?: string;
 }
 
-const CONTACT_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT as string | undefined;
-
 export function ContactPage() {
   usePageMetadata({
     title: 'Contact Us – QuranNoor',
@@ -38,7 +36,7 @@ export function ContactPage() {
   const [honeypot, setHoneypot] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState<{
-    type: 'idle' | 'submitting' | 'sent' | 'unconfigured' | 'error';
+    type: 'idle' | 'submitting' | 'sent' | 'error';
     text?: string;
   }>({ type: 'idle' });
 
@@ -77,18 +75,12 @@ export function ContactPage() {
       return;
     }
 
-    // Never simulate form delivery if no real endpoint is configured
-    if (!CONTACT_ENDPOINT || !CONTACT_ENDPOINT.trim()) {
-      setStatus({
-        type: 'unconfigured',
-        text: 'Validation passed, but live message delivery is not yet connected. To enable real submissions before or after deployment, configure VITE_CONTACT_ENDPOINT (e.g., a Cloudflare Worker mail handler or form processing endpoint) in your environment settings.',
-      });
-      return;
-    }
-
+    // Messages are delivered through the server-side /api/contact Pages
+    // Function, which holds the delivery destination in an environment
+    // variable — no endpoint or email address lives in the client bundle.
     setStatus({ type: 'submitting' });
     try {
-      const response = await fetch(CONTACT_ENDPOINT.trim(), {
+      const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
@@ -96,12 +88,20 @@ export function ContactPage() {
           email: email.trim(),
           subject: subject.trim(),
           message: message.trim(),
+          website: honeypot,
           source: 'QuranNoor.com',
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Submission returned status ${response.status}`);
+        let detail = `Submission returned status ${response.status}`;
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (data.error) detail = data.error;
+        } catch {
+          // Keep the status-based message when the body is not JSON.
+        }
+        throw new Error(detail);
       }
 
       setName('');
@@ -140,33 +140,6 @@ export function ContactPage() {
           QuranNoor.
         </p>
       </header>
-
-      {!CONTACT_ENDPOINT && (
-        <div
-          role="note"
-          className="flex items-start gap-3 rounded-2xl border p-5 text-sm"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          <Info className="mt-0.5 h-5 w-5 shrink-0" style={{ color: 'var(--gold)' }} />
-          <div className="space-y-1.5">
-            <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Mail Delivery Configuration Pending
-            </p>
-            <p className="leading-relaxed">
-              This contact form includes full field validation and honeypot spam protection, but no
-              mail server or form endpoint is connected in this pre-export workspace. Set{' '}
-              <code className="rounded px-1.5 py-0.5 text-xs" style={{ backgroundColor: 'var(--bg-muted)' }}>
-                VITE_CONTACT_ENDPOINT
-              </code>{' '}
-              or attach a Cloudflare Pages Function mail handler before going live on QuranNoor.com.
-            </p>
-          </div>
-        </div>
-      )}
 
       <form
         onSubmit={handleSubmit}

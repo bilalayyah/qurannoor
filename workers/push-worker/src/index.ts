@@ -31,7 +31,9 @@ async function generateVapidKeys(): Promise<{ publicKey: string; privateKey: str
     ['sign', 'verify']
   )) as CryptoKeyPair;
 
-  const rawPublic = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+  // exportKey('raw', …) is typed as ArrayBuffer | JsonWebKey in the installed
+  // @cloudflare/workers-types, but 'raw' always yields an ArrayBuffer at runtime.
+  const rawPublic = (await crypto.subtle.exportKey('raw', keyPair.publicKey)) as ArrayBuffer;
   const jwkPrivate = (await crypto.subtle.exportKey('jwk', keyPair.privateKey)) as JsonWebKey;
 
   if (!jwkPrivate.d) {
@@ -112,6 +114,12 @@ function getUtcDayOfYear(date: Date = new Date()): number {
   return Math.floor((currentDay - startOfYear) / 86_400_000) + 1;
 }
 
+// NOTE (audit I-12, decision: KEEP): this daily-ayah payload is intentional
+// daily-reminder behaviour, not the removed "Ayah of the Day" UI feature.
+// The Ayah-of-the-Day section was removed from the site UI, but the daily
+// push reminder deliberately still includes one ayah reference (verse key +
+// link) so subscribers get a concrete daily reminder. Do not remove this
+// function as part of the removed-feature cleanup.
 function getAyahOfTheDayRef(date: Date = new Date()): {
   verseKey: string;
   chapterName: string;

@@ -1,0 +1,66 @@
+# Minimal CI: typecheck the app and the push worker, plus grep guards that
+# pin past audit fixes (AdSense removal, QPC-Hafs Arabic, removed features).
+# No build step: `npm run build` is intentionally not run here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Root install needs --legacy-peer-deps: vite 8.3.8's peerOptional
+      # esbuild range (^0.27.0 || ^0.28.0) conflicts with the project's
+      # pinned esbuild ^0.25.0. Plain `npm ci` fails ERESOLVE on this tree.
+      - name: Install root dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install push-worker dependencies
+        run: npm ci --prefix workers/push-worker
+
+      - name: Typecheck app
+        run: npm run lint
+
+      - name: Typecheck push worker
+        run: npm run lint:worker
+
+      - name: Guard — no AdSense script in source
+        # AdSense was removed from all sites (audit follow-up). ads.txt is a
+        # deliberate leftover and does not contain this string, so it is safe
+        # to scan public/ too.
+        run: |
+          if grep -rn 'adsbygoogle' src functions workers server.ts public; then
+            echo 'ERROR: adsbygoogle found in source — AdSense must stay removed.'
+            exit 1
+          fi
+
+      - name: Guard — Uthmani text must not be a render source
+        # Displayed Arabic must come from text_qpc_hafs. The QPC-first
+        # accessor lives in src/utils/text.ts (it only falls back to
+        # text_uthmani when QPC text is absent), so this guard scans only
+        # render code. text_uthmani_tajweed is allowed: it only projects
+        # Tajweed colours onto QPC text and is never rendered as Arabic.
+        run: |
+          if grep -rnE '\.text_uthmani([^_a-zA-Z]|$)' src/components src/pages src/hooks; then
+            echo 'ERROR: text_uthmani used as a render source — use text_qpc_hafs.'
+            exit 1
+          fi
+
+      - name: Guard — guides must not name removed features
+        # The Daily Reading Goal and the Khatm tracker were removed from the
+        # product; guides must not present them as QuranNoor features.
+        run: |
+          if grep -rniE 'daily reading goal|khatm tracker' src/data; then
+            echo 'ERROR: guides name a removed feature (Daily Reading Goal / Khatm tracker).'
+            exit 1
+          fi
