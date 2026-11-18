@@ -1,4 +1,4 @@
-import { SURAH_VERSE_COUNTS } from './ayahOfTheDay';
+import { SURAH_VERSE_COUNTS } from './surahCatalog';
 
 const URDU_AUDIO_BASE_URL = 'https://cdn.islamic.network/quran/audio/64/ur.khan';
 export const URDU_AUDIO_CREDIT = 'Urdu · Shamshad Ali Khan (Jalandhari)';

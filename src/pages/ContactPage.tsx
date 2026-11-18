@@ -2,7 +2,17 @@ import { AlertCircle, Info, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { ThemedSelect, type ThemedSelectOption } from '../components/ThemedSelect';
 import { usePageMetadata } from '../hooks/usePageMetadata';
+
+const CONTACT_TOPIC_OPTIONS: readonly ThemedSelectOption[] = [
+  { value: 'General Feedback', label: 'General Feedback' },
+  { value: 'Quran Text or Diacritic Issue', label: 'Quran Text or Diacritic Issue' },
+  { value: 'Audio or Reciter Issue', label: 'Audio or Reciter Issue' },
+  { value: 'Accessibility Concern', label: 'Accessibility Concern' },
+  { value: 'Privacy or Data Inquiry', label: 'Privacy or Data Inquiry' },
+  { value: 'Copyright & Attribution', label: 'Copyright & Attribution' },
+];
 
 interface FormErrors {
   name?: string;
@@ -253,24 +263,15 @@ export function ContactPage() {
           >
             Topic / Subject <span aria-hidden="true">*</span>
           </label>
-          <select
+          <ThemedSelect
             id="contact-subject"
+            ariaLabel="Topic / Subject"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border px-3.5 text-sm outline-none"
-            style={{
-              backgroundColor: 'var(--bg-canvas)',
-              borderColor: 'var(--border-subtle)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <option value="General Feedback">General Feedback</option>
-            <option value="Quran Text or Diacritic Issue">Quran Text or Diacritic Issue</option>
-            <option value="Audio or Reciter Issue">Audio or Reciter Issue</option>
-            <option value="Accessibility Concern">Accessibility Concern</option>
-            <option value="Privacy or Data Inquiry">Privacy or Data Inquiry</option>
-            <option value="Copyright & Attribution">Copyright & Attribution</option>
-          </select>
+            options={CONTACT_TOPIC_OPTIONS}
+            onChange={setSubject}
+            searchable={false}
+            className="w-full"
+          />
         </div>
 
         <div className="space-y-1.5">

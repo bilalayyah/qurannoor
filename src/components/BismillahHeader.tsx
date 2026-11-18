@@ -13,12 +13,12 @@ export function BismillahHeader() {
         dir="rtl"
         lang="ar"
         translate="no"
-        className={`notranslate quran-arabic-text text-xl sm:text-2xl leading-[1.7] ${getArabicFontClass(
+        className={`notranslate quran-arabic-text leading-[1.7] ${getArabicFontClass(
           settings.arabicFont
         )}`}
-        style={{ color: 'var(--text-primary)' }}
+        style={{ fontSize: `${settings.arabicFontSize}px`, color: 'var(--text-primary)' }}
       >
-        بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
+        بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
       </p>
       {settings.showTranslation && (
         <div className="mt-3 flex flex-col items-center gap-2.5">

@@ -79,7 +79,7 @@ interface AudioContextValue {
   setAudioMode: (mode: AudioMode) => void;
   updateQueue: (queue: PlayableAyah[]) => void;
   setQueueEndHandler: (handler: QueueEndHandler | null) => void;
-  continueAfterPageAdvance: (newQueue: PlayableAyah[]) => void;
+  continueAfterPageAdvance: (newQueue: PlayableAyah[], startVerseKey?: string) => void;
   cancelPageAdvance: () => void;
 }
 
@@ -989,7 +989,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const continueAfterPageAdvance = useCallback(
-    (newQueue: PlayableAyah[]) => {
+    (newQueue: PlayableAyah[], startVerseKey?: string) => {
       const pending = pendingAdvanceRef.current;
       if (!pending || pending.reqId !== playbackRequestIdRef.current) {
         return;
@@ -1001,12 +1001,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       queueRef.current = newQueue;
+      const matchedIdx = startVerseKey
+        ? newQueue.findIndex((item) => item.verseKey === startVerseKey)
+        : 0;
+      const startIdx = matchedIdx >= 0 ? matchedIdx : 0;
+      const targetAyah = newQueue[startIdx] || newQueue[0];
       if (pending.mode === 'english') {
-        speakAyahTranslation(newQueue[0], 0);
+        speakAyahTranslation(targetAyah, startIdx);
       } else if (pending.mode === 'urdu') {
-        startUrduAyahPlayback(newQueue[0], 0, 'urdu');
+        startUrduAyahPlayback(targetAyah, startIdx, 'urdu');
       } else {
-        startArabicAyahPlayback(newQueue[0], 0);
+        startArabicAyahPlayback(targetAyah, startIdx);
       }
     },
     [speakAyahTranslation, startArabicAyahPlayback, startUrduAyahPlayback]

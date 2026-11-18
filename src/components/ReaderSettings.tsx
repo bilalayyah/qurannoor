@@ -7,9 +7,10 @@ import { usePushNotifications } from '../utils/pushNotifications';
 import { getArabicFontClass } from '../utils/text';
 import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
+import { ThemedSelect, type ThemedSelectOption } from './ThemedSelect';
 
 const FONT_OPTIONS: Array<{ id: ArabicFontFamily; label: string; scriptHint: string }> = [
-  { id: 'scheherazade', label: 'Scheherazade New', scriptHint: 'Classical Naskh' },
+  { id: 'scheherazade', label: 'UthmanicHafs', scriptHint: 'Madinah Mushaf (Hafs)' },
   { id: 'noto-naskh', label: 'Noto Naskh Arabic', scriptHint: 'Clean Naskh' },
   { id: 'lateef', label: 'Lateef', scriptHint: 'IndoPak Style' },
 ];
@@ -22,8 +23,6 @@ export function ReaderSettings() {
     translations,
     isSettingsOpen,
     setIsSettingsOpen,
-    currentStreak,
-    dailyGoal,
     showToast,
   } = useReader();
 
@@ -47,6 +46,26 @@ export function ReaderSettings() {
   if (!isSettingsOpen) return null;
 
   const currentTranslation = translations.find((t) => t.id === settings.translationId);
+  const translationOptions: ThemedSelectOption[] = translations.map((t) => ({
+    value: String(t.id),
+    label: t.name,
+    description: t.author_name ? `Translator: ${t.author_name}` : undefined,
+    keywords: `${t.name} ${t.author_name || ''} ${t.language_name || ''}`,
+  }));
+  const voiceOptions: ThemedSelectOption[] = [
+    {
+      value: '',
+      label: 'System Default English Voice',
+      description: 'Use browser default speech synthesis voice',
+      keywords: 'system default english voice',
+    },
+    ...availableVoices.map((v) => ({
+      value: v.voiceURI,
+      label: v.name,
+      badge: v.lang,
+      keywords: `${v.name} ${v.lang}`,
+    })),
+  ];
 
   return (
     <div
@@ -235,7 +254,7 @@ export function ReaderSettings() {
                 )}`}
                 style={{ fontSize: `${settings.arabicFontSize}px` }}
               >
-                بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
+                بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
               </p>
             </div>
 
@@ -338,25 +357,18 @@ export function ReaderSettings() {
                   >
                     Translation
                   </label>
-                  <select
+                  <ThemedSelect
                     id="settings-translation-select"
-                    value={settings.translationId}
-                    onChange={(e) =>
-                      updateSettings({ translationId: Number(e.target.value) })
-                    }
-                    className="w-full min-h-[42px] rounded-xl border px-3 text-sm outline-none"
-                    style={{
-                      backgroundColor: 'var(--bg-canvas)',
-                      borderColor: 'var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    {translations.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                    ariaLabel="Translation"
+                    value={String(settings.translationId)}
+                    options={translationOptions}
+                    onChange={(val) => updateSettings({ translationId: Number(val) })}
+                    placeholder="Select translation…"
+                    searchPlaceholder="Search translation or author..."
+                    searchable
+                    emptyText="No matching translations found"
+                    className="w-full"
+                  />
                   {currentTranslation && (
                     <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                       Translator: {currentTranslation.author_name}
@@ -488,24 +500,19 @@ export function ReaderSettings() {
                 >
                   English Translation Voice (Browser Speech Synthesis)
                 </label>
-                <select
+                <ThemedSelect
                   id="settings-tts-voice"
+                  ariaLabel="English Translation Voice"
                   value={settings.ttsVoiceURI}
-                  onChange={(e) => updateSettings({ ttsVoiceURI: e.target.value })}
-                  className="w-full min-h-[42px] rounded-xl border px-3 text-sm outline-none"
-                  style={{
-                    backgroundColor: 'var(--bg-canvas)',
-                    borderColor: 'var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  <option value="">System Default English Voice</option>
-                  {availableVoices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </select>
+                  options={voiceOptions}
+                  onChange={(val) => updateSettings({ ttsVoiceURI: val })}
+                  placeholder="System Default English Voice"
+                  searchPlaceholder="Search voice or accent..."
+                  searchable
+                  placement="auto"
+                  emptyText="No matching voices found"
+                  className="w-full"
+                />
               </div>
             )}
           </section>
@@ -526,7 +533,7 @@ export function ReaderSettings() {
                     ? 'Not supported in this browser'
                     : pushStatus === 'enabled'
                     ? 'Daily 7:00 AM Dubai time reminder active'
-                    : 'Daily 7:00 AM reminder for your reading goal'}
+                    : 'Daily 7:00 AM Dubai time notification'}
                 </p>
               </div>
 
@@ -541,11 +548,7 @@ export function ReaderSettings() {
                     await disablePush();
                     showToast('Daily reading reminder turned off');
                   } else {
-                    const next = await enablePush({
-                      streak: currentStreak,
-                      goalTarget: dailyGoal.target,
-                      goalUnit: dailyGoal.unit,
-                    });
+                    const next = await enablePush();
                     if (next.status === 'enabled') {
                       showToast('Daily reading reminder enabled');
                     } else if (next.status === 'preview_unavailable') {

@@ -1,4 +1,9 @@
-import { toLocalDateKey } from '../utils/readingGoal';
+function toLocalDateKey(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 export interface CalculationMethodOption {
   id: number;
@@ -39,17 +44,8 @@ export interface PrayerLocation {
   label: string;
   latitude: number;
   longitude: number;
-  source: 'geolocation' | 'city';
-}
-
-export interface CitySearchResult {
-  id: number;
-  name: string;
-  admin1?: string;
-  country?: string;
-  latitude: number;
-  longitude: number;
   timezone?: string;
+  source: 'geolocation' | 'ip';
 }
 
 export interface PrayerDayData {
@@ -72,6 +68,16 @@ export interface PrayerPreferences {
 
 const PREFS_KEY = 'qurannoor_prayer_prefs_v1';
 const CACHE_KEY = 'qurannoor_prayer_cache_v1';
+export const PRAYER_UPDATED_EVENT = 'qurannoor:prayer-updated';
+
+function notifyPrayerUpdated(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new CustomEvent(PRAYER_UPDATED_EVENT));
+  } catch {
+    // ignore event dispatch issues
+  }
+}
 
 function buildCacheKey(dateKey: string, lat: number, lng: number, method: number): string {
   return `${dateKey}:${lat.toFixed(3)}:${lng.toFixed(3)}:m${method}`;
@@ -84,8 +90,10 @@ export function loadPrayerPreferences(): PrayerPreferences {
     const parsed = JSON.parse(raw) as Partial<PrayerPreferences>;
     const methodValid = CALCULATION_METHODS.some((m) => m.id === parsed.method);
     const loc = parsed.location;
-    const validLoc =
+    const validSource = loc?.source === 'geolocation' || loc?.source === 'ip';
+    const validLoc: PrayerLocation | null =
       loc &&
+      validSource &&
       typeof loc.label === 'string' &&
       typeof loc.latitude === 'number' &&
       Number.isFinite(loc.latitude) &&
@@ -95,7 +103,8 @@ export function loadPrayerPreferences(): PrayerPreferences {
             label: loc.label,
             latitude: loc.latitude,
             longitude: loc.longitude,
-            source: loc.source === 'geolocation' ? ('geolocation' as const) : ('city' as const),
+            timezone: typeof loc.timezone === 'string' && loc.timezone ? loc.timezone : undefined,
+            source: loc.source === 'geolocation' ? 'geolocation' : 'ip',
           }
         : null;
     return {
@@ -110,6 +119,7 @@ export function loadPrayerPreferences(): PrayerPreferences {
 export function savePrayerPreferences(prefs: PrayerPreferences): void {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    notifyPrayerUpdated();
   } catch {
     // ignore storage errors
   }
@@ -147,6 +157,15 @@ export function getLatestCachedPrayerDataForToday(dateKey: string = toLocalDateK
   }
 }
 
+export function getActiveCachedPrayerDataForToday(dateKey: string = toLocalDateKey()): PrayerDayData | null {
+  const prefs = loadPrayerPreferences();
+  if (prefs.location) {
+    const exact = getCachedPrayerData(prefs.location, prefs.method, dateKey);
+    if (exact) return exact;
+  }
+  return getLatestCachedPrayerDataForToday(dateKey);
+}
+
 function saveCachedPrayerData(data: PrayerDayData): void {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
@@ -161,6 +180,7 @@ function saveCachedPrayerData(data: PrayerDayData): void {
     const key = buildCacheKey(data.dateKey, data.location.latitude, data.location.longitude, data.methodId);
     next[key] = data;
     localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+    notifyPrayerUpdated();
   } catch {
     // ignore storage errors
   }
@@ -239,15 +259,23 @@ export async function fetchPrayerAndQiblaData({
   const methodName =
     timingsJson?.data?.meta?.method?.name || methodOption?.name || `Method ${method}`;
 
+  const resolvedTimezone =
+    location.timezone ||
+    timingsJson?.data?.meta?.timezone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    'UTC';
+
   const data: PrayerDayData = {
     dateKey,
     readableDate: timingsJson?.data?.date?.readable || dateParam,
     hijriDateText,
-    timezone:
-      timingsJson?.data?.meta?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    timezone: resolvedTimezone,
     methodId: method,
     methodName,
-    location,
+    location: {
+      ...location,
+      timezone: location.timezone || resolvedTimezone,
+    },
     timings: {
       Fajr: stripTimezoneTag(rawTimings.Fajr),
       Sunrise: stripTimezoneTag(rawTimings.Sunrise),
@@ -264,37 +292,24 @@ export async function fetchPrayerAndQiblaData({
   return data;
 }
 
-export async function searchCitiesFree(
-  query: string,
-  signal?: AbortSignal
-): Promise<CitySearchResult[]> {
-  const trimmed = query.trim();
-  if (trimmed.length < 2) return [];
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-    trimmed
-  )}&count=6&language=en&format=json`;
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    throw new Error(`City search returned HTTP ${res.status}`);
+function formatPlaceParts(parts: Array<unknown>): string {
+  const cleaned = parts
+    .map((p) => (typeof p === 'string' ? p.trim() : ''))
+    .filter(Boolean);
+  if (cleaned.length === 0) return '';
+  return cleaned.join(', ');
+}
+
+async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 4500): Promise<T> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as T;
+  } finally {
+    globalThis.clearTimeout(timer);
   }
-  const json = await res.json();
-  if (!Array.isArray(json?.results)) return [];
-  return json.results
-    .filter(
-      (item: Record<string, unknown>) =>
-        typeof item?.name === 'string' &&
-        typeof item?.latitude === 'number' &&
-        typeof item?.longitude === 'number'
-    )
-    .map((item: Record<string, unknown>) => ({
-      id: Number(item.id) || Math.round(Number(item.latitude) * 10000 + Number(item.longitude)),
-      name: String(item.name),
-      admin1: typeof item.admin1 === 'string' ? item.admin1 : undefined,
-      country: typeof item.country === 'string' ? item.country : undefined,
-      latitude: Number(item.latitude),
-      longitude: Number(item.longitude),
-      timezone: typeof item.timezone === 'string' ? item.timezone : undefined,
-    }));
 }
 
 export async function reverseGeocodeFree(latitude: number, longitude: number): Promise<string> {
@@ -302,18 +317,267 @@ export async function reverseGeocodeFree(latitude: number, longitude: number): P
     const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(
       latitude
     )}&longitude=${encodeURIComponent(longitude)}&localityLanguage=en`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Reverse geocode unavailable');
-    const data = await res.json();
-    const city = data?.city || data?.locality || data?.principalSubdivision;
-    const country = data?.countryName;
-    if (city && country) return `${city}, ${country}`;
-    if (city) return String(city);
-    if (country) return String(country);
+    const data = await fetchJsonWithTimeout<{
+      locality?: string;
+      city?: string;
+      principalSubdivision?: string;
+      countryName?: string;
+    }>(url, 4500);
+    const area = data?.locality || data?.city;
+    const region =
+      data?.principalSubdivision && data.principalSubdivision !== area
+        ? data.principalSubdivision
+        : data?.city && data.city !== area
+        ? data.city
+        : data?.principalSubdivision;
+    const label = formatPlaceParts([area, region, data?.countryName]);
+    if (label) return label;
+  } catch {
+    // Try secondary free reverse geocode below
+  }
+
+  try {
+    const nomUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+      latitude
+    )}&lon=${encodeURIComponent(longitude)}&accept-language=en`;
+    const nom = await fetchJsonWithTimeout<{
+      address?: {
+        suburb?: string;
+        neighbourhood?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        state?: string;
+        country?: string;
+      };
+    }>(nomUrl, 4500);
+    const addr = nom?.address;
+    if (addr) {
+      const area = addr.suburb || addr.neighbourhood || addr.city || addr.town || addr.village;
+      const cityOrState = addr.city || addr.state;
+      const label = formatPlaceParts([
+        area,
+        cityOrState && cityOrState !== area ? cityOrState : addr.state,
+        addr.country,
+      ]);
+      if (label) return label;
+    }
   } catch {
     // Fallback to clean coordinates
   }
+
   return `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`;
+}
+
+export async function fetchIpLocationFree(): Promise<PrayerLocation | null> {
+  // Primary: ipapi.co/json
+  try {
+    const data = await fetchJsonWithTimeout<{
+      error?: boolean;
+      city?: string;
+      region?: string;
+      country_name?: string;
+      latitude?: number | string;
+      longitude?: number | string;
+      timezone?: string;
+    }>('https://ipapi.co/json/', 4500);
+    const lat = Number(data?.latitude);
+    const lng = Number(data?.longitude);
+    if (!data?.error && Number.isFinite(lat) && Number.isFinite(lng)) {
+      const label =
+        formatPlaceParts([data.city, data.region, data.country_name]) ||
+        `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
+      return {
+        label,
+        latitude: lat,
+        longitude: lng,
+        timezone:
+          typeof data.timezone === 'string' && data.timezone
+            ? data.timezone
+            : Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
+        source: 'ip',
+      };
+    }
+  } catch {
+    // Fall through to secondary IP provider
+  }
+
+  // Secondary: ipwho.is
+  try {
+    const data = await fetchJsonWithTimeout<{
+      success?: boolean;
+      city?: string;
+      region?: string;
+      country?: string;
+      latitude?: number | string;
+      longitude?: number | string;
+      timezone?: { id?: string };
+    }>('https://ipwho.is/', 4500);
+    const lat = Number(data?.latitude);
+    const lng = Number(data?.longitude);
+    if (data?.success !== false && Number.isFinite(lat) && Number.isFinite(lng)) {
+      const label =
+        formatPlaceParts([data.city, data.region, data.country]) ||
+        `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
+      return {
+        label,
+        latitude: lat,
+        longitude: lng,
+        timezone:
+          typeof data.timezone?.id === 'string' && data.timezone.id
+            ? data.timezone.id
+            : Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
+        source: 'ip',
+      };
+    }
+  } catch {
+    // Fall through to tertiary IP provider
+  }
+
+  // Tertiary: get.geojs.io
+  try {
+    const data = await fetchJsonWithTimeout<{
+      city?: string;
+      region?: string;
+      country?: string;
+      latitude?: number | string;
+      longitude?: number | string;
+      timezone?: string;
+    }>('https://get.geojs.io/v1/ip/geo.json', 4500);
+    const lat = Number(data?.latitude);
+    const lng = Number(data?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const label =
+        formatPlaceParts([data.city, data.region, data.country]) ||
+        `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
+      return {
+        label,
+        latitude: lat,
+        longitude: lng,
+        timezone:
+          typeof data.timezone === 'string' && data.timezone
+            ? data.timezone
+            : Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
+        source: 'ip',
+      };
+    }
+  } catch {
+    // All IP services unavailable
+  }
+
+  return null;
+}
+
+function getBrowserPositionAsync(timeoutMs = 5000): Promise<GeolocationPosition | null> {
+  if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    let settled = false;
+    const guardTimer = globalThis.setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(null);
+      }
+    }, timeoutMs + 500);
+
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (settled) return;
+          settled = true;
+          globalThis.clearTimeout(guardTimer);
+          resolve(pos);
+        },
+        () => {
+          if (settled) return;
+          settled = true;
+          globalThis.clearTimeout(guardTimer);
+          resolve(null);
+        },
+        { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 600000 }
+      );
+    } catch {
+      if (!settled) {
+        settled = true;
+        globalThis.clearTimeout(guardTimer);
+        resolve(null);
+      }
+    }
+  });
+}
+
+let inFlightAutoDetect: Promise<PrayerLocation | null> | null = null;
+
+export async function detectPrayerLocationAuto(options?: {
+  forceRefresh?: boolean;
+}): Promise<PrayerLocation | null> {
+  const prefs = loadPrayerPreferences();
+  if (!options?.forceRefresh && prefs.location) {
+    return prefs.location;
+  }
+
+  if (inFlightAutoDetect) {
+    return inFlightAutoDetect;
+  }
+
+  inFlightAutoDetect = (async () => {
+    try {
+      const deviceTz =
+        typeof Intl !== 'undefined'
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone || undefined
+          : undefined;
+
+      // 1. Try browser geolocation automatically (no tap required)
+      const pos = await getBrowserPositionAsync(5000);
+      if (pos) {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const label = await reverseGeocodeFree(lat, lng);
+        const loc: PrayerLocation = {
+          label,
+          latitude: lat,
+          longitude: lng,
+          timezone: deviceTz,
+          source: 'geolocation',
+        };
+        const latestPrefs = loadPrayerPreferences();
+        savePrayerPreferences({ method: latestPrefs.method, location: loc });
+        return loc;
+      }
+
+      // 2. Fallback automatically to free IP geolocation
+      const ipLoc = await fetchIpLocationFree();
+      if (ipLoc) {
+        const latestPrefs = loadPrayerPreferences();
+        savePrayerPreferences({ method: latestPrefs.method, location: ipLoc });
+        return ipLoc;
+      }
+
+      return null;
+    } finally {
+      inFlightAutoDetect = null;
+    }
+  })();
+
+  return inFlightAutoDetect;
+}
+
+export async function loadOrDetectPrayerData(options?: {
+  signal?: AbortSignal;
+}): Promise<PrayerDayData | null> {
+  const prefs = loadPrayerPreferences();
+  const loc = prefs.location || (await detectPrayerLocationAuto());
+  if (!loc) return null;
+
+  const cached = getCachedPrayerData(loc, prefs.method);
+  if (cached) return cached;
+
+  return fetchPrayerAndQiblaData({
+    location: loc,
+    method: prefs.method,
+    signal: options?.signal,
+  });
 }
 
 function parseTimeToSeconds(hhmm: string): number {
@@ -359,7 +623,10 @@ export function getNextPrayerCountdown(
 ): {
   nextPrayer: PrayerName;
   nextTime24: string;
+  remainingText: string;
   countdownText: string;
+  remainingWithSecondsText: string;
+  countdownWithSecondsText: string;
   secondsRemaining: number;
 } {
   const order: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -389,19 +656,41 @@ export function getNextPrayerCountdown(
   const hours = Math.floor(totalMins / 60);
   const mins = totalMins % 60;
 
-  let countdownText: string;
+  let remainingText: string;
   if (hours > 0) {
-    countdownText = `${nextPrayer} in ${hours}h ${mins}m`;
+    remainingText = `${hours}h ${mins}m`;
   } else if (mins > 1) {
-    countdownText = `${nextPrayer} in ${mins}m`;
+    remainingText = `${mins}m`;
   } else {
-    countdownText = `${nextPrayer} in ${Math.max(1, secondsRemaining)}s`;
+    remainingText = `${Math.max(1, secondsRemaining)}s`;
   }
+
+  const countdownText = `${nextPrayer} in ${remainingText}`;
+
+  const totalSec = Math.max(1, Math.floor(secondsRemaining));
+  const exactHours = Math.floor(totalSec / 3600);
+  const exactMins = Math.floor((totalSec % 3600) / 60);
+  const exactSecs = totalSec % 60;
+  const secsPadded = String(exactSecs).padStart(2, '0');
+
+  let remainingWithSecondsText: string;
+  if (exactHours > 0) {
+    remainingWithSecondsText = `${exactHours}h ${exactMins}m ${secsPadded}s`;
+  } else if (exactMins > 0) {
+    remainingWithSecondsText = `${exactMins}m ${secsPadded}s`;
+  } else {
+    remainingWithSecondsText = `${exactSecs}s`;
+  }
+
+  const countdownWithSecondsText = `${nextPrayer} in ${remainingWithSecondsText}`;
 
   return {
     nextPrayer,
     nextTime24: timings[nextPrayer],
+    remainingText,
     countdownText,
+    remainingWithSecondsText,
+    countdownWithSecondsText,
     secondsRemaining,
   };
 }

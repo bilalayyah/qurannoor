@@ -15,15 +15,62 @@ interface QiblaCompassProps {
   locationLabel: string;
 }
 
-interface DeviceOrientationIOS extends DeviceOrientationEvent {
+interface DeviceOrientationWithWebkit extends DeviceOrientationEvent {
   webkitCompassHeading?: number;
 }
 
-type OrientationPermissionState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
+type CompassSensorState = 'waiting' | 'prompt' | 'live' | 'denied' | 'unsupported';
 
 const ALIGNMENT_THRESHOLD_DEG = 10;
 const CHIME_REARM_THRESHOLD_DEG = 14;
 const MUTED_STORAGE_KEY = 'qurannoor_qibla_muted_v1';
+
+function normalizeDeg(deg: number): number {
+  return ((deg % 360) + 360) % 360;
+}
+
+function getScreenOrientationAngle(): number {
+  if (typeof window === 'undefined') return 0;
+  if (window.screen?.orientation && typeof window.screen.orientation.angle === 'number') {
+    return window.screen.orientation.angle;
+  }
+  const legacyOrientation = (window as unknown as { orientation?: number }).orientation;
+  return typeof legacyOrientation === 'number' && Number.isFinite(legacyOrientation)
+    ? legacyOrientation
+    : 0;
+}
+
+function extractCompassHeading(e: Event, isAbsoluteEvent: boolean): number | null {
+  const event = e as DeviceOrientationWithWebkit;
+  const screenAngle = getScreenOrientationAngle();
+
+  if (
+    typeof event.webkitCompassHeading === 'number' &&
+    Number.isFinite(event.webkitCompassHeading)
+  ) {
+    return normalizeDeg(event.webkitCompassHeading + screenAngle);
+  }
+
+  const isAbsolute = isAbsoluteEvent ? event.absolute !== false : event.absolute === true;
+  if (isAbsolute && typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
+    return normalizeDeg(360 - event.alpha + screenAngle);
+  }
+
+  return null;
+}
+
+async function checkMotionPermissionDenied(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) return false;
+  for (const name of ['accelerometer', 'magnetometer', 'gyroscope']) {
+    try {
+      const status = await navigator.permissions.query({ name: name as PermissionName });
+      if (status.state === 'denied') return true;
+    } catch {
+      // Browser may not recognize this permission name; continue
+    }
+  }
+  return false;
+}
 
 /**
  * Signed shortest angular difference in (-180, 180] from currentHeading to targetBearing.
@@ -37,7 +84,7 @@ export function getSignedQiblaDelta(targetBearing: number, currentHeading: numbe
 }
 
 /**
- * Unwraps targetDeg relative to prevDeg so CSS rotations always take the shortest path across 0/360.
+ * Unwraps targetDeg relative to prevDeg so rotations always take the shortest path across 0/360.
  */
 function unwrapAngle(prevDeg: number | null, targetDeg: number): number {
   if (prevDeg === null || !Number.isFinite(prevDeg)) return targetDeg;
@@ -47,7 +94,7 @@ function unwrapAngle(prevDeg: number | null, targetDeg: number): number {
 
 export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProps) {
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
-  const [permissionState, setPermissionState] = useState<OrientationPermissionState>('unknown');
+  const [sensorState, setSensorState] = useState<CompassSensorState>('waiting');
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     try {
       return localStorage.getItem(MUTED_STORAGE_KEY) === '1';
@@ -62,9 +109,9 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
   const lastChimeAtRef = useRef<number>(0);
   const smoothDialRef = useRef<number | null>(null);
   const smoothNeedleRef = useRef<number | null>(null);
-  const iosListenerRef = useRef<((e: Event) => void) | null>(null);
+  const cleanupListenersRef = useRef<(() => void) | null>(null);
 
-  const needsIOSPermission =
+  const hasIOSRequestPermission =
     typeof window !== 'undefined' &&
     typeof DeviceOrientationEvent !== 'undefined' &&
     typeof (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> })
@@ -140,70 +187,93 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
     }
   }, [isMuted]);
 
-  useEffect(() => {
+  const attachSensorListeners = useCallback(() => {
+    if (cleanupListenersRef.current) {
+      cleanupListenersRef.current();
+      cleanupListenersRef.current = null;
+    }
+
     if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) {
-      setPermissionState('unsupported');
+      setSensorState('unsupported');
       return;
     }
 
-    if (needsIOSPermission) {
-      setPermissionState('prompt');
-      return;
-    }
-
-    let received = false;
-    let hasAbsolute = false;
+    let receivedHeading = false;
+    let hasAbsoluteStream = false;
+    let disposed = false;
 
     const handleOrientation = (e: Event, isAbsoluteEvent: boolean) => {
-      const event = e as DeviceOrientationIOS;
-      if (!isAbsoluteEvent && hasAbsolute && !event.absolute) {
+      if (disposed) return;
+      if (!isAbsoluteEvent && hasAbsoluteStream) {
         return;
       }
 
-      let heading: number | null = null;
-      if (
-        typeof event.webkitCompassHeading === 'number' &&
-        Number.isFinite(event.webkitCompassHeading)
-      ) {
-        heading = event.webkitCompassHeading;
-      } else if (typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
-        if (isAbsoluteEvent || event.absolute) {
-          hasAbsolute = true;
-        }
-        heading = (360 - event.alpha) % 360;
-      }
+      const heading = extractCompassHeading(e, isAbsoluteEvent);
+      if (heading === null) return;
 
-      if (heading !== null) {
-        received = true;
-        setDeviceHeading(((heading % 360) + 360) % 360);
-        setPermissionState('granted');
+      if (isAbsoluteEvent) {
+        hasAbsoluteStream = true;
       }
+      receivedHeading = true;
+      setSensorState('live');
+      setDeviceHeading((prev) => {
+        if (prev !== null && Math.abs(getSignedQiblaDelta(heading, prev)) < 0.3) {
+          return prev;
+        }
+        return heading;
+      });
     };
 
     const onAbsolute = (e: Event) => handleOrientation(e, true);
-    const onRelative = (e: Event) => handleOrientation(e, false);
+    const onOrientationFallback = (e: Event) => handleOrientation(e, false);
 
+    setSensorState('waiting');
+    // Chrome on Android uses deviceorientationabsolute first; deviceorientation is fallback (iOS Safari / absolute events)
     window.addEventListener('deviceorientationabsolute', onAbsolute, true);
-    window.addEventListener('deviceorientation', onRelative, true);
+    window.addEventListener('deviceorientation', onOrientationFallback, true);
 
-    const checkTimer = window.setTimeout(() => {
-      if (!received) {
-        setPermissionState('unsupported');
-      }
-    }, 1500);
+    const sensorCheckTimer = window.setTimeout(async () => {
+      if (disposed || receivedHeading) return;
+      const blocked = await checkMotionPermissionDenied();
+      if (disposed || receivedHeading) return;
+      setSensorState(blocked ? 'denied' : 'unsupported');
+    }, 2500);
+
+    cleanupListenersRef.current = () => {
+      disposed = true;
+      window.clearTimeout(sensorCheckTimer);
+      window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
+      window.removeEventListener('deviceorientation', onOrientationFallback, true);
+    };
+  }, []);
+
+  // Auto-attach directly on Android/non-iOS; show tap prompt only on iOS Safari where requestPermission is a function
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) {
+      setSensorState('unsupported');
+      return;
+    }
+
+    if (hasIOSRequestPermission) {
+      setSensorState('prompt');
+      return;
+    }
+
+    attachSensorListeners();
 
     return () => {
-      window.clearTimeout(checkTimer);
-      window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
-      window.removeEventListener('deviceorientation', onRelative, true);
+      if (cleanupListenersRef.current) {
+        cleanupListenersRef.current();
+        cleanupListenersRef.current = null;
+      }
     };
-  }, [needsIOSPermission]);
+  }, [hasIOSRequestPermission, attachSensorListeners]);
 
   useEffect(() => {
     return () => {
-      if (iosListenerRef.current) {
-        window.removeEventListener('deviceorientation', iosListenerRef.current, true);
-        iosListenerRef.current = null;
+      if (cleanupListenersRef.current) {
+        cleanupListenersRef.current();
+        cleanupListenersRef.current = null;
       }
       if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
         audioCtxRef.current.close().catch(() => {});
@@ -211,41 +281,38 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
     };
   }, []);
 
-  const handleEnableIOSCompass = async () => {
+  const handleEnableLiveCompass = async () => {
     unlockAudioContext();
     setUserActivatedSound(true);
-    try {
-      const req = (
-        DeviceOrientationEvent as unknown as {
-          requestPermission?: () => Promise<'granted' | 'denied'>;
-        }
-      ).requestPermission;
-      if (!req) return;
-      const result = await req();
-      if (result === 'granted') {
-        setPermissionState('granted');
-        if (iosListenerRef.current) {
-          window.removeEventListener('deviceorientation', iosListenerRef.current, true);
-        }
-        const handler = (e: Event) => {
-          const event = e as DeviceOrientationIOS;
-          if (
-            typeof event.webkitCompassHeading === 'number' &&
-            Number.isFinite(event.webkitCompassHeading)
-          ) {
-            setDeviceHeading(((event.webkitCompassHeading % 360) + 360) % 360);
-          } else if (typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
-            setDeviceHeading((((360 - event.alpha) % 360) + 360) % 360);
-          }
-        };
-        iosListenerRef.current = handler;
-        window.addEventListener('deviceorientation', handler, true);
-      } else {
-        setPermissionState('denied');
-      }
-    } catch {
-      setPermissionState('denied');
+
+    if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) {
+      setSensorState('unsupported');
+      return;
     }
+
+    const maybeRequestPermission = (
+      DeviceOrientationEvent as unknown as {
+        requestPermission?: () => Promise<'granted' | 'denied'>;
+      }
+    ).requestPermission;
+
+    // Only call requestPermission when it is a function (iOS Safari)
+    if (typeof maybeRequestPermission === 'function') {
+      try {
+        const result = await maybeRequestPermission();
+        if (result === 'granted') {
+          attachSensorListeners();
+        } else {
+          setSensorState('denied');
+        }
+      } catch {
+        setSensorState('denied');
+      }
+      return;
+    }
+
+    // Android Chrome & other browsers: attach listeners directly without requestPermission
+    attachSensorListeners();
   };
 
   const handleToggleSound = () => {
@@ -263,7 +330,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
     setUserActivatedSound(true);
   };
 
-  const normalizedBearing = ((qiblaDirection % 360) + 360) % 360;
+  const normalizedBearing = normalizeDeg(qiblaDirection);
   const roundedBearing = Math.round(normalizedBearing);
   const cardinal = getCardinalDirection(normalizedBearing);
   const isLive = deviceHeading !== null;
@@ -307,6 +374,12 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
 
   const ticks = Array.from({ length: 36 }, (_, i) => i * 10);
 
+  const headerStatusLabel = isLive
+    ? 'Live compass'
+    : sensorState === 'waiting'
+    ? 'Waiting for sensor…'
+    : 'Static bearing';
+
   return (
     <div
       className="rounded-2xl border p-5 sm:p-6 flex flex-col items-center text-center justify-between space-y-4 transition-colors duration-200"
@@ -331,9 +404,9 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
         <div className="flex items-center gap-2">
           <span
             className="text-xs font-medium"
-            style={{ color: isAligned ? 'var(--accent-text)' : 'var(--text-tertiary)' }}
+            style={{ color: isAligned || isLive ? 'var(--accent-text)' : 'var(--text-tertiary)' }}
           >
-            {isLive ? 'Live compass' : 'Static bearing'}
+            {headerStatusLabel}
           </span>
 
           <button
@@ -490,10 +563,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
           />
 
           {/* Rotating Compass Rose (ticks + N / E / S / W) */}
-          <g
-            transform={`rotate(${dialRotation} 130 138)`}
-            style={{ transition: isLive ? 'transform 120ms linear' : undefined }}
-          >
+          <g transform={`rotate(${dialRotation} 130 138)`}>
             {ticks.map((deg) => {
               const isMajor = deg % 90 === 0;
               const isMed = deg % 30 === 0 && !isMajor;
@@ -562,10 +632,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
           </g>
 
           {/* Qibla Zone Highlight + Prominent Arrow + Kaaba Marker */}
-          <g
-            transform={`rotate(${needleRotation} 130 138)`}
-            style={{ transition: 'transform 150ms ease-out' }}
-          >
+          <g transform={`rotate(${needleRotation} 130 138)`}>
             {/* ±10° Qibla Alignment Sector & Rim Arc */}
             <path
               d="M 130 138 L 113.33 43.46 A 96 96 0 0 1 146.67 43.46 Z"
@@ -677,24 +744,42 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
         </p>
       </div>
 
-      {/* Live Compass Controls */}
-      {needsIOSPermission && permissionState === 'prompt' && (
+      {/* Live Compass Activation & Honest Status Line */}
+      {!isLive && (
         <button
           type="button"
-          onClick={handleEnableIOSCompass}
+          onClick={handleEnableLiveCompass}
           className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-5 py-2 text-xs sm:text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--accent)' }}
         >
           <Navigation className="h-4 w-4 shrink-0" />
-          <span>Enable Live Device Compass</span>
+          <span>Enable live compass</span>
         </button>
       )}
 
-      {permissionState === 'denied' && (
-        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          Compass sensor permission was declined. Enable Motion &amp; Orientation access in browser settings for live pointing.
-        </p>
-      )}
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-xs leading-relaxed"
+        style={{
+          color:
+            sensorState === 'live'
+              ? 'var(--accent-text)'
+              : sensorState === 'denied'
+              ? 'var(--gold)'
+              : 'var(--text-tertiary)',
+        }}
+      >
+        {isLive
+          ? 'Live — move your phone to find Qibla'
+          : sensorState === 'waiting'
+          ? 'Waiting for sensor…'
+          : sensorState === 'prompt'
+          ? 'Tap "Enable live compass" above to activate live pointing'
+          : sensorState === 'denied'
+          ? 'Motion sensor access is blocked for this site. Tap the lock icon in your browser’s address bar → Site settings → allow Motion sensors and Location, then reload.'
+          : 'Live compass is not available on this device — showing static bearing'}
+      </p>
 
       {isLive && !userActivatedSound && !isMuted && (
         <button
@@ -709,12 +794,6 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
           <Volume2 className="h-3.5 w-3.5" />
           <span>Tap to enable alignment chime &amp; vibration</span>
         </button>
-      )}
-
-      {!isLive && permissionState === 'unsupported' && (
-        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-          Static bearing shown on desktop. Open on a phone with a compass sensor for live alignment.
-        </p>
       )}
     </div>
   );

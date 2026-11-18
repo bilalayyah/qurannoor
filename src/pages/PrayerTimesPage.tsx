@@ -1,20 +1,19 @@
-import { Clock, LocateFixed, MapPin, RotateCw, Search } from 'lucide-react';
+import { Clock, LocateFixed, MapPin, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { QiblaCompass } from '../components/QiblaCompass';
 import { ErrorBanner } from '../components/StatusStates';
+import { ThemedSelect, type ThemedSelectOption } from '../components/ThemedSelect';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import {
   CALCULATION_METHODS,
+  detectPrayerLocationAuto,
   fetchPrayerAndQiblaData,
   formatPrayerDisplayTime,
   getCachedPrayerData,
   getNextPrayerCountdown,
   loadPrayerPreferences,
-  reverseGeocodeFree,
   savePrayerPreferences,
-  searchCitiesFree,
-  type CitySearchResult,
   type PrayerDayData,
   type PrayerLocation,
   type PrayerName,
@@ -43,15 +42,14 @@ export function PrayerTimesPage() {
   const [prayerData, setPrayerData] = useState<PrayerDayData | null>(() =>
     initialPrefs.location ? getCachedPrayerData(initialPrefs.location, initialPrefs.method) : null
   );
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(() =>
+    !(initialPrefs.location && getCachedPrayerData(initialPrefs.location, initialPrefs.method))
+  );
+  const [detectingLocation, setDetectingLocation] = useState<boolean>(() => !initialPrefs.location);
   const [error, setError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [usingOfflineCache, setUsingOfflineCache] = useState<boolean>(false);
 
-  const [cityQuery, setCityQuery] = useState('');
-  const [cityResults, setCityResults] = useState<CitySearchResult[]>([]);
-  const [searchingCity, setSearchingCity] = useState(false);
-  const [cityError, setCityError] = useState<string | null>(null);
-  const [geoStatus, setGeoStatus] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(() => new Date());
 
   const geoAttemptedRef = useRef(false);
@@ -62,10 +60,11 @@ export function PrayerTimesPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  // Persist method + location preferences
+  // Persist method + location preferences whenever either is set/changed
   useEffect(() => {
+    if (!location && method === initialPrefs.method) return;
     savePrayerPreferences({ method, location });
-  }, [method, location]);
+  }, [method, location, initialPrefs.method]);
 
   const loadForLocation = useCallback(
     async (loc: PrayerLocation, calcMethod: number, signal?: AbortSignal) => {
@@ -92,7 +91,6 @@ export function PrayerTimesPage() {
       } catch (err) {
         if ((err as { name?: string })?.name === 'AbortError') return;
         if (cached) {
-          // Offline or API temporarily unreachable, but today's cache is valid
           setPrayerData(cached);
           setUsingOfflineCache(true);
           setError(null);
@@ -119,90 +117,59 @@ export function PrayerTimesPage() {
     return () => controller.abort();
   }, [location, method, loadForLocation]);
 
-  const requestBrowserLocation = useCallback(async (isAutomatic = false) => {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      if (!isAutomatic) {
-        setGeoStatus('Browser geolocation is unavailable. Please search your city below.');
+  // Automatic location detection on initial mount if no saved location (or when retrying permission)
+  const runAutoDetection = useCallback(async (forceRefresh = false) => {
+    setDetectingLocation(true);
+    setLoading(true);
+    setError(null);
+    setLocationError(null);
+    try {
+      const detected = await detectPrayerLocationAuto({ forceRefresh });
+      if (detected) {
+        setLocation(detected);
+        setLocationError(null);
+      } else {
+        setLoading(false);
+        setLocationError(
+          'Location permission is required to detect your area automatically and show accurate prayer times. Please allow location access in your browser settings and try again.'
+        );
       }
-      return;
+    } finally {
+      setDetectingLocation(false);
     }
-
-    if (!isAutomatic) {
-      setGeoStatus('Detecting your location...');
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const label = await reverseGeocodeFree(lat, lng);
-        const loc: PrayerLocation = {
-          label,
-          latitude: lat,
-          longitude: lng,
-          source: 'geolocation',
-        };
-        setGeoStatus(null);
-        setLocation(loc);
-      },
-      () => {
-        if (!isAutomatic) {
-          setGeoStatus('Location permission was declined or unavailable. Search your city instead.');
-        }
-      },
-      { enableHighAccuracy: false, timeout: 6500, maximumAge: 600000 }
-    );
   }, []);
 
-  // On initial mount with no saved location, request geolocation once if browser allows
   useEffect(() => {
     if (location || geoAttemptedRef.current) return;
     geoAttemptedRef.current = true;
-    requestBrowserLocation(true);
-  }, [location, requestBrowserLocation]);
-
-  const handleCitySearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = cityQuery.trim();
-    if (trimmed.length < 2) {
-      setCityError('Enter at least 2 characters to search a city.');
-      return;
-    }
-
-    setSearchingCity(true);
-    setCityError(null);
-    try {
-      const results = await searchCitiesFree(trimmed);
-      setCityResults(results);
-      if (results.length === 0) {
-        setCityError(`No matching cities found for "${trimmed}".`);
-      }
-    } catch (err) {
-      setCityError(err instanceof Error ? err.message : 'Unable to search cities.');
-    } finally {
-      setSearchingCity(false);
-    }
-  };
-
-  const handleSelectCity = (city: CitySearchResult) => {
-    const parts = [city.name, city.admin1, city.country].filter(Boolean);
-    const loc: PrayerLocation = {
-      label: parts.join(', '),
-      latitude: city.latitude,
-      longitude: city.longitude,
-      source: 'city',
-    };
-    setCityResults([]);
-    setCityQuery('');
-    setCityError(null);
-    setGeoStatus(null);
-    setLocation(loc);
-  };
+    runAutoDetection(false);
+  }, [location, runAutoDetection]);
 
   const countdown = useMemo(() => {
     if (!prayerData) return null;
     return getNextPrayerCountdown(prayerData.timings, prayerData.timezone, nowTick);
   }, [prayerData, nowTick]);
+
+  const activeMethodOption = useMemo(
+    () => CALCULATION_METHODS.find((m) => m.id === method),
+    [method]
+  );
+
+  const methodOptions = useMemo<ThemedSelectOption[]>(
+    () =>
+      CALCULATION_METHODS.map((m) => ({
+        value: String(m.id),
+        label: m.name,
+        badge: m.shortName,
+        keywords: `${m.name} ${m.shortName}`,
+      })),
+    []
+  );
+
+  const displayTimezone =
+    prayerData?.timezone ||
+    location?.timezone ||
+    (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC');
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 space-y-8">
@@ -226,57 +193,44 @@ export function PrayerTimesPage() {
         </p>
       </div>
 
-      {/* Location & Calculation Method Controls */}
+      {/* Compact Detected Location Bar + Calculation Method Selector */}
       <section
         aria-label="Location and Calculation Method Settings"
-        className="rounded-2xl border p-5 sm:p-6 space-y-4"
+        className="rounded-2xl border p-4 sm:p-5"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-subtle)',
         }}
       >
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-end">
-          {/* City Search Fallback */}
-          <form onSubmit={handleCitySearch} className="lg:col-span-6 space-y-1.5">
-            <label
-              htmlFor="city-search-input"
-              className="block text-xs font-medium"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Search City Manually
-            </label>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex flex-1 items-center gap-2 rounded-xl border px-3"
-                style={{
-                  backgroundColor: 'var(--bg-canvas)',
-                  borderColor: 'var(--border-subtle)',
-                }}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <MapPin
+              className="h-4 w-4 shrink-0 mt-0.5 sm:mt-0"
+              style={{ color: 'var(--accent-text)' }}
+            />
+            <div className="min-w-0">
+              <p
+                className="text-sm font-semibold truncate"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <Search className="h-4 w-4 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-                <input
-                  id="city-search-input"
-                  type="search"
-                  value={cityQuery}
-                  onChange={(e) => setCityQuery(e.target.value)}
-                  placeholder="Enter city (e.g. Karachi, London, Makkah)..."
-                  className="w-full min-h-[40px] bg-transparent text-sm outline-none"
-                  style={{ color: 'var(--text-primary)' }}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={searchingCity}
-                className="min-h-[42px] shrink-0 rounded-xl px-4 py-2 text-xs sm:text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                {searchingCity ? 'Searching...' : 'Find City'}
-              </button>
+                {location ? (
+                  <>
+                    {location.label}
+                    {displayTimezone ? ` · ${displayTimezone}` : ''}
+                  </>
+                ) : detectingLocation ? (
+                  'Detecting your location…'
+                ) : (
+                  'Location permission needed'
+                )}
+              </p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                Method: {activeMethodOption?.name || `Method ${method}`}
+              </p>
             </div>
-          </form>
+          </div>
 
-          {/* Calculation Method Picker */}
-          <div className="lg:col-span-4 space-y-1.5">
+          <div className="w-full sm:w-80 shrink-0 space-y-1">
             <label
               htmlFor="calculation-method-select"
               className="block text-xs font-medium"
@@ -284,144 +238,88 @@ export function PrayerTimesPage() {
             >
               Calculation Method
             </label>
-            <select
+            <ThemedSelect
               id="calculation-method-select"
-              value={method}
-              onChange={(e) => setMethod(Number(e.target.value))}
-              className="w-full min-h-[42px] rounded-xl border px-3 text-sm outline-none"
-              style={{
-                backgroundColor: 'var(--bg-canvas)',
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {CALCULATION_METHODS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Browser Geolocation Button */}
-          <div className="lg:col-span-2">
-            <button
-              type="button"
-              onClick={() => requestBrowserLocation(false)}
-              className="w-full inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--accent-text)',
-              }}
-            >
-              <LocateFixed className="h-4 w-4 shrink-0" />
-              <span>Use Location</span>
-            </button>
+              ariaLabel="Calculation Method"
+              value={String(method)}
+              options={methodOptions}
+              onChange={(val) => setMethod(Number(val))}
+              searchPlaceholder="Search calculation method..."
+              searchable
+              emptyText="No calculation methods match your search"
+              className="w-full"
+            />
           </div>
         </div>
-
-        {geoStatus && (
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            {geoStatus}
-          </p>
-        )}
-
-        {cityError && (
-          <p className="text-xs text-red-700 dark:text-red-400" role="alert">
-            {cityError}
-          </p>
-        )}
-
-        {cityResults.length > 0 && (
-          <div
-            className="border-t pt-3 space-y-1.5"
-            style={{ borderColor: 'var(--border-subtle)' }}
-          >
-            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-              Select a location:
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {cityResults.map((city) => {
-                const sub = [city.admin1, city.country].filter(Boolean).join(', ');
-                return (
-                  <button
-                    key={city.id}
-                    type="button"
-                    onClick={() => handleSelectCity(city)}
-                    className="flex items-start gap-2 rounded-xl border p-3 text-left text-xs transition-colors hover:border-[#0E6B4B]/50"
-                    style={{
-                      backgroundColor: 'var(--bg-canvas)',
-                      borderColor: 'var(--border-subtle)',
-                    }}
-                  >
-                    <MapPin
-                      className="h-3.5 w-3.5 mt-0.5 shrink-0"
-                      style={{ color: 'var(--accent-text)' }}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                        {city.name}
-                      </p>
-                      {sub && (
-                        <p className="truncate" style={{ color: 'var(--text-tertiary)' }}>
-                          {sub}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </section>
 
       {/* Main Content */}
-      {!location && !loading && !error ? (
-        <section
-          className="rounded-2xl border p-8 sm:p-10 text-center space-y-4"
+      {locationError && !location ? (
+        <div
+          role="alert"
+          className="mx-auto my-8 max-w-xl rounded-2xl border p-6 text-center"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--border-subtle)',
           }}
         >
-          <MapPin
-            className="mx-auto h-7 w-7"
+          <LocateFixed
+            className="mx-auto h-6 w-6"
             style={{ color: 'var(--accent-text)' }}
           />
-          <div className="space-y-1.5 max-w-md mx-auto">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Choose Your Location
-            </h2>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Click &ldquo;Use Location&rdquo; to detect your coordinates automatically or search for your city above to fetch live prayer times and your exact Qibla bearing.
-            </p>
-          </div>
-        </section>
+          <h3
+            className="mt-3 text-base font-semibold"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Enable location permission
+          </h3>
+          <p className="mt-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {locationError}
+          </p>
+          <button
+            type="button"
+            onClick={() => runAutoDetection(true)}
+            className="mt-4 inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            <LocateFixed className="h-4 w-4" />
+            <span>Try again</span>
+          </button>
+        </div>
       ) : error ? (
         <ErrorBanner
           message={error}
           onRetry={() => {
-            if (location) loadForLocation(location, method);
+            if (location) {
+              loadForLocation(location, method);
+            } else {
+              runAutoDetection(true);
+            }
           }}
         />
-      ) : loading && !prayerData ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 animate-pulse" aria-busy="true">
-          <div
-            className="lg:col-span-7 h-96 rounded-2xl border"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          />
-          <div
-            className="lg:col-span-5 h-96 rounded-2xl border"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          />
+      ) : (loading || detectingLocation) && !prayerData ? (
+        <div className="space-y-3" aria-busy="true">
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {detectingLocation
+              ? 'Detecting your location and fetching today’s prayer times…'
+              : 'Loading today’s prayer times and Qibla bearing…'}
+          </p>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 animate-pulse">
+            <div
+              className="lg:col-span-7 h-96 rounded-2xl border"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-subtle)',
+              }}
+            />
+            <div
+              className="lg:col-span-5 h-96 rounded-2xl border"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-subtle)',
+              }}
+            />
+          </div>
         </div>
       ) : prayerData ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
@@ -480,6 +378,8 @@ export function PrayerTimesPage() {
                   {prayerData.location.label}
                 </span>
                 <span aria-hidden="true">·</span>
+                <span>{prayerData.timezone}</span>
+                <span aria-hidden="true">·</span>
                 <span className="tabular-nums">{prayerData.readableDate}</span>
                 {prayerData.hijriDateText && (
                   <>
@@ -503,6 +403,15 @@ export function PrayerTimesPage() {
             {usingOfflineCache && (
               <p className="text-xs" style={{ color: 'var(--gold)' }}>
                 Showing cached times for today (offline fallback).
+              </p>
+            )}
+
+            {prayerData.timings.Sunrise && (
+              <p
+                className="px-3 text-xs tabular-nums"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Sunrise: {formatPrayerDisplayTime(prayerData.timings.Sunrise)}
               </p>
             )}
 
@@ -559,22 +468,6 @@ export function PrayerTimesPage() {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Secondary Reference Row */}
-            <div
-              className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs"
-              style={{
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              <span>
-                {prayerData.timings.Sunrise
-                  ? `Sunrise: ${formatPrayerDisplayTime(prayerData.timings.Sunrise)}`
-                  : ''}
-              </span>
-              <span>Method: {prayerData.methodName} · Aladhan API</span>
             </div>
           </section>
 

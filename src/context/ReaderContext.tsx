@@ -8,10 +8,6 @@ import {
 import type {
   BookmarkItem,
   Chapter,
-  DailyActivityRecord,
-  DailyGoalConfig,
-  DailyGoalUnit,
-  DailyReadingData,
   Juz,
   LastReadAyah,
   ReaderSettings,
@@ -20,24 +16,15 @@ import type {
   ThemeMode,
   TranslationResource,
 } from '../types/quran';
-import { SURAH_NAMES, SURAH_VERSE_COUNTS } from '../utils/ayahOfTheDay';
-import {
-  calculateStreaks,
-  getDayProgress,
-  getLast7DaysSummary,
-  MAX_GOAL_TARGET,
-  normalizeDailyReadingData,
-  toLocalDateKey,
-  type DaySummaryItem,
-} from '../utils/readingGoal';
+import { SURAH_NAMES, SURAH_VERSE_COUNTS } from '../utils/surahCatalog';
 import { toSurahSlug } from '../utils/slugs';
 
 const STORAGE_KEYS = {
   SETTINGS: 'qurannoor_reader_settings_v1',
   ARABIC_SIZE_MIGRATED: 'qurannoor_arabic_size_v2_migrated',
+  ARABIC_SIZE_MIGRATED_V3: 'qurannoor_arabic_size_v3_migrated',
   BOOKMARKS: 'qurannoor_bookmarks_v1',
   PROGRESS: 'qurannoor_reading_progress_v1',
-  DAILY_GOAL: 'qurannoor_daily_goal_v1',
   LAST_READ: 'qurannoor_last_read',
 };
 
@@ -51,7 +38,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'light',
   script: 'uthmani',
   arabicFont: 'scheherazade',
-  arabicFontSize: 21,
+  arabicFontSize: 28,
   translationFontSize: 17,
   translationId: 20, // Saheeh International
   reciterId: 7, // Mishary Rashid al-Afasy
@@ -84,15 +71,7 @@ interface ReaderContextValue {
   readingProgress: ReadingProgress | null;
   saveReadingProgress: (progress: Omit<ReadingProgress, 'updatedAt'>) => void;
   lastRead: LastReadAyah | null;
-  dailyGoal: DailyGoalConfig;
-  dailyHistory: Record<string, DailyActivityRecord>;
-  todayProgress: number;
-  currentStreak: number;
-  bestStreak: number;
-  last7Days: DaySummaryItem[];
-  updateDailyGoal: (goal: DailyGoalConfig) => void;
-  recordAyahRead: (verseKey: string, pageNumber?: number) => void;
-  logManualReading: (delta: number, unit?: DailyGoalUnit) => void;
+  recordAyahRead: (verseKey: string) => void;
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
   toastMessage: string | null;
@@ -133,6 +112,18 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
           resolvedArabicSize = DEFAULT_SETTINGS.arabicFontSize;
         }
         localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED, '1');
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    try {
+      const migratedV3 = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3);
+      if (!migratedV3) {
+        if (resolvedArabicSize < 28) {
+          resolvedArabicSize = 28;
+        }
+        localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3, '1');
       }
     } catch {
       // ignore storage errors
@@ -183,15 +174,6 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
       return null;
     } catch {
       return null;
-    }
-  });
-
-  const [dailyReadingData, setDailyReadingData] = useState<DailyReadingData>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
-      return normalizeDailyReadingData(raw ? JSON.parse(raw) : null);
-    } catch {
-      return normalizeDailyReadingData(null);
     }
   });
 
@@ -254,15 +236,6 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, [readingProgress]);
-
-  // Persist daily reading goal & activity history
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, JSON.stringify(dailyReadingData));
-    } catch {
-      // ignore
-    }
-  }, [dailyReadingData]);
 
   // Persist last read ayah
   useEffect(() => {
@@ -349,28 +322,19 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateDailyGoal = useCallback(
-    (nextGoal: DailyGoalConfig) => {
-      const unit: DailyGoalUnit = nextGoal.unit === 'pages' ? 'pages' : 'ayahs';
-      const parsed = Math.round(Number(nextGoal.target) || 1);
-      const target = Math.max(1, Math.min(MAX_GOAL_TARGET[unit], parsed));
-      setDailyReadingData((prev) => ({
-        ...prev,
-        goal: { unit, target },
-      }));
-      showToast(`Daily goal updated: ${target} ${unit === 'pages' ? (target === 1 ? 'page' : 'pages') : (target === 1 ? 'ayah' : 'ayahs')} / day`);
-    },
-    [showToast]
-  );
-
-  const recordAyahRead = useCallback((verseKey: string, pageNumber?: number) => {
+  const recordAyahRead = useCallback((verseKey: string) => {
     if (!verseKey) return;
-    const todayKey = toLocalDateKey();
 
     const [chStr, vStr] = verseKey.split(':');
     const chapterId = Number(chStr);
     const verseNumber = Number(vStr);
-    if (Number.isInteger(chapterId) && chapterId >= 1 && chapterId <= 114 && Number.isInteger(verseNumber) && verseNumber >= 1) {
+    if (
+      Number.isInteger(chapterId) &&
+      chapterId >= 1 &&
+      chapterId <= 114 &&
+      Number.isInteger(verseNumber) &&
+      verseNumber >= 1
+    ) {
       const ch = chaptersRef.current.find((c) => c.id === chapterId);
       const chapterName = ch?.name_simple || SURAH_NAMES[chapterId - 1] || `Surah ${chapterId}`;
       const nextLastRead: LastReadAyah = {
@@ -390,94 +354,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         // ignore
       }
     }
-
-    setDailyReadingData((prev) => {
-      const existing: DailyActivityRecord = prev.history[todayKey] || {
-        ayahKeys: [],
-        pages: [],
-        manualAyahs: 0,
-        manualPages: 0,
-      };
-      const hasVerse = existing.ayahKeys.includes(verseKey);
-      const validPage = typeof pageNumber === 'number' && Number.isInteger(pageNumber) && pageNumber > 0;
-      const hasPage = !validPage || existing.pages.includes(pageNumber);
-
-      if (hasVerse && hasPage) {
-        return prev;
-      }
-
-      const nextRecord: DailyActivityRecord = {
-        ...existing,
-        ayahKeys: hasVerse ? existing.ayahKeys : [...existing.ayahKeys, verseKey],
-        pages: hasPage ? existing.pages : [...existing.pages, pageNumber!],
-      };
-
-      return {
-        ...prev,
-        history: {
-          ...prev.history,
-          [todayKey]: nextRecord,
-        },
-      };
-    });
   }, []);
-
-  const logManualReading = useCallback(
-    (delta: number, unitOverride?: DailyGoalUnit) => {
-      const todayKey = toLocalDateKey();
-      setDailyReadingData((prev) => {
-        const unit = unitOverride ?? prev.goal.unit;
-        const existing: DailyActivityRecord = prev.history[todayKey] || {
-          ayahKeys: [],
-          pages: [],
-          manualAyahs: 0,
-          manualPages: 0,
-        };
-
-        const nextRecord: DailyActivityRecord =
-          unit === 'pages'
-            ? {
-                ...existing,
-                manualPages: Math.max(0, (existing.manualPages || 0) + delta),
-              }
-            : {
-                ...existing,
-                manualAyahs: Math.max(0, (existing.manualAyahs || 0) + delta),
-              };
-
-        const beforeCount = getDayProgress(existing, prev.goal.unit);
-        const afterCount = getDayProgress(nextRecord, prev.goal.unit);
-        if (beforeCount < prev.goal.target && afterCount >= prev.goal.target) {
-          showToast('Daily reading goal reached today');
-        }
-
-        return {
-          ...prev,
-          history: {
-            ...prev.history,
-            [todayKey]: nextRecord,
-          },
-        };
-      });
-    },
-    [showToast]
-  );
-
-  const todayKey = toLocalDateKey();
-  const todayProgress = useMemo(
-    () => getDayProgress(dailyReadingData.history[todayKey], dailyReadingData.goal.unit),
-    [dailyReadingData.history, dailyReadingData.goal.unit, todayKey]
-  );
-
-  const { currentStreak, bestStreak } = useMemo(
-    () => calculateStreaks(dailyReadingData.history, dailyReadingData.goal),
-    [dailyReadingData.history, dailyReadingData.goal]
-  );
-
-  const last7Days = useMemo(
-    () => getLast7DaysSummary(dailyReadingData.history, dailyReadingData.goal),
-    [dailyReadingData.history, dailyReadingData.goal]
-  );
 
   return (
     <ReaderContext.Provider
@@ -500,15 +377,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         readingProgress,
         saveReadingProgress,
         lastRead,
-        dailyGoal: dailyReadingData.goal,
-        dailyHistory: dailyReadingData.history,
-        todayProgress,
-        currentStreak,
-        bestStreak,
-        last7Days,
-        updateDailyGoal,
         recordAyahRead,
-        logManualReading,
         isSettingsOpen,
         setIsSettingsOpen,
         toastMessage,

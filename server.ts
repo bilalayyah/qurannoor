@@ -17,6 +17,7 @@ import {
   type RawChapterReciter,
 } from './server/quranClient.ts';
 import { POPULAR_SECTIONS, toSurahSlug } from './src/utils/slugs.ts';
+import { GUIDE_ARTICLES } from './src/data/guides.ts';
 import type { Chapter, ChapterTimestamp, Juz, Reciter, TranslationResource, Verse } from './src/types/quran.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -210,8 +211,8 @@ const handleVersesByChapter = async (req: express.Request, res: express.Response
     words: 'true',
     translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
-    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
     page: String(page),
     per_page: String(perPage),
   });
@@ -302,8 +303,8 @@ const handleVersesByJuz = async (req: express.Request, res: express.Response) =>
     words: 'true',
     translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
-    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
     page: String(page),
     per_page: String(perPage),
   });
@@ -589,8 +590,8 @@ const handleVerseByKey = async (req: express.Request, res: express.Response) => 
     words: 'true',
     translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
-    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
   });
 
   try {
@@ -636,8 +637,8 @@ const handleVersesByKeys = async (req: express.Request, res: express.Response) =
     words: 'true',
     translations: translation,
     audio: String(reciter),
-    fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
-    word_fields: 'text_uthmani,text_indopak,text_uthmani_tajweed',
+    fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
+    word_fields: 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed',
   });
 
   try {
@@ -728,7 +729,12 @@ const handleTafsirByAyah = async (req: express.Request, res: express.Response) =
 app.get('/api/tafsirs/:tafsirId/by_ayah/:verseKey', handleTafsirByAyah);
 app.get('/api/quran/tafsirs/:tafsirId/by_ayah/:verseKey', handleTafsirByAyah);
 
-// SEO: robots.txt & sitemap.xml
+// AdSense & SEO: ads.txt, robots.txt & sitemap.xml
+app.get('/ads.txt', (_req, res) => {
+  res.type('text/plain; charset=utf-8');
+  res.send('google.com, pub-5754238751997058, DIRECT, f08c47fec0942fa0\n');
+});
+
 app.get('/robots.txt', (req, res) => {
   const baseUrl =
     process.env.APP_URL && process.env.APP_URL !== 'MY_APP_URL'
@@ -760,7 +766,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const isPrelive = env === 'prelive';
     const chapters = chaptersCatalog.length === 114 ? chaptersCatalog : [];
 
-    const corePaths = ['/', '/quran', '/surahs', '/juz', '/listen'];
+    const corePaths = ['/', '/quran', '/surahs', '/juz', '/listen', '/prayer-times', '/guides'];
     const trustAndLegalPaths = [
       '/about',
       '/contact',
@@ -787,6 +793,7 @@ app.get('/sitemap.xml', async (req, res) => {
       '/ayah/al-baqarah/285',
       '/ayah/al-baqarah/286',
     ];
+    const guidePaths = GUIDE_ARTICLES.map((guide) => `/guides/${guide.slug}`);
 
     const allPaths = Array.from(
       new Set([
@@ -795,11 +802,12 @@ app.get('/sitemap.xml', async (req, res) => {
         ...juzPaths,
         ...popularPaths,
         ...featuredAyahPaths,
+        ...guidePaths,
         ...trustAndLegalPaths,
       ])
     );
 
-    const lastmod = '2026-11-15';
+    const lastmod = '2026-11-16';
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allPaths
@@ -809,10 +817,12 @@ ${allPaths
         ? '1.0'
         : p === '/quran' || p.startsWith('/surah/')
         ? '0.9'
-        : p.startsWith('/juz/') || p.startsWith('/ayah/') || p.startsWith('/popular/')
+        : p === '/guides' || p.startsWith('/juz/') || p.startsWith('/ayah/') || p.startsWith('/popular/')
         ? '0.8'
+        : p.startsWith('/guides/')
+        ? '0.7'
         : '0.6';
-    const changefreq = p === '/' || p === '/quran' ? 'weekly' : 'monthly';
+    const changefreq = p === '/' || p === '/quran' || p === '/guides' ? 'weekly' : 'monthly';
     return `  <url>
     <loc>${baseUrl}${p}</loc>
     <lastmod>${lastmod}</lastmod>

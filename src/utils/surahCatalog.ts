@@ -1,7 +1,3 @@
-import { toSurahSlug } from './slugs';
-
-export const TOTAL_QURAN_VERSES = 6236;
-
 export const SURAH_VERSE_COUNTS: readonly number[] = [
   7, 286, 200, 176, 120, 165, 206, 75, 129, 109,
   123, 111, 43, 52, 99, 128, 111, 110, 98, 135,
@@ -42,52 +38,3 @@ export const SURAH_NAMES: readonly string[] = [
   'Quraysh', "Al-Ma'un", 'Al-Kawthar', 'Al-Kafirun', 'An-Nasr',
   'Al-Masad', 'Al-Ikhlas', 'Al-Falaq', 'An-Nas',
 ];
-
-export interface AyahOfTheDayRef {
-  verseIndex: number;
-  chapterId: number;
-  verseNumber: number;
-  verseKey: string;
-  chapterName: string;
-  chapterSlug: string;
-}
-
-export function getUtcDayOfYear(date: Date = new Date()): number {
-  const startOfYear = Date.UTC(date.getUTCFullYear(), 0, 1);
-  const currentDay = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-  return Math.floor((currentDay - startOfYear) / 86_400_000) + 1;
-}
-
-export function getAyahOfTheDayRef(date: Date = new Date()): AyahOfTheDayRef {
-  const dayOfYear = getUtcDayOfYear(date);
-  const seed = date.getUTCFullYear() * 366 + dayOfYear;
-  const verseIndex = ((seed % TOTAL_QURAN_VERSES) + TOTAL_QURAN_VERSES) % TOTAL_QURAN_VERSES;
-
-  let remaining = verseIndex;
-  for (let i = 0; i < SURAH_VERSE_COUNTS.length; i += 1) {
-    const count = SURAH_VERSE_COUNTS[i];
-    if (remaining < count) {
-      const chapterId = i + 1;
-      const verseNumber = remaining + 1;
-      const chapterName = SURAH_NAMES[i] || `Surah ${chapterId}`;
-      return {
-        verseIndex,
-        chapterId,
-        verseNumber,
-        verseKey: `${chapterId}:${verseNumber}`,
-        chapterName,
-        chapterSlug: toSurahSlug(chapterName),
-      };
-    }
-    remaining -= count;
-  }
-
-  return {
-    verseIndex: 0,
-    chapterId: 1,
-    verseNumber: 1,
-    verseKey: '1:1',
-    chapterName: 'Al-Fatihah',
-    chapterSlug: toSurahSlug('Al-Fatihah'),
-  };
-}

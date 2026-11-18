@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
 import type { RepeatMode } from '../types/quran';
+import { ThemedSelect } from './ThemedSelect';
 
 interface HifzControlsBarProps {
   queue: PlayableAyah[];
@@ -99,43 +100,33 @@ export function HifzControlsBar({ queue }: HifzControlsBarProps) {
             <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
               Repeat Range:
             </span>
-            <select
-              aria-label="Repeat range start ayah"
+            <ThemedSelect
+              ariaLabel="Repeat range start ayah"
               value={startKey}
-              onChange={(e) => setStartKey(e.target.value)}
-              className="min-h-[34px] rounded-lg border px-2.5 text-xs tabular-nums outline-none"
-              style={{
-                backgroundColor: 'var(--bg-canvas)',
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {queue.map((item) => (
-                <option key={item.verseKey} value={item.verseKey}>
-                  Ayah {item.verseKey}
-                </option>
-              ))}
-            </select>
+              options={queue.map((item) => ({
+                value: item.verseKey,
+                label: `Ayah ${item.verseKey}`,
+              }))}
+              onChange={setStartKey}
+              searchPlaceholder="Search ayah (e.g. 2:255)..."
+              compact
+              className="w-[126px]"
+            />
 
             <span style={{ color: 'var(--text-tertiary)' }}>to</span>
 
-            <select
-              aria-label="Repeat range end ayah"
+            <ThemedSelect
+              ariaLabel="Repeat range end ayah"
               value={endKey}
-              onChange={(e) => setEndKey(e.target.value)}
-              className="min-h-[34px] rounded-lg border px-2.5 text-xs tabular-nums outline-none"
-              style={{
-                backgroundColor: 'var(--bg-canvas)',
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {queue.map((item) => (
-                <option key={item.verseKey} value={item.verseKey}>
-                  Ayah {item.verseKey}
-                </option>
-              ))}
-            </select>
+              options={queue.map((item) => ({
+                value: item.verseKey,
+                label: `Ayah ${item.verseKey}`,
+              }))}
+              onChange={setEndKey}
+              searchPlaceholder="Search ayah (e.g. 2:255)..."
+              compact
+              className="w-[126px]"
+            />
 
             <button
               type="button"

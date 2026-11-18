@@ -108,8 +108,13 @@ function buildUpstreamVersesParams(
   const qs = new URLSearchParams(incoming);
 
   if (!qs.has('language')) qs.set('language', 'en');
-  if (!qs.has('words')) qs.set('words', 'false');
-  if (!qs.has('fields')) qs.set('fields', 'text_uthmani,text_indopak');
+  if (!qs.has('words')) qs.set('words', 'true');
+  if (!qs.has('fields')) {
+    qs.set('fields', 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed');
+  }
+  if (!qs.has('word_fields')) {
+    qs.set('word_fields', 'text_qpc_hafs,text_uthmani,text_indopak,text_uthmani_tajweed');
+  }
 
   if (!qs.has('translations')) {
     const translation = qs.get('translation') || '20,234';

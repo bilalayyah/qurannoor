@@ -18,6 +18,7 @@ import {
   getArabicFontClass,
   getEnglishTranslation,
   getUrduTranslation,
+  getVerseArabicText,
   stripHtmlTags,
   toArabicIndicDigits,
 } from '../utils/text';
@@ -260,9 +261,7 @@ export function SearchPage() {
                     fontSize: `${settings.arabicFontSize}px`,
                   }}
                 >
-                  {settings.script === 'indopak' && directVerse.text_indopak
-                    ? directVerse.text_indopak
-                    : directVerse.text_uthmani}{' '}
+                  {getVerseArabicText(directVerse, settings.script)}{' '}
                   <span
                     className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}

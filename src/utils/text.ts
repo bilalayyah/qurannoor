@@ -60,6 +60,40 @@ export function getEnglishTranslation<
   );
 }
 
+export function stripQpcHafsEndMarker(text?: string | null): string {
+  if (!text) return '';
+  return text.replace(/[\s\u00A0]+[\u0660-\u0669]+$/, '');
+}
+
+export function getVerseArabicText(
+  verse: {
+    text_qpc_hafs?: string;
+    text_uthmani?: string;
+    text_indopak?: string;
+  },
+  script: 'uthmani' | 'indopak' | string
+): string {
+  if (script === 'indopak' && verse.text_indopak) {
+    return verse.text_indopak;
+  }
+  return stripQpcHafsEndMarker(verse.text_qpc_hafs) || verse.text_uthmani || '';
+}
+
+export function getWordArabicText(
+  word: {
+    text_qpc_hafs?: string;
+    text_uthmani?: string;
+    text_indopak?: string;
+    text?: string;
+  },
+  script: 'uthmani' | 'indopak' | string
+): string {
+  if (script === 'indopak' && word.text_indopak) {
+    return word.text_indopak;
+  }
+  return word.text_qpc_hafs || word.text_uthmani || word.text || '';
+}
+
 export function getUrduTranslation<
   T extends { resource_id: number; text: string }
 >(translations?: T[] | null): T | undefined {

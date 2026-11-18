@@ -43,11 +43,14 @@ const SearchPage = lazy(() =>
 const BookmarksPage = lazy(() =>
   import('./pages/BookmarksPage').then((m) => ({ default: m.BookmarksPage }))
 );
-const KhatmPage = lazy(() =>
-  import('./pages/KhatmPage').then((m) => ({ default: m.KhatmPage }))
-);
 const PrayerTimesPage = lazy(() =>
   import('./pages/PrayerTimesPage').then((m) => ({ default: m.PrayerTimesPage }))
+);
+const GuidesIndexPage = lazy(() =>
+  import('./pages/GuidesPage').then((m) => ({ default: m.GuidesIndexPage }))
+);
+const GuideArticlePage = lazy(() =>
+  import('./pages/GuidesPage').then((m) => ({ default: m.GuideArticlePage }))
 );
 const AboutPage = lazy(() =>
   import('./pages/InfoPages').then((m) => ({ default: m.AboutPage }))
@@ -97,7 +100,7 @@ function AppShell() {
   const hasActiveAudio = Boolean(activeVerseKey || activeChapterId || isPlaying || isLoading);
 
   return (
-    <div className={`flex min-h-screen flex-col overflow-x-hidden ${hasActiveAudio ? 'pb-16' : ''}`}>
+    <div className={`flex min-h-screen flex-col overflow-x-clip ${hasActiveAudio ? 'pb-16' : ''}`}>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:px-4 focus:py-2.5 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg"
@@ -123,9 +126,10 @@ function AppShell() {
             <Route path="/listen" element={<ListenPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
-            <Route path="/khatm" element={<KhatmPage />} />
             <Route path="/prayer-times" element={<PrayerTimesPage />} />
             <Route path="/qibla" element={<Navigate to="/prayer-times" replace />} />
+            <Route path="/guides" element={<GuidesIndexPage />} />
+            <Route path="/guides/:slug" element={<GuideArticlePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

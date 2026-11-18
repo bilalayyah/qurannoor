@@ -249,7 +249,7 @@ function AyahPhotoCardCanvas({
             translate="no"
             className="notranslate quran-arabic-text"
             style={{
-              fontFamily: "'Scheherazade New', 'Noto Naskh Arabic', serif",
+              fontFamily: "'UthmanicHafs', 'Scheherazade New', serif",
               fontSize: `${fitted.arabicSize}px`,
               lineHeight: 1.98,
               color: '#1A1F1C',

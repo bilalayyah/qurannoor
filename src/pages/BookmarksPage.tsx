@@ -1,4 +1,5 @@
 import { ArrowRight, Bookmark, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { useReader } from '../context/ReaderContext';
@@ -16,6 +17,26 @@ export function BookmarksPage() {
   });
 
   const { bookmarks, removeBookmark, readingProgress, settings } = useReader();
+  const [qpcMap, setQpcMap] = useState<Map<string, string> | null>(null);
+
+  useEffect(() => {
+    if (settings.script === 'indopak' || bookmarks.length === 0) return;
+    let cancelled = false;
+    fetch('/quran-search-index.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((rows: Array<[string, string, string, string]> | null) => {
+        if (cancelled || !Array.isArray(rows)) return;
+        const next = new Map<string, string>();
+        for (const [key, ar] of rows) {
+          next.set(key, ar);
+        }
+        setQpcMap(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [bookmarks.length, settings.script]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
@@ -158,7 +179,8 @@ export function BookmarksPage() {
                     fontSize: `${settings.arabicFontSize}px`,
                   }}
                 >
-                  {item.textArabic}{' '}
+                  {(settings.script !== 'indopak' && qpcMap?.get(item.verseKey)) ||
+                    item.textArabic}{' '}
                   <span
                     className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}

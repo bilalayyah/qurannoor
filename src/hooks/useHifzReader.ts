@@ -4,18 +4,19 @@ import type { Verse } from '../types/quran';
 export function useHifzReader(
   verses: Verse[],
   activeVerseKey: string | null,
-  hifzMode: boolean
+  hifzMode: boolean,
+  scopeKey?: string
 ) {
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(() => new Set());
   const [cursorKey, setCursorKey] = useState<string | null>(null);
 
   const firstKey = verses[0]?.verse_key || '';
-  const verseCount = verses.length;
+  const resetToken = scopeKey ?? firstKey;
 
   useEffect(() => {
     setRevealedKeys(new Set());
     setCursorKey(null);
-  }, [firstKey, verseCount, hifzMode]);
+  }, [resetToken, hifzMode]);
 
   const currentIdx = useMemo(() => {
     if (verses.length === 0) return -1;

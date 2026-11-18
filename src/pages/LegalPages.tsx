@@ -207,6 +207,50 @@ export function PrivacyPolicyPage() {
           updated effective date at the top of this page.
         </p>
       </LegalSection>
+
+      <LegalSection heading="Advertising & Third-Party Cookies">
+        <p>
+          QuranNoor may display advertisements served by Google AdSense. Third-party vendors,
+          including Google, use cookies to serve ads based on a user&apos;s prior visits to this
+          website or other websites. Google&apos;s use of advertising cookies enables it and its
+          partners to serve ads to users based on their visits to QuranNoor.com and/or other sites
+          on the Internet.
+        </p>
+        <p>
+          Users may opt out of personalized advertising by visiting{' '}
+          <a
+            href="https://adssettings.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+            style={{ color: 'var(--accent-text)' }}
+          >
+            Google Ads Settings (https://adssettings.google.com)
+          </a>{' '}
+          and{' '}
+          <a
+            href="https://www.aboutads.info/choices"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+            style={{ color: 'var(--accent-text)' }}
+          >
+            www.aboutads.info/choices
+          </a>
+          . Alternatively, users can opt out of a third-party vendor&apos;s use of cookies for
+          personalized advertising by visiting{' '}
+          <a
+            href="https://www.aboutads.info/choices"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+            style={{ color: 'var(--accent-text)' }}
+          >
+            www.aboutads.info/choices
+          </a>
+          .
+        </p>
+      </LegalSection>
     </LegalLayout>
   );
 }
@@ -393,6 +437,74 @@ export function CookiePolicyPage() {
           applicable privacy laws and, for visitors in the EEA, United Kingdom, and Switzerland,
           after valid consent is obtained via a Google-certified Consent Management Platform (CMP).
         </p>
+
+        <div
+          className="mt-3 overflow-hidden rounded-xl border font-ui text-sm"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-subtle)',
+          }}
+        >
+          <div
+            className="border-b px-4 py-2.5 text-xs font-semibold tracking-wide"
+            style={{
+              backgroundColor: 'var(--bg-canvas)',
+              borderColor: 'var(--border-subtle)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Cookie Categories Overview
+          </div>
+          <ul className="divide-y text-xs sm:text-sm" style={{ borderColor: 'var(--border-subtle)' }}>
+            <li className="px-4 py-3 space-y-1">
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Essential &amp; Preference Storage
+              </p>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Local browser storage keys used solely on your device to remember reading settings,
+                last-read Surah/Ayah progress, and bookmarks.
+              </p>
+            </li>
+            <li className="px-4 py-3 space-y-1">
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Analytics Cookies
+              </p>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Not currently active on QuranNoor.com.
+              </p>
+            </li>
+            <li className="px-4 py-3 space-y-1.5">
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Advertising Cookies
+              </p>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Cookies set by Google AdSense and third-party vendors to show relevant ads based on
+                prior visits to this website or other websites and to measure ad performance. You may
+                opt out of personalized advertising via{' '}
+                <a
+                  href="https://adssettings.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4"
+                  style={{ color: 'var(--accent-text)' }}
+                >
+                  Google Ads Settings (https://adssettings.google.com)
+                </a>{' '}
+                or{' '}
+                <a
+                  href="https://www.aboutads.info/choices"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4"
+                  style={{ color: 'var(--accent-text)' }}
+                >
+                  www.aboutads.info/choices
+                </a>
+                .
+              </p>
+            </li>
+          </ul>
+        </div>
       </LegalSection>
 
       <LegalSection heading="4. Managing Your Browser Storage & Cookies">

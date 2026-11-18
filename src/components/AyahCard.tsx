@@ -26,6 +26,8 @@ import {
   getArabicFontClass,
   getEnglishTranslation,
   getUrduTranslation,
+  getVerseArabicText,
+  getWordArabicText,
   stripHtmlTags,
   toArabicIndicDigits,
 } from '../utils/text';
@@ -103,10 +105,7 @@ export function AyahCard({
 
   const bookmarked = isBookmarked(verse.verse_key);
 
-  const arabicText =
-    settings.script === 'indopak' && verse.text_indopak
-      ? verse.text_indopak
-      : verse.text_uthmani;
+  const arabicText = getVerseArabicText(verse, settings.script);
 
   const englishTranslation = getEnglishTranslation(verse.translations, settings.translationId);
   const cleanTranslation = stripHtmlTags(englishTranslation?.text ?? '');
@@ -127,9 +126,9 @@ export function AyahCard({
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     if (activeVerseKey === verse.verse_key && isPlaying) {
-      recordAyahRead(verse.verse_key, verse.page_number);
+      recordAyahRead(verse.verse_key);
     }
-  }, [activeVerseKey, isPlaying, verse.verse_key, verse.page_number, recordAyahRead]);
+  }, [activeVerseKey, isPlaying, verse.verse_key, recordAyahRead]);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -142,7 +141,7 @@ export function AyahCard({
         if (entry?.isIntersecting) {
           if (timerId === null) {
             timerId = window.setTimeout(() => {
-              recordAyahRead(verse.verse_key, verse.page_number);
+              recordAyahRead(verse.verse_key);
               timerId = null;
             }, 1200);
           }
@@ -159,7 +158,7 @@ export function AyahCard({
       if (timerId !== null) window.clearTimeout(timerId);
       observer.disconnect();
     };
-  }, [verse.verse_key, verse.page_number, recordAyahRead]);
+  }, [verse.verse_key, recordAyahRead]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -276,7 +275,7 @@ export function AyahCard({
       }}
     >
       {/* Top Bar: Ayah Number & Metadata (left) + Prominent Action Buttons (right) */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
           <Link
             to={`/ayah/${toSurahSlug(chapterName)}/${verse.verse_number}`}
@@ -487,7 +486,7 @@ export function AyahCard({
       </div>
 
       {/* Center: Balanced Authentic Arabic Quran Text */}
-      <div ref={arabicContainerRef} className="relative mb-5">
+      <div ref={arabicContainerRef} className="relative mb-1.5">
         <div
           className={
             isHifzBlurred
@@ -515,10 +514,11 @@ export function AyahCard({
                   const isWordSelected = selectedWord?.word.id === word.id;
                   const useTajweed =
                     settings.tajweedColors && Boolean(word.text_uthmani_tajweed);
-                  const displayWord =
-                    settings.script === 'indopak' && word.text_indopak && !settings.tajweedColors
-                      ? word.text_indopak
-                      : word.text_uthmani || word.text || '';
+                  const qpcWordText = getWordArabicText(word, 'uthmani');
+                  const displayWord = getWordArabicText(
+                    word,
+                    settings.tajweedColors ? 'uthmani' : settings.script
+                  );
 
                   return (
                     <Fragment key={word.id}>
@@ -547,7 +547,7 @@ export function AyahCard({
                             setSelectedWord({ word, x: 140, y: 48 });
                           }
                         }}
-                        aria-label={`Word: ${word.text_uthmani || word.text || ''} (${word.translation?.text || ''})`}
+                        aria-label={`Word: ${qpcWordText} (${word.translation?.text || ''})`}
                         className="inline cursor-pointer rounded border-0 p-0 m-0 transition-colors hover:bg-black/5 dark:hover:bg-white/10 focus:outline-none"
                         style={{
                           backgroundColor: isWordSelected
@@ -556,14 +556,17 @@ export function AyahCard({
                         }}
                       >
                         {useTajweed
-                          ? renderTajweedNodes(word.text_uthmani_tajweed!)
+                          ? renderTajweedNodes(word.text_uthmani_tajweed!, qpcWordText)
                           : displayWord}
                       </button>{' '}
                     </Fragment>
                   );
                 })
             ) : settings.tajweedColors && verse.text_uthmani_tajweed ? (
-              renderTajweedNodes(verse.text_uthmani_tajweed)
+              renderTajweedNodes(
+                verse.text_uthmani_tajweed,
+                getVerseArabicText(verse, 'uthmani')
+              )
             ) : (
               arabicText
             )}{' '}
@@ -615,14 +618,12 @@ export function AyahCard({
               dir="rtl"
               lang="ar"
               translate="no"
-              className={`notranslate text-center text-xl leading-[1.8] ${getArabicFontClass(
+              className={`notranslate text-center leading-[1.8] ${getArabicFontClass(
                 settings.arabicFont
               )}`}
-              style={{ color: 'var(--text-primary)' }}
+              style={{ fontSize: `${settings.arabicFontSize}px`, color: 'var(--text-primary)' }}
             >
-              {settings.script === 'indopak' && selectedWord.word.text_indopak
-                ? selectedWord.word.text_indopak
-                : selectedWord.word.text_uthmani || selectedWord.word.text}
+              {getWordArabicText(selectedWord.word, settings.script)}
             </p>
             {selectedWord.word.transliteration?.text && (
               <p
@@ -646,11 +647,11 @@ export function AyahCard({
 
       {/* Below Arabic: English & Urdu Translations */}
       {settings.showTranslation && (cleanTranslation || cleanUrdu) && (
-        <div className="mb-5 space-y-3.5">
+        <div className="mb-4 space-y-1.5">
           {cleanTranslation && (
             <p
               dir="ltr"
-              className="font-editorial max-w-3xl text-left leading-[1.78]"
+              className="font-editorial max-w-3xl text-left leading-[1.72]"
               style={{
                 fontSize: `${settings.translationFontSize}px`,
                 color: 'var(--text-secondary)',
@@ -663,8 +664,8 @@ export function AyahCard({
             <p
               dir="rtl"
               lang="ur"
-              className={`font-urdu w-full text-right leading-[2.1] [word-spacing:0.08em] ${
-                cleanTranslation ? 'border-t pt-3' : ''
+              className={`font-urdu w-full text-right leading-[2.0] [word-spacing:0.08em] ${
+                cleanTranslation ? 'border-t pt-1.5' : ''
               }`}
               style={{
                 fontSize: `${Math.max(13, settings.translationFontSize - 2)}px`,

@@ -35,6 +35,7 @@ export interface VerseWord {
   position: number;
   audio_url?: string | null;
   char_type_name: 'word' | 'end' | string;
+  text_qpc_hafs?: string;
   text_uthmani?: string;
   text_indopak?: string;
   text_uthmani_tajweed?: string;
@@ -58,6 +59,7 @@ export interface Verse {
   ruku_number: number;
   manzil_number: number;
   sajdah_number: number | null;
+  text_qpc_hafs?: string;
   text_uthmani: string;
   text_indopak?: string;
   text_uthmani_tajweed?: string;
@@ -229,21 +231,3 @@ export interface PopularSectionItem {
   verseKeys?: string[];
 }
 
-export type DailyGoalUnit = 'ayahs' | 'pages';
-
-export interface DailyGoalConfig {
-  unit: DailyGoalUnit;
-  target: number;
-}
-
-export interface DailyActivityRecord {
-  ayahKeys: string[];
-  pages: number[];
-  manualAyahs?: number;
-  manualPages?: number;
-}
-
-export interface DailyReadingData {
-  goal: DailyGoalConfig;
-  history: Record<string, DailyActivityRecord>;
-}

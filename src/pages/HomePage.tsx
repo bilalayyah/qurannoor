@@ -1,13 +1,9 @@
-import { ArrowRight, BookOpen, Headphones, Layers } from 'lucide-react';
+import { BookOpen, ArrowRight, Headphones, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AyahOfTheDay } from '../components/AyahOfTheDay';
 import { QuranNoorMark } from '../components/BrandLogo';
 import { ContinueReading } from '../components/ContinueReading';
-import { DailyReadingGoal } from '../components/DailyReadingGoal';
-import { DailyReminderCard } from '../components/DailyReminderCard';
-import { KhatmHomeCard } from '../components/KhatmHomeCard';
+import { GuidesHomeSection } from '../components/GuidesHomeSection';
 import { PopularSections } from '../components/PopularSections';
-import { PrayerHomeCard } from '../components/PrayerHomeCard';
 import { QuranSearch } from '../components/QuranSearch';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 
@@ -227,17 +223,11 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Khatm Plan, Ayah of the Day, Daily Reading Goal, Reminder & Prayer Times */}
-      <div className="space-y-6">
-        <KhatmHomeCard />
-        <AyahOfTheDay />
-        <DailyReadingGoal />
-        <DailyReminderCard />
-        <PrayerHomeCard />
-      </div>
-
       {/* Popular Quran Sections */}
       <PopularSections />
+
+      {/* Guides Section */}
+      <GuidesHomeSection />
     </div>
   );
 }
