@@ -110,6 +110,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
   const smoothDialRef = useRef<number | null>(null);
   const smoothNeedleRef = useRef<number | null>(null);
   const cleanupListenersRef = useRef<(() => void) | null>(null);
+  const sensorRetryRef = useRef<number>(0);
 
   const hasIOSRequestPermission =
     typeof window !== 'undefined' &&
@@ -215,6 +216,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
         hasAbsoluteStream = true;
       }
       receivedHeading = true;
+      sensorRetryRef.current = 0;
       setSensorState('live');
       setDeviceHeading((prev) => {
         if (prev !== null && Math.abs(getSignedQiblaDelta(heading, prev)) < 0.3) {
@@ -234,6 +236,14 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
 
     const sensorCheckTimer = window.setTimeout(async () => {
       if (disposed || receivedHeading) return;
+      // First loads can be slow to deliver the first heading (cold sensor):
+      // re-attach a couple of times before giving up, so the compass can go
+      // live on arrival without any tap.
+      if (sensorRetryRef.current < 2) {
+        sensorRetryRef.current += 1;
+        attachSensorListeners();
+        return;
+      }
       const blocked = await checkMotionPermissionDenied();
       if (disposed || receivedHeading) return;
       setSensorState(blocked ? 'denied' : 'unsupported');
@@ -439,7 +449,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
             <p
               dir="rtl"
               lang="ar"
-              className="font-quran-noto-naskh text-xl leading-[1.8]"
+              className="font-quran-uthmanic text-xl leading-[1.8]"
             >
               القبلة هنا ✓
             </p>
@@ -748,8 +758,9 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
         </p>
       </div>
 
-      {/* Live Compass Activation & Honest Status Line */}
-      {!isLive && (
+      {/* Live Compass Activation — button only on iOS, where Apple requires a tap
+          for motion permission; on Android the compass auto-enables on arrival */}
+      {sensorState === 'prompt' && (
         <button
           type="button"
           onClick={handleEnableLiveCompass}
