@@ -95,7 +95,7 @@ export function PrivacyPolicyPage() {
   usePageMetadata({
     title: 'Privacy Policy – QuranNoor',
     description:
-      'Learn how QuranNoor.com handles local browser storage, technical logs, third-party services, and future advertising consent.',
+      'Learn how QuranNoor.com handles local browser storage, technical logs, and third-party services.',
     canonicalPath: '/privacy-policy',
   });
 
@@ -156,15 +156,12 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="5. Advertising & Google AdSense">
+      <LegalSection heading="5. Advertising">
         <p>
-          QuranNoor.com currently loads the Google AdSense script so that Google can review the
-          site for approval, but it does not display any ad units yet. Once AdSense is approved and
-          ads are shown, Google and its partners may use cookies or similar identifiers to serve and
-          measure ads. Advertising cookies follow the Cookie Policy. For visitors located in the
-          European Economic Area (EEA), the United Kingdom, and Switzerland, non-essential
-          advertising cookies will only operate through a Google-certified Consent Management
-          Platform (CMP) integrated with the IAB Transparency &amp; Consent Framework (TCF).
+          QuranNoor.com currently shows no advertisements and loads no advertising scripts. If
+          advertising is introduced in the future, this Privacy Policy and the Cookie Policy will
+          be updated before any advertising script is activated, and advertising cookies will
+          only operate as described in the Cookie Policy.
         </p>
       </LegalSection>
 
@@ -203,53 +200,17 @@ export function PrivacyPolicyPage() {
 
       <LegalSection heading="8. Policy Updates">
         <p>
-          We may update this Privacy Policy whenever new technical integrations (such as analytics,
-          email delivery, or advertising consent management) are enabled. Any revision will carry an
-          updated effective date at the top of this page.
+          We may update this Privacy Policy whenever new technical integrations (such as analytics
+          or email delivery) are enabled. Any revision will carry an updated effective date at the
+          top of this page.
         </p>
       </LegalSection>
 
       <LegalSection heading="Advertising & Third-Party Cookies">
         <p>
-          QuranNoor may display advertisements served by Google AdSense. Third-party vendors,
-          including Google, use cookies to serve ads based on a user&apos;s prior visits to this
-          website or other websites. Google&apos;s use of advertising cookies enables it and its
-          partners to serve ads to users based on their visits to QuranNoor.com and/or other sites
-          on the Internet.
-        </p>
-        <p>
-          Users may opt out of personalized advertising by visiting{' '}
-          <a
-            href="https://adssettings.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4"
-            style={{ color: 'var(--accent-text)' }}
-          >
-            Google Ads Settings (https://adssettings.google.com)
-          </a>{' '}
-          and{' '}
-          <a
-            href="https://www.aboutads.info/choices"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4"
-            style={{ color: 'var(--accent-text)' }}
-          >
-            www.aboutads.info/choices
-          </a>
-          . Alternatively, users can opt out of a third-party vendor&apos;s use of cookies for
-          personalized advertising by visiting{' '}
-          <a
-            href="https://www.aboutads.info/choices"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4"
-            style={{ color: 'var(--accent-text)' }}
-          >
-            www.aboutads.info/choices
-          </a>
-          .
+          QuranNoor.com currently shows no advertisements and loads no advertising scripts, so no
+          advertising cookies are placed by this website. If advertising is introduced in the
+          future, this section will be updated before any advertising script is activated.
         </p>
       </LegalSection>
     </LegalLayout>
@@ -396,7 +357,7 @@ export function CookiePolicyPage() {
   return (
     <LegalLayout
       title="Cookie Policy"
-      subtitle="Clear information about how QuranNoor.com uses browser storage today and how cookies would be governed if analytics or advertising are added later."
+      subtitle="Clear information about how QuranNoor.com uses browser storage today and how cookies would be governed if analytics are added later."
       canonicalPath="/cookie-policy"
       breadcrumbLabel="Cookie Policy"
     >
@@ -431,10 +392,10 @@ export function CookiePolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="3. Advertising Cookies (Future Readiness Only)">
+      <LegalSection heading="3. Advertising Cookies (Not Currently Active)">
         <p>
-          No advertising scripts or advertising cookies are active on QuranNoor.com. When Google
-          AdSense is later configured, advertising cookies will only be placed in accordance with
+          No advertising scripts or advertising cookies are active on QuranNoor.com. If advertising
+          is introduced in the future, advertising cookies will only be placed in accordance with
           applicable privacy laws and, for visitors in the EEA, United Kingdom, and Switzerland,
           after valid consent is obtained via a Google-certified Consent Management Platform (CMP).
         </p>
@@ -479,29 +440,7 @@ export function CookiePolicyPage() {
                 Advertising Cookies
               </p>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Cookies set by Google AdSense and third-party vendors to show relevant ads based on
-                prior visits to this website or other websites and to measure ad performance. You may
-                opt out of personalized advertising via{' '}
-                <a
-                  href="https://adssettings.google.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4"
-                  style={{ color: 'var(--accent-text)' }}
-                >
-                  Google Ads Settings (https://adssettings.google.com)
-                </a>{' '}
-                or{' '}
-                <a
-                  href="https://www.aboutads.info/choices"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4"
-                  style={{ color: 'var(--accent-text)' }}
-                >
-                  www.aboutads.info/choices
-                </a>
-                .
+                Not currently active on QuranNoor.com.
               </p>
             </li>
           </ul>
