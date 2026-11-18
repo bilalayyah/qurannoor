@@ -77,7 +77,7 @@ export function HifzControlsBar({ queue }: HifzControlsBarProps) {
                 type="button"
                 onClick={() => setRepeatMode(opt.value)}
                 aria-pressed={active}
-                className="min-h-[34px] rounded-lg border px-2.5 text-xs font-semibold transition-colors"
+                className="min-h-[44px] rounded-lg border px-2.5 text-xs font-semibold transition-colors"
                 style={{
                   backgroundColor: active ? 'var(--accent)' : 'var(--bg-canvas)',
                   borderColor: active ? 'var(--accent)' : 'var(--border-subtle)',
@@ -131,7 +131,7 @@ export function HifzControlsBar({ queue }: HifzControlsBarProps) {
             <button
               type="button"
               onClick={() => playAyahRange(startKey, endKey, queue)}
-              className="inline-flex min-h-[34px] items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-white transition-opacity hover:opacity-90"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               <Play className="h-3 w-3 fill-current" />
@@ -142,7 +142,7 @@ export function HifzControlsBar({ queue }: HifzControlsBarProps) {
               <button
                 type="button"
                 onClick={() => setRepeatRange(null)}
-                className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border px-2.5 text-xs font-medium"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border px-2.5 text-xs font-medium"
                 style={{
                   backgroundColor: 'var(--accent-soft)',
                   borderColor: 'var(--accent)',

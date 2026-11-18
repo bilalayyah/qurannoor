@@ -884,7 +884,7 @@ export function SurahReaderPage() {
                     : `Play Surah ${activeChapter.name_simple}`
                 }
                 aria-pressed={isThisSurahPlaying}
-                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-opacity hover:opacity-90 whitespace-nowrap shrink-0"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-opacity hover:opacity-90 whitespace-nowrap shrink-0"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 {isThisSurahPlaying ? (
@@ -900,7 +900,7 @@ export function SurahReaderPage() {
                 onClick={() => setShowSurahInfo((prev) => !prev)}
                 aria-expanded={showSurahInfo}
                 aria-controls="surah-info-panel"
-                className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap shrink-0"
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap shrink-0"
                 style={{
                   backgroundColor: showSurahInfo ? 'var(--gold-soft)' : 'var(--bg-canvas)',
                   borderColor: showSurahInfo ? 'var(--gold)' : 'var(--border-subtle)',
@@ -1007,7 +1007,7 @@ export function SurahReaderPage() {
                   }
                 }}
                 disabled={queue.length === 0}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-50 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-50 whitespace-nowrap"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -1030,7 +1030,7 @@ export function SurahReaderPage() {
                   onChange={(e) => setJumpAyahInput(e.target.value)}
                   placeholder={`Ayah 1–${activeChapter.verses_count}`}
                   aria-label="Jump to Ayah number"
-                  className="min-h-[38px] w-28 rounded-xl border px-3 text-xs tabular-nums outline-none"
+                  className="min-h-[44px] w-28 rounded-xl border px-3 text-xs tabular-nums outline-none"
                   style={{
                     backgroundColor: 'var(--bg-canvas)',
                     borderColor: 'var(--border-subtle)',
@@ -1039,7 +1039,7 @@ export function SurahReaderPage() {
                 />
                 <button
                   type="submit"
-                  className="min-h-[38px] rounded-xl border px-3 text-xs font-medium whitespace-nowrap"
+                  className="min-h-[44px] rounded-xl border px-3 text-xs font-medium whitespace-nowrap"
                   style={{
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-secondary)',
@@ -1052,7 +1052,7 @@ export function SurahReaderPage() {
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border px-3.5 text-xs font-medium whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3.5 text-xs font-medium whitespace-nowrap"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -1093,7 +1093,7 @@ export function SurahReaderPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/surah/al-fatihah"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <span>Read Surah Al-Fatihah (7 Ayahs)</span>
@@ -1101,7 +1101,7 @@ export function SurahReaderPage() {
               </Link>
               <Link
                 to="/surah/al-baqarah"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -1112,7 +1112,7 @@ export function SurahReaderPage() {
               </Link>
               <Link
                 to="/surahs"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-secondary)',
@@ -1138,7 +1138,7 @@ export function SurahReaderPage() {
                 type="button"
                 onClick={loadPreviousChunk}
                 disabled={loadingEarlier}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-60"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderColor: 'var(--border-subtle)',
@@ -1208,7 +1208,7 @@ export function SurahReaderPage() {
                   <button
                     type="button"
                     onClick={loadNextChunk}
-                    className="inline-flex min-h-[38px] items-center rounded-xl border px-4 text-xs font-medium"
+                    className="inline-flex min-h-[44px] items-center rounded-xl border px-4 text-xs font-medium"
                     style={{
                       backgroundColor: 'var(--bg-surface)',
                       borderColor: 'var(--border-subtle)',
@@ -1251,7 +1251,7 @@ export function SurahReaderPage() {
               <Link
                 key={item.slug}
                 to={`/popular/${item.slug}`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium hover:underline underline-offset-4"
                 style={{ color: 'var(--accent-text)' }}
               >
                 <span>{item.title}</span>

@@ -444,7 +444,7 @@ export function AyahCard({
                 <button
                   type="button"
                   onClick={handleRepeatThisAyah}
-                  className="flex w-full min-h-[38px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  className="flex w-full min-h-[44px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   <Repeat className="h-3.5 w-3.5" />
@@ -454,7 +454,7 @@ export function AyahCard({
                 <button
                   type="button"
                   onClick={handleShareAyah}
-                  className="flex w-full min-h-[38px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  className="flex w-full min-h-[44px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   <Share2 className="h-3.5 w-3.5" />
@@ -472,7 +472,7 @@ export function AyahCard({
                         playEnglishTranslation(playableItem, queue);
                       }
                     }}
-                    className="flex w-full min-h-[38px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    className="flex w-full min-h-[44px] items-center gap-2.5 rounded-lg px-3 text-left text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <Volume2 className="h-3.5 w-3.5" />
@@ -701,7 +701,7 @@ export function AyahCard({
                 playEnglishTranslation(playableItem, queue);
               }
             }}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{
               color: isThisEnglishActive ? 'var(--accent-text)' : 'var(--text-secondary)',
               backgroundColor: isThisEnglishActive ? 'var(--accent-soft)' : 'transparent',
@@ -715,7 +715,7 @@ export function AyahCard({
         <button
           type="button"
           onClick={handleShareAyah}
-          className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
           style={{ color: 'var(--text-secondary)' }}
         >
           <Share2 className="h-3.5 w-3.5" />
@@ -725,7 +725,7 @@ export function AyahCard({
         <button
           type="button"
           onClick={handleRepeatThisAyah}
-          className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
           style={{ color: 'var(--text-secondary)' }}
         >
           <Repeat className="h-3.5 w-3.5" />
@@ -737,7 +737,7 @@ export function AyahCard({
             type="button"
             onClick={() => setTafsirOpen((v) => !v)}
             aria-expanded={tafsirOpen}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{
               color: tafsirOpen ? 'var(--accent-text)' : 'var(--text-secondary)',
               backgroundColor: tafsirOpen ? 'var(--accent-soft)' : 'transparent',

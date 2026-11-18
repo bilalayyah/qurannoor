@@ -204,7 +204,7 @@ export function AyahTafsirSection({
                   type="button"
                   onClick={() => handleLanguageChange(opt.id)}
                   aria-pressed={active}
-                  className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap"
+                  className="min-h-[44px] rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap"
                   style={{
                     backgroundColor: active ? 'var(--bg-surface)' : 'transparent',
                     color: active ? 'var(--accent-text)' : 'var(--text-tertiary)',
@@ -245,7 +245,7 @@ export function AyahTafsirSection({
           <button
             type="button"
             onClick={() => setRetryCount((c) => c + 1)}
-            className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{
               borderColor: 'var(--border-subtle)',
               backgroundColor: 'var(--bg-surface)',
@@ -365,7 +365,7 @@ export function AyahTafsirSection({
             <button
               type="button"
               onClick={() => setShowFull((v) => !v)}
-              className="inline-flex min-h-[34px] items-center gap-1 text-xs font-medium hover:underline underline-offset-4"
+              className="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium hover:underline underline-offset-4"
               style={{ color: 'var(--accent-text)' }}
             >
               <span>{showFull ? 'Show shorter summary' : 'Read full tafsir'}</span>

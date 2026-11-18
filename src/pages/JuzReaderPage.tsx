@@ -699,7 +699,7 @@ export function JuzReaderPage() {
                 if (queue.length > 0) playAyah(queue[0], queue);
               }}
               disabled={queue.length === 0}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               <Play className="h-3.5 w-3.5" />
@@ -718,7 +718,7 @@ export function JuzReaderPage() {
                   onChange={(e) => setJumpAyahInput(e.target.value)}
                   placeholder={`Ayah 1–${maxVerseCount}`}
                   aria-label="Jump to Ayah in Juz"
-                  className="min-h-[38px] w-28 rounded-xl border px-3 text-xs tabular-nums outline-none"
+                  className="min-h-[44px] w-28 rounded-xl border px-3 text-xs tabular-nums outline-none"
                   style={{
                     backgroundColor: 'var(--bg-canvas)',
                     borderColor: 'var(--border-subtle)',
@@ -727,7 +727,7 @@ export function JuzReaderPage() {
                 />
                 <button
                   type="submit"
-                  className="min-h-[38px] rounded-xl border px-3 text-xs font-medium whitespace-nowrap"
+                  className="min-h-[44px] rounded-xl border px-3 text-xs font-medium whitespace-nowrap"
                   style={{
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-secondary)',
@@ -741,7 +741,7 @@ export function JuzReaderPage() {
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border px-3.5 text-xs font-medium"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3.5 text-xs font-medium"
               style={{
                 borderColor: 'var(--border-subtle)',
                 color: 'var(--text-primary)',
@@ -765,7 +765,7 @@ export function JuzReaderPage() {
               <Link
                 key={item.id}
                 to={`/surah/${item.slug}`}
-                className="font-medium hover:underline underline-offset-4 tabular-nums"
+                className="inline-flex min-h-[44px] items-center font-medium hover:underline underline-offset-4 tabular-nums"
                 style={{ color: 'var(--accent-text)' }}
               >
                 {item.id}. {item.name} ({item.range})
@@ -802,7 +802,7 @@ export function JuzReaderPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/juz/1"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <span>Read Juz 1</span>
@@ -810,7 +810,7 @@ export function JuzReaderPage() {
               </Link>
               <Link
                 to="/juz/2"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -821,7 +821,7 @@ export function JuzReaderPage() {
               </Link>
               <Link
                 to="/juz"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-secondary)',
@@ -846,7 +846,7 @@ export function JuzReaderPage() {
                 type="button"
                 onClick={loadPreviousChunk}
                 disabled={loadingEarlier}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-60"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderColor: 'var(--border-subtle)',
@@ -893,7 +893,7 @@ export function JuzReaderPage() {
                       <div>
                         <Link
                           to={`/surah/${toSurahSlug(ch.name_simple)}`}
-                          className="text-base font-semibold hover:underline"
+                          className="inline-flex min-h-[44px] items-center text-base font-semibold hover:underline"
                           style={{ color: 'var(--text-primary)' }}
                         >
                           {ch.id}. {ch.name_simple}
@@ -957,7 +957,7 @@ export function JuzReaderPage() {
                   <button
                     type="button"
                     onClick={loadNextChunk}
-                    className="inline-flex min-h-[38px] items-center rounded-xl border px-4 text-xs font-medium"
+                    className="inline-flex min-h-[44px] items-center rounded-xl border px-4 text-xs font-medium"
                     style={{
                       backgroundColor: 'var(--bg-surface)',
                       borderColor: 'var(--border-subtle)',

@@ -164,11 +164,11 @@ export function AyahPage() {
               {chapter.name_simple} — Ayah {verseNum}
             </h1>
             <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
-              <Link to={`/surah/${canonicalSlug}?ayah=${verseNum}`} className="hover:underline underline-offset-4">
+              <Link to={`/surah/${canonicalSlug}?ayah=${verseNum}`} className="inline-flex min-h-[44px] items-center hover:underline underline-offset-4">
                 Read Full Surah {chapter.name_simple}
               </Link>
               {verse && (
-                <Link to={`/juz/${verse.juz_number}`} className="inline-flex items-center gap-1 hover:underline underline-offset-4">
+                <Link to={`/juz/${verse.juz_number}`} className="inline-flex min-h-[44px] items-center gap-1 hover:underline underline-offset-4">
                   <Layers className="h-3.5 w-3.5" />
                   <span>Open Juz {verse.juz_number}</span>
                 </Link>
@@ -211,7 +211,7 @@ export function AyahPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/ayah/al-baqarah/255"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <span>Read Ayatul Kursi (2:255)</span>
@@ -219,7 +219,7 @@ export function AyahPage() {
               </Link>
               <Link
                 to="/surah/al-fatihah"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
                 style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
               >
                 Read Surah Al-Fatihah
@@ -267,7 +267,7 @@ export function AyahPage() {
               <Link
                 key={item.slug}
                 to={item.type === 'chapter' ? `/surah/${item.slug}` : `/popular/${item.slug}`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium hover:underline underline-offset-4"
                 style={{ color: 'var(--accent-text)' }}
               >
                 <span>{item.title}</span>

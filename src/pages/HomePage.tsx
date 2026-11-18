@@ -63,7 +63,7 @@ export function HomePage() {
         <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5">
           <Link
             to="/surah/al-fatihah"
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl px-4 py-1.5 text-xs sm:text-sm font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-4 py-1.5 text-xs sm:text-sm font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -72,7 +72,7 @@ export function HomePage() {
 
           <Link
             to="/listen"
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderColor: 'var(--border-subtle)',
@@ -109,7 +109,7 @@ export function HomePage() {
             </p>
             <Link
               to="/quran"
-              className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium hover:underline underline-offset-4"
+              className="inline-flex min-h-[44px] items-center gap-1 text-xs sm:text-sm font-medium hover:underline underline-offset-4"
               style={{ color: 'var(--accent-text)' }}
             >
               <span>Explore Directory</span>

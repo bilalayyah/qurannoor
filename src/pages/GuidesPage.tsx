@@ -58,7 +58,7 @@ export function GuidesIndexPage() {
                 key={category}
                 type="button"
                 onClick={() => setSelectedCategory(category)}
-                className="min-h-[38px] rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap"
+                className="min-h-[44px] rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap"
                 style={{
                   backgroundColor: active ? 'var(--accent)' : 'var(--bg-surface)',
                   borderColor: active ? 'var(--accent)' : 'var(--border-subtle)',
@@ -212,7 +212,7 @@ export function GuideArticlePage() {
           </p>
           <Link
             to="/guides"
-            className="inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium text-white"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium text-white"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -374,7 +374,7 @@ export function GuideArticlePage() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:border-[#0E6B4B]/50 whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:border-[#0E6B4B]/50 whitespace-nowrap"
                 style={{
                   backgroundColor: 'var(--bg-canvas)',
                   borderColor: 'var(--border-subtle)',
@@ -398,7 +398,7 @@ export function GuideArticlePage() {
         <div className="flex items-center gap-4">
           <Link
             to="/guides"
-            className="inline-flex items-center gap-1.5 font-medium hover:underline underline-offset-4"
+            className="inline-flex min-h-[44px] items-center gap-1.5 font-medium hover:underline underline-offset-4"
             style={{ color: 'var(--accent-text)' }}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -407,7 +407,7 @@ export function GuideArticlePage() {
           {prevArticle && (
             <Link
               to={`/guides/${prevArticle.slug}`}
-              className="text-xs sm:text-sm hover:underline underline-offset-4 truncate max-w-[220px]"
+              className="inline-flex min-h-[44px] items-center text-xs sm:text-sm hover:underline underline-offset-4 truncate max-w-[220px]"
               style={{ color: 'var(--text-secondary)' }}
             >
               Previous: {prevArticle.title}
@@ -418,7 +418,7 @@ export function GuideArticlePage() {
         {nextArticle && (
           <Link
             to={`/guides/${nextArticle.slug}`}
-            className="inline-flex items-center gap-1.5 font-medium hover:underline underline-offset-4 truncate max-w-[300px]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 font-medium hover:underline underline-offset-4 truncate max-w-[300px]"
             style={{ color: 'var(--accent-text)' }}
           >
             <span className="truncate">Next: {nextArticle.title}</span>

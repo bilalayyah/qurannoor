@@ -75,7 +75,7 @@ export function QuranSearch({
           aria-label="Search Quran"
           className={`w-full bg-transparent px-2 outline-none ${
             compact
-              ? 'min-h-[34px] sm:min-h-[36px] text-xs sm:text-sm'
+              ? 'min-h-[44px] text-xs sm:text-sm'
               : 'min-h-[44px] text-sm sm:text-base'
           }`}
           style={{ color: 'var(--text-primary)' }}
@@ -84,8 +84,8 @@ export function QuranSearch({
           type="submit"
           className={`shrink-0 font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap ${
             compact
-              ? 'min-h-[32px] sm:min-h-[34px] rounded-lg px-3.5 py-1 text-xs sm:text-sm'
-              : 'min-h-[40px] rounded-xl px-5 py-2 text-sm'
+              ? 'min-h-[44px] rounded-lg px-3.5 py-1 text-xs sm:text-sm'
+              : 'min-h-[44px] rounded-xl px-5 py-2 text-sm'
           }`}
           style={{ backgroundColor: 'var(--accent)' }}
         >

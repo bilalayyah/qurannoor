@@ -174,7 +174,7 @@ export function PopularPassagePage() {
               if (queue.length > 0) playAyah(queue[0], queue);
             }}
             disabled={queue.length === 0}
-            className="inline-flex min-h-[40px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             <Play className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ export function PopularPassagePage() {
                   ? `?ayah=${section.verseKeys[0].split(':')[1]}`
                   : ''
               }`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+              className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium hover:underline"
               style={{ color: 'var(--accent-text)' }}
             >
               <span>Read in Surah {chapter.name_simple}</span>
@@ -229,7 +229,7 @@ export function PopularPassagePage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/popular/ayatul-kursi"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <span>Read Ayatul Kursi (2:255)</span>
@@ -237,7 +237,7 @@ export function PopularPassagePage() {
               </Link>
               <Link
                 to="/popular/last-two-ayahs-al-baqarah"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-5 py-2 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -248,7 +248,7 @@ export function PopularPassagePage() {
               </Link>
               <Link
                 to="/surah/al-fatihah"
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium"
                 style={{
                   borderColor: 'var(--border-subtle)',
                   color: 'var(--text-secondary)',

@@ -77,7 +77,7 @@ export function BookmarksPage() {
             </div>
             <Link
               to={`/surah/${readingProgress.chapterSlug}?ayah=${readingProgress.verseNumber}`}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white whitespace-nowrap"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white whitespace-nowrap"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               <span>Resume Reading</span>
@@ -113,7 +113,7 @@ export function BookmarksPage() {
             </p>
             <Link
               to="/surah/al-fatihah"
-              className="mt-5 inline-flex min-h-[42px] items-center rounded-xl px-5 py-2 text-sm font-medium text-white"
+              className="mt-5 inline-flex min-h-[44px] items-center rounded-xl px-5 py-2 text-sm font-medium text-white"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               Start Reading
@@ -133,7 +133,7 @@ export function BookmarksPage() {
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <Link
                     to={`/surah/${toSurahSlug(item.chapterName)}?ayah=${item.verseNumber}`}
-                    className="text-sm font-semibold hover:underline tabular-nums"
+                    className="inline-flex min-h-[44px] items-center text-sm font-semibold hover:underline tabular-nums"
                     style={{ color: 'var(--accent-text)' }}
                   >
                     {item.chapterName} · {item.verseKey}
@@ -142,7 +142,7 @@ export function BookmarksPage() {
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/surah/${toSurahSlug(item.chapterName)}?ayah=${item.verseNumber}`}
-                      className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border px-3 text-xs font-medium"
+                      className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border px-3 text-xs font-medium"
                       style={{
                         borderColor: 'var(--border-subtle)',
                         color: 'var(--text-primary)',
@@ -156,7 +156,7 @@ export function BookmarksPage() {
                       type="button"
                       onClick={() => removeBookmark(item.verseKey)}
                       aria-label={`Remove bookmark ${item.verseKey}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors hover:text-red-600"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-colors hover:text-red-600"
                       style={{
                         borderColor: 'var(--border-subtle)',
                         color: 'var(--text-tertiary)',

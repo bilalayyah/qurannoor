@@ -425,7 +425,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
             aria-label={isMuted ? 'Unmute Qibla alignment sound' : 'Mute Qibla alignment sound'}
             aria-pressed={!isMuted}
             title={isMuted ? 'Alignment sound muted' : 'Alignment chime enabled'}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{
               borderColor: isMuted ? 'var(--border-subtle)' : 'var(--accent)',
               backgroundColor: isMuted ? 'transparent' : 'var(--bg-surface)',
@@ -800,7 +800,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
         <button
           type="button"
           onClick={handleActivateChime}
-          className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+          className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
           style={{
             borderColor: 'var(--border-subtle)',
             color: 'var(--accent-text)',
