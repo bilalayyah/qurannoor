@@ -606,10 +606,10 @@ export function SurahReaderPage() {
 
   usePageMetadata({
     title: activeChapter
-      ? `Surah ${activeChapter.name_simple} (${activeChapter.translated_name?.name}) – QuranNoor`
+      ? `Surah ${activeChapter.name_simple}${activeChapter.translated_name?.name ? ` (${activeChapter.translated_name.name})` : ''} – QuranNoor`
       : 'Read Quran – QuranNoor',
     description: activeChapter
-      ? `Read and listen to Surah ${activeChapter.name_simple} (${activeChapter.translated_name?.name}) — ${activeChapter.verses_count} Ayahs with authentic Uthmani Arabic script and English translation on QuranNoor.com.`
+      ? `Read and listen to Surah ${activeChapter.name_simple}${activeChapter.translated_name?.name ? ` (${activeChapter.translated_name.name})` : ''} — ${activeChapter.verses_count} Ayahs with authentic Uthmani Arabic script and English translation on QuranNoor.com.`
       : 'Read the Noble Quran on QuranNoor.com with authentic Uthmani Arabic script and English translations.',
     canonicalPath: activeChapter ? `/surah/${toSurahSlug(activeChapter.name_simple)}` : undefined,
   });
@@ -1161,6 +1161,7 @@ export function SurahReaderPage() {
 
           <VirtualizedVerseChunks
             chunks={chunks}
+            layoutKey={`${settings.arabicFontSize}|${settings.showTranslation}|${settings.tajweedColors}|${settings.script}`}
             activeVerseKey={activeVerseKey}
             highlightedVerseKey={highlightedVerseKey}
             forcedMountPage={forcedMountPage}

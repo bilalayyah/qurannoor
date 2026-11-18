@@ -869,6 +869,7 @@ export function JuzReaderPage() {
 
           <VirtualizedVerseChunks
             chunks={chunks}
+            layoutKey={`${settings.arabicFontSize}|${settings.showTranslation}|${settings.tajweedColors}|${settings.script}`}
             activeVerseKey={activeVerseKey}
             highlightedVerseKey={highlightedVerseKey}
             forcedMountPage={forcedMountPage}

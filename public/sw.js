@@ -13,7 +13,7 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title || 'QuranNoor';
-  const body = payload.body || 'Aaj ka Quran goal — 10 ayahs padhein';
+  const body = payload.body || 'Your daily Quran reminder — read a few ayahs today';
   const targetUrl = payload.url || '/';
 
   const options = {

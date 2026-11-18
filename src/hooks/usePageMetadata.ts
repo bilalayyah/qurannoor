@@ -54,7 +54,8 @@ export function usePageMetadata({
     const canonicalUrl = `${origin}${path}`;
 
     updateMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
-    updateMeta('meta[property="og:image"]', 'property', 'og:image', `${origin}/icon-app.svg`);
+    updateMeta('meta[property="og:image"]', 'property', 'og:image', `${origin}/icons/icon-512.png`);
+    updateMeta('meta[name="twitter:image"]', 'name', 'twitter:image', `${origin}/icons/icon-512.png`);
 
     let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonicalEl) {

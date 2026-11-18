@@ -10,7 +10,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'فَوَلِّ وَجْهَكَ شَطْرَ الْمَسْجِدِ الْحَرَامِ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Find the direction of the Ka’bah reliably anywhere you travel using great-circle compass bearings, live phone compass calibration, solar cues, and local mosque alignment.',
@@ -97,7 +97,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Understand how the sun’s daily path sets the windows for Fajr, Dhuhr, Asr, Maghrib, and Isha—and why Fajr and Isha vary across Muslim World League, ISNA, Karachi, and Umm al-Qura.',
@@ -183,7 +183,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'وَلَقَدْ صَرَّفْنَا فِي هَـٰذَا الْقُرْآنِ لِيَذَّكَّرُوا',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Explore the strengths and styles of well-known English Quran translations—from literal modern prose to classic literary cadences and footnote-rich editions.',
@@ -270,7 +270,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'قُرْآنًا عَرَبِيًّا لَّعَلَّكُمْ تَعْقِلُونَ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Turn everyday Quran reading into gentle Arabic vocabulary learning by tracking word-by-word meanings, spotting high-frequency words, and pairing sight with audio.',
@@ -357,7 +357,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Explore how listening regularly to the Noble Quran brings mental stillness, sharpens Arabic pronunciation by ear, accelerates memorization, and keeps scripture close during busy routines.',

@@ -10,7 +10,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'فَاسْتَمِعُوا لَهُ وَأَنصِتُوا لَعَلَّكُمْ تُرْحَمُونَ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Understand the difference between Murattal, Mujawwad, and Muallim styles—and choose a Qari tailored to daily reading, reflection, or memorization.',
@@ -98,7 +98,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'شَهْرُ رَمَضَانَ الَّذِي أُنزِلَ فِيهِ الْقُرْآنُ هُدًى لِّلنَّاسِ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Build a calm, achievable Ramadan Quran plan—from the classic 4-pages-per-prayer method for finishing one Juz daily to balanced alternatives for busy schedules.',
@@ -185,7 +185,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'A clear overview of Surah Al-Baqarah—the longest Surah in the Quran at 286 ayahs—covering its opening promise of guidance, historical lessons, laws, and Ayat al-Kursi.',
@@ -273,7 +273,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
     category: 'Tajweed & Hifz',
     arabicAccent: 'قُلْ هُوَ اللَّهُ أَحَدٌ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'A verse-by-verse guide to Surahs 105 through 114—the beloved closing chapters of the Quran most commonly memorized first and recited in daily prayer.',

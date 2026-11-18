@@ -156,14 +156,15 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="5. Future Advertising & Google AdSense">
+      <LegalSection heading="5. Advertising & Google AdSense">
         <p>
-          QuranNoor.com does not currently display active advertisements or load Google AdSense code.
-          If Google AdSense is introduced in the future, Google and its partners may use cookies or
-          similar identifiers to serve and measure ads. For visitors located in the European Economic
-          Area (EEA), the United Kingdom, and Switzerland, non-essential advertising cookies will only
-          operate through a Google-certified Consent Management Platform (CMP) integrated with the
-          IAB Transparency &amp; Consent Framework (TCF).
+          QuranNoor.com currently loads the Google AdSense script so that Google can review the
+          site for approval, but it does not display any ad units yet. Once AdSense is approved and
+          ads are shown, Google and its partners may use cookies or similar identifiers to serve and
+          measure ads. Advertising cookies follow the Cookie Policy. For visitors located in the
+          European Economic Area (EEA), the United Kingdom, and Switzerland, non-essential
+          advertising cookies will only operate through a Google-certified Consent Management
+          Platform (CMP) integrated with the IAB Transparency &amp; Consent Framework (TCF).
         </p>
       </LegalSection>
 

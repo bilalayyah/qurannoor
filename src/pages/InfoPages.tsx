@@ -184,11 +184,17 @@ export function MethodologyPage() {
             2. Authentic Uthmani Typography &amp; Browser Protection
           </h2>
           <p>
-            Quranic Arabic verses are rendered using <strong>Scheherazade New</strong> (default
-            classical Naskh / Uthmani script) alongside optional <strong>Noto Naskh Arabic</strong>{' '}
-            and <strong>Lateef</strong> (IndoPak style) fonts, with Urdu rendered in{' '}
-            <strong>Noto Nastaliq Urdu</strong>—all licensed under the open-source SIL Open Font
-            License (OFL 1.1). Every Arabic verse enforces right-to-left Unicode isolation (
+            Quranic Arabic verses are rendered using <strong>UthmanicHafs</strong> (default,
+            KFGQPC Uthmanic Script Hafs — the Madinah Mushaf style — loaded from the official
+            Quran Foundation font CDN), with <strong>Scheherazade New</strong> as the fallback and
+            optional <strong>Noto Naskh Arabic</strong> and <strong>Lateef</strong> (IndoPak style)
+            fonts, and Urdu rendered in <strong>Noto Nastaliq Urdu</strong>. The displayed Arabic
+            text comes from the official Quran Foundation API field{' '}
+            <code className="font-ui text-xs">text_qpc_hafs</code>. UthmanicHafs is provided under
+            the KFGQPC licence (free to use, copy and distribute; not to be sold or modified),
+            while Scheherazade New, Noto Naskh Arabic, Lateef and Noto Nastaliq Urdu are licensed
+            under the open-source SIL Open Font License (OFL 1.1). Every Arabic verse enforces
+            right-to-left Unicode isolation (
             <code className="font-ui text-xs">dir="rtl"</code>) and carries{' '}
             <code className="font-ui text-xs">translate="no"</code> attributes to prevent automated
             browser translation extensions from altering sacred text.

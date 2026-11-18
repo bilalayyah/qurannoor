@@ -12,6 +12,8 @@ interface VirtualizedVerseChunksProps {
   highlightedVerseKey?: string | null;
   forcedMountPage?: number | null;
   mountRadius?: number;
+  /** Changes when a display setting that affects chunk heights changes; cached heights are invalidated. */
+  layoutKey?: string;
   renderVerse: (verse: Verse, flatIndex: number) => React.ReactNode;
 }
 
@@ -26,6 +28,7 @@ export function VirtualizedVerseChunks({
   highlightedVerseKey = null,
   forcedMountPage = null,
   mountRadius = 2,
+  layoutKey,
   renderVerse,
 }: VirtualizedVerseChunksProps) {
   const [anchorPage, setAnchorPage] = useState<number>(() => chunks[0]?.page ?? 1);
@@ -71,6 +74,18 @@ export function VirtualizedVerseChunks({
       }
     }
   }, [chunks]);
+
+  // Invalidate cached chunk heights when display settings change (Arabic font
+  // size, translations, Tajweed, script) — unmounted chunk spacers would
+  // otherwise keep stale heights and scrolling back can jump. Chunks with no
+  // measured height simply re-mount and re-measure, so clearing is safe.
+  const prevLayoutKeyRef = useRef<string | undefined>(layoutKey);
+  useEffect(() => {
+    if (prevLayoutKeyRef.current !== layoutKey) {
+      prevLayoutKeyRef.current = layoutKey;
+      measuredHeightsRef.current.clear();
+    }
+  }, [layoutKey]);
 
   const updateAnchorFromScroll = useCallback(() => {
     if (chunks.length <= 1) return;

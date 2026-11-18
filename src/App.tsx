@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AudioPlayer } from './components/AudioPlayer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { InstallAppModal } from './components/InstallAppModal';
@@ -82,6 +83,9 @@ const AccessibilityPage = lazy(() =>
 const BrandPage = lazy(() =>
   import('./pages/BrandPage').then((m) => ({ default: m.BrandPage }))
 );
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
+);
 
 function RouteFallback() {
   return (
@@ -97,6 +101,7 @@ function RouteFallback() {
 function AppShell() {
   const { toastMessage } = useReader();
   const { isPlaying, isLoading, activeVerseKey, activeChapterId } = useAudio();
+  const location = useLocation();
   const hasActiveAudio = Boolean(activeVerseKey || activeChapterId || isPlaying || isLoading);
 
   return (
@@ -113,6 +118,7 @@ function AppShell() {
 
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Suspense fallback={<RouteFallback />}>
+          <ErrorBoundary resetKey={location.pathname}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/quran" element={<QuranGatewayPage />} />
@@ -143,8 +149,9 @@ function AppShell() {
             {/* Legacy route redirects */}
             <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
             <Route path="/terms" element={<Navigate to="/terms-and-conditions" replace />} />
-            <Route path="*" element={<HomePage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          </ErrorBoundary>
         </Suspense>
       </main>
 

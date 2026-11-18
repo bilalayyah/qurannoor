@@ -108,7 +108,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     try {
       const migrated = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED);
       if (!migrated) {
-        if (stored.arabicFontSize === undefined || stored.arabicFontSize >= 26) {
+        if (stored.arabicFontSize === undefined || stored.arabicFontSize < 28) {
           resolvedArabicSize = DEFAULT_SETTINGS.arabicFontSize;
         }
         localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED, '1');

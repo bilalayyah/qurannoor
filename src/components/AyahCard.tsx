@@ -679,6 +679,16 @@ export function AyahCard({
         </div>
       )}
 
+      {/* Translation unavailable note */}
+      {settings.showTranslation && !cleanTranslation && !cleanUrdu && (
+        <p
+          className="mb-4 text-xs italic"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          Translation unavailable for this Ayah.
+        </p>
+      )}
+
       {/* Subtle Secondary Action Strip */}
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
         {ttsSupported && cleanTranslation && (

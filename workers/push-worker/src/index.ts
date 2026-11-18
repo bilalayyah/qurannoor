@@ -137,28 +137,28 @@ function getAyahOfTheDayRef(date: Date = new Date()): {
   return { verseKey: '1:1', chapterName: 'Al-Fatihah' };
 }
 
+function toSurahSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['`’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function buildReminderPayload(
-  record: StoredSubscription,
+  _record: StoredSubscription,
   ayahRef: { verseKey: string; chapterName: string }
 ): string {
-  const streak =
-    typeof record.streak === 'number' && Number.isFinite(record.streak) && record.streak > 0
-      ? Math.floor(record.streak)
-      : 0;
-
-  const baseGoal =
-    streak > 0
-      ? `Aaj ka Quran goal — 10 ayahs padhein (${streak}-day streak)`
-      : 'Aaj ka Quran goal — 10 ayahs padhein';
-
-  const body = `${baseGoal} · Ayah of the Day: Surah ${ayahRef.chapterName} (${ayahRef.verseKey})`;
+  const verseNumber = ayahRef.verseKey.split(':')[1] || '1';
+  const ayahUrl = `/ayah/${toSurahSlug(ayahRef.chapterName)}/${verseNumber}`;
+  const body = `Your daily Quran reminder — Surah ${ayahRef.chapterName} (${ayahRef.verseKey})`;
 
   return JSON.stringify({
     title: 'QuranNoor',
     body,
     tag: 'daily-reminder',
     ayahKey: ayahRef.verseKey,
-    url: '/',
+    url: ayahUrl,
   });
 }
 

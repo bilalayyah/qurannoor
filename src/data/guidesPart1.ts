@@ -10,7 +10,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Start a calm, sustainable daily routine for reading the Noble Quran—without burnout—by pairing small fixed portions with translation and steady timing.',
@@ -98,7 +98,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
     category: 'Tajweed & Hifz',
     arabicAccent: 'عَلَّمَ الْقُرْآنَ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Learn what Tajweed means, why articulation points (Makharij) protect the clarity of Arabic letters, and how foundational rules like Noon Sakinah, Madd, and Qalqalah work.',
@@ -186,7 +186,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
     category: 'Tajweed & Hifz',
     arabicAccent: 'وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Discover how students memorize the Quran reliably using small daily new portions, disciplined revision ratios, Juz 30 foundations, and guided listening.',
@@ -275,7 +275,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'كِتَابٌ أَنزَلْنَاهُ إِلَيْكَ مُبَارَكٌ لِّيَدَّبَّرُوا آيَاتِهِ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Understand the discipline of Tafsir (Quranic exegesis), classical commentary traditions such as Tafsir Ibn Kathir, and how to read Tafsir safely alongside the text.',
@@ -362,7 +362,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'شَهْرُ رَمَضَانَ الَّذِي أُنزِلَ فِيهِ الْقُرْآنُ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-15',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Understand how the 30 Juz divide the Noble Quran into balanced daily portions, why Juz boundaries cross Surahs, and the well-known names of major Juz sections.',

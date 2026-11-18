@@ -10,7 +10,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
     category: 'Daily Reading',
     arabicAccent: 'وَاعْبُدْ رَبَّكَ حَتَّىٰ يَأْتِيَكَ الْيَقِينُ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Build a lifelong daily bond with the Quran in ten focused minutes a day—through tiny goals, reliable daily triggers, streak tracking, and calm missed-day recovery.',
@@ -98,7 +98,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Discover why Surah Al-Fatiha is called Umm al-Kitab ("Mother of the Book"), why it opens every rakah of prayer, and the clear meaning of each of its seven ayahs.',
@@ -185,7 +185,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
     category: 'Quran Study',
     arabicAccent: 'وَقُرْآنًا فَرَقْنَاهُ لِتَقْرَأَهُ عَلَى النَّاسِ عَلَىٰ مُكْثٍ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Learn how classical scholars distinguish Makki and Madani chapters—anchored around the Hijrah to Madinah—and see why their tone, length, and themes complement one another.',
@@ -266,7 +266,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
     category: 'Tajweed & Hifz',
     arabicAccent: 'رَبِّ هَبْ لِي مِن لَّدُنكَ ذُرِّيَّةً طَيِّبَةً',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Help children grow up loving the Quran—by keeping daily lessons brief, starting with Juz 30 short surahs, using audio repetition, and leading with patience and warmth.',
@@ -354,7 +354,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
     category: 'Tajweed & Hifz',
     arabicAccent: 'فَاقْرَءُوا مَا تَيَسَّرَ مِنَ الْقُرْآنِ',
     author: 'QuranNoor Team',
-    publishedAt: '2026-11-16',
+    publishedAt: '2026-11-17',
     readingTimeMinutes: 5,
     summary:
       'Identify everyday habits that slip into fast Quran reading—from swallowed vowels and confused similar letters to skipping translation—with practical, calm corrections.',

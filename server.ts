@@ -807,7 +807,7 @@ app.get('/sitemap.xml', async (req, res) => {
       ])
     );
 
-    const lastmod = '2026-11-16';
+    const lastmod = '2026-11-18';
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allPaths

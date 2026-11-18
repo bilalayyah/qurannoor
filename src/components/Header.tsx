@@ -114,14 +114,17 @@ export function Header() {
         borderColor: 'var(--border-subtle)',
       }}
     >
-      <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between gap-1.5 sm:gap-3 lg:gap-5 px-3 sm:px-6">
+      <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between gap-1 sm:gap-3 lg:gap-5 px-2 min-[380px]:px-3 sm:px-6">
         {/* Zone 1: QuranNoor Brand Logo */}
         <Link
           to="/"
           aria-label="QuranNoor Home"
           className="inline-flex items-center whitespace-nowrap shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
         >
-          <span className="sm:hidden">
+          <span className="min-[380px]:hidden">
+            <QuranNoorLogo variant="compact" size="sm" />
+          </span>
+          <span className="hidden min-[380px]:inline-flex sm:hidden">
             <QuranNoorLogo variant="horizontal" size="sm" />
           </span>
           <span className="hidden sm:inline-flex">
@@ -163,7 +166,7 @@ export function Header() {
               title={`${prayerData.location.label} · ${countdown.nextPrayer} at ${formatPrayerDisplayTime(
                 countdown.nextTime24
               )}`}
-              className="mr-0.5 sm:mr-1 inline-flex items-center gap-1 sm:gap-1.5 rounded-full border px-1.5 min-[380px]:px-2 sm:px-2.5 py-1 text-[10.5px] min-[380px]:text-[11px] sm:text-xs font-medium tabular-nums whitespace-nowrap shrink-0 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+              className="mr-0.5 sm:mr-1 inline-flex items-center gap-1 sm:gap-1.5 rounded-full border px-1.5 sm:px-2.5 py-1 text-[10.5px] min-[380px]:text-[11px] sm:text-xs font-medium tabular-nums whitespace-nowrap shrink-0 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
               style={{
                 backgroundColor: 'var(--accent-soft)',
                 borderColor: 'color-mix(in srgb, var(--accent) 26%, transparent)',
@@ -177,7 +180,7 @@ export function Header() {
               />
               <span className="hidden sm:inline">{countdown.countdownWithSecondsText}</span>
               <span className="sm:hidden">
-                {countdown.nextPrayer} · {countdown.remainingWithSecondsText}
+                {countdown.nextPrayer} · {countdown.remainingText}
               </span>
             </Link>
           )}
@@ -209,7 +212,7 @@ export function Header() {
           <Link
             to="/search"
             aria-label="Search the Quran"
-            className="inline-flex h-7 w-7 min-[380px]:h-8 min-[380px]:w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             <Search className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
@@ -219,7 +222,7 @@ export function Header() {
             type="button"
             onClick={cycleTheme}
             aria-label={settings.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="inline-flex h-7 w-7 min-[380px]:h-8 min-[380px]:w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             {settings.theme === 'dark' ? (
@@ -233,7 +236,7 @@ export function Header() {
             type="button"
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Reader settings"
-            className="inline-flex h-7 w-7 min-[380px]:h-8 min-[380px]:w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             <Settings className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
@@ -244,7 +247,7 @@ export function Header() {
             onClick={() => setMobileMenuOpen((v) => !v)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
-            className="inline-flex md:hidden h-7 w-7 min-[380px]:h-8 min-[380px]:w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex md:hidden h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{ color: 'var(--text-primary)' }}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

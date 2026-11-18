@@ -330,7 +330,7 @@ export function ListenPage() {
                       className="mt-0.5 truncate text-xs"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
-                      {ch.translated_name?.name} · {ch.verses_count} Ayahs
+                      {ch.translated_name?.name ? `${ch.translated_name.name} · ` : ''}{ch.verses_count} Ayahs
                     </p>
                   </div>
                 </div>
