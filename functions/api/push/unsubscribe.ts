@@ -1,4 +1,6 @@
 interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }
 
@@ -17,6 +19,39 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
   'Cache-Control': 'no-store',
 };
+
+// M-10: best-effort per-IP rate limiting via KV (fail-open). See subscribe.ts
+// for the rationale; unsubscribe is limited to 20/hour/IP.
+async function hashString(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
+}
+
+async function checkPushRateLimit(
+  kv: KVNamespaceLike,
+  request: Request,
+  action: string,
+  limit: number,
+  windowSeconds: number
+): Promise<boolean> {
+  try {
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (!ip) return true;
+    const windowId = Math.floor(Date.now() / (windowSeconds * 1000));
+    const key = `rl:push:${action}:${await hashString(ip)}:${windowId}`;
+    const raw = await kv.get(key);
+    const count = raw ? parseInt(raw, 10) || 0 : 0;
+    if (count >= limit) return false;
+    await kv.put(key, String(count + 1), { expirationTtl: windowSeconds + 60 });
+    return true;
+  } catch (e) {
+    console.error('Push rate-limit check failed (failing open)', e);
+    return true;
+  }
+}
 
 async function hashEndpoint(endpoint: string): Promise<string> {
   const bytes = new TextEncoder().encode(endpoint);
@@ -43,9 +78,25 @@ export const onRequestPost = async (context: {
     );
   }
 
+  // M-10: rate-limit unsubscribes (20/hour/IP) before parsing the body.
+  if (!(await checkPushRateLimit(env.PUSH_KV, request, 'unsubscribe', 20, 3600))) {
+    return new Response(
+      JSON.stringify({ ok: false, error: 'Too many requests. Please try again later.' }),
+      { status: 429, headers: JSON_HEADERS }
+    );
+  }
+
+  // M-10: size cap — an unsubscribe body is just an endpoint URL.
   let body: UnsubscribePayload;
   try {
-    body = (await request.json()) as UnsubscribePayload;
+    const text = await request.text();
+    if (text.length > 2048) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Request body too large.' }),
+        { status: 413, headers: JSON_HEADERS }
+      );
+    }
+    body = JSON.parse(text) as UnsubscribePayload;
   } catch {
     return new Response(
       JSON.stringify({ ok: false, error: 'Invalid JSON request body.' }),

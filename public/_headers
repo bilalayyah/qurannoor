@@ -1,0 +1,45 @@
+# Security headers for QuranNoor (Cloudflare Pages).
+# Audit H-2 (2026-11-18): no HSTS / CSP / X-Frame-Options / Permissions-Policy
+# was set on any response. These rules cover static assets; functions/_middleware.ts
+# applies the same headers to Pages Functions responses (incl. /api/*), because
+# _headers alone does not reliably cover Function responses.
+#
+# CSP host inventory (verified against the code, 2026-11-18):
+# - Google Fonts CSS/woff2: fonts.googleapis.com, fonts.gstatic.com
+# - UthmanicHafs font (see src/index.css): verses.quran.foundation
+# - Quran API (via the /api proxy, browser never calls it directly, but listed
+#   for defence-in-depth if a direct call is ever made): api.quran.com,
+#   apis.quran.foundation, apis-prelive.quran.foundation,
+#   oauth2.quran.foundation, prelive-oauth2.quran.foundation
+# - Audio: verses.quran.com (API audio URLs), cdn.islamic.network (Urdu audio)
+# - Prayer times / Qibla: api.aladhan.com
+# - Reverse-geocode + IP fallback (src/services/prayerApi.ts):
+#   api.bigdatacloud.net, nominatim.openstreetmap.org, ipapi.co, ipwho.is,
+#   get.geojs.io
+# - Contact form POST (src/pages/ContactPage.tsx, fetch): formsubmit.co
+# - data:/blob: in font-src + img-src is required by the share-as-photo
+#   canvas (src/components/ShareAyahPhotoModal.tsx, html-to-image toPng):
+#   html-to-image embeds fetched fonts as data: URLs when rasterising the
+#   card, and the PNG itself is a data: URL used for download/share.
+#   Without data: the card would fall back to a generic serif font.
+# - style-src 'unsafe-inline' is required: the app sets inline styles
+#   (style attributes) pervasively in React components.
+# - No 'unsafe-inline' / 'unsafe-eval' in script-src: index.html has no
+#   inline executable script (only a JSON-LD data block, which browsers do
+#   not execute as script) and the Vite bundle is same-origin.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://verses.quran.foundation; img-src 'self' data: blob:; media-src 'self' https://verses.quran.com https://verses.quran.foundation https://cdn.islamic.network; connect-src 'self' https://api.quran.com https://apis.quran.foundation https://apis-prelive.quran.foundation https://oauth2.quran.foundation https://prelive-oauth2.quran.foundation https://verses.quran.foundation https://verses.quran.com https://api.aladhan.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://get.geojs.io https://cdn.islamic.network https://formsubmit.co; worker-src 'self'; manifest-src 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+
+/api/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox

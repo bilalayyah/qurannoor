@@ -1,3 +1,8 @@
+interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
 interface Env {
   QURAN_CLIENT_ID?: string;
   QURAN_CLIENT_SECRET?: string;
@@ -5,6 +10,10 @@ interface Env {
   QF_CLIENT_ID?: string;
   QF_CLIENT_SECRET?: string;
   QF_ENV?: string;
+  // Optional: bound project-wide (wrangler.toml PUSH_KV). Used ONLY for the
+  // best-effort per-IP rate-limit counters below (keys prefixed rl:api:).
+  // Absent in preview -> rate limiting is skipped (fail open).
+  PUSH_KV?: KVNamespaceLike;
 }
 
 const PUBLIC_API_BASE = 'https://api.quran.com/api/v4';
@@ -18,6 +27,85 @@ const SCOPES_CONTENT = [
 ].join(' ');
 
 let tokenCache: { accessToken: string; expiresAt: number } | null = null;
+
+// M-9: best-effort per-IP rate limiting for the API proxy, backed by KV when
+// the binding is present. Fail-open: any KV error (or a missing binding /
+// missing CF-Connecting-IP) skips limiting rather than breaking reads.
+// This is only an abuse backstop (300 req/min/IP — far above normal use);
+// the primary protection should be a Cloudflare dashboard rate-limit rule
+// on /api/*, which the coordinator should add (see report). KV is eventually
+// consistent, so concurrent bursts can overshoot the limit slightly.
+async function hashClientIp(ip: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
+}
+
+async function checkApiRateLimit(env: Env, request: Request): Promise<boolean> {
+  try {
+    const kv = env.PUSH_KV;
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (!kv || !ip) return true;
+    const windowId = Math.floor(Date.now() / 60_000);
+    const key = `rl:api:${await hashClientIp(ip)}:${windowId}`;
+    const raw = await kv.get(key);
+    const count = raw ? parseInt(raw, 10) || 0 : 0;
+    if (count >= 300) return false;
+    await kv.put(key, String(count + 1), { expirationTtl: 90 });
+    return true;
+  } catch (e) {
+    console.error('API rate-limit check failed (failing open)', e);
+    return true;
+  }
+}
+
+// M-9: allow-list of real Quran API paths this proxy serves. Anything else
+// gets a 404 instead of falling through to the upstream (the old open-proxy
+// behaviour). "contact" and "push" are deliberately NOT here — they are
+// handled by their own route files (functions/api/contact.ts,
+// functions/api/push/*). The quran/* variants are the legacy URL shapes the
+// preview server also serves; they map to the same upstream paths.
+const ALLOWED_API_PATHS: RegExp[] = [
+  /^env-status$/,
+  /^chapters$/,
+  /^chapters\/\d+$/,
+  /^quran\/chapters$/,
+  /^quran\/chapters\/\d+$/,
+  /^verses\/by_chapter\/\d+$/,
+  /^quran\/verses\/chapter\/\d+$/,
+  /^verses\/by_juz\/\d{1,2}$/,
+  /^quran\/verses\/juz\/\d{1,2}$/,
+  /^verses\/by_key\/\d{1,3}:\d{1,3}$/,
+  /^quran\/verses\/by_key\/\d{1,3}:\d{1,3}$/,
+  /^verses\/key\/\d{1,3}:\d{1,3}$/,
+  /^quran\/verses\/key\/\d{1,3}:\d{1,3}$/,
+  /^verses\/keys$/,
+  /^quran\/verses\/keys$/,
+  /^juz$/,
+  /^juzs$/,
+  /^quran\/juzs$/,
+  /^translations$/,
+  /^quran\/resources\/translations$/,
+  /^tafsirs$/,
+  /^quran\/resources\/tafsirs$/,
+  /^tafsirs\/\d+\/by_ayah\/\d{1,3}:\d{1,3}$/,
+  /^quran\/tafsirs\/\d+\/by_ayah\/\d{1,3}:\d{1,3}$/,
+  /^recitations$/,
+  /^quran\/resources\/recitations$/,
+  /^recitations\/\d+\/by_chapter\/\d+$/,
+  /^quran\/recitations\/\d+\/by_chapter\/\d+$/,
+  /^audio$/,
+  /^audio\/chapter\/\d+\/\d+$/,
+  /^quran\/audio\/chapter\/\d+\/\d+$/,
+  /^search$/,
+  /^quran\/search$/,
+];
+
+function isAllowedApiPath(subPath: string): boolean {
+  return ALLOWED_API_PATHS.some((re) => re.test(subPath));
+}
 
 async function getOAuthToken(env: Env): Promise<string | null> {
   const clientId = (env.QURAN_CLIENT_ID || env.QF_CLIENT_ID)?.trim();
@@ -47,7 +135,13 @@ async function getOAuthToken(env: Env): Promise<string | null> {
     body: `grant_type=client_credentials&scope=${encodeURIComponent(SCOPES_CONTENT)}`,
   });
 
-  if (!resp.ok) return null;
+  if (!resp.ok) {
+    // L-8: OAuth failures must not fail silently — log server-side. The proxy
+    // still falls back to the public API (no token), but the failure is now
+    // visible in Functions logs instead of silently degrading.
+    console.error('Quran API OAuth token request failed', resp.status, oauthUrl);
+    return null;
+  }
   const data = (await resp.json()) as { access_token: string; expires_in?: number };
   tokenCache = {
     accessToken: data.access_token,
@@ -148,6 +242,9 @@ export const onRequestGet = async (context: {
   const subPath = (params.path || []).join('/');
 
   const clientId = (env.QURAN_CLIENT_ID || env.QF_CLIENT_ID)?.trim();
+  // L-8: hasCredentials must reflect id AND secret, matching the preview
+  // server (server.ts), which requires both to obtain a token.
+  const clientSecret = (env.QURAN_CLIENT_SECRET || env.QF_CLIENT_SECRET)?.trim();
   const rawEnv = (env.QURAN_ENV || env.QF_ENV)?.trim() || 'production';
   const environment = rawEnv === 'prelive' ? 'prelive' : 'production';
 
@@ -158,11 +255,27 @@ export const onRequestGet = async (context: {
         environment,
         appName: 'Noor Quran',
         isPrelive: environment === 'prelive',
-        hasCredentials: Boolean(clientId),
+        hasCredentials: Boolean(clientId && clientSecret),
         scopes: SCOPES_CONTENT.split(' '),
         supportedSurahs: environment === 'prelive' ? [1, 2] : Array.from({ length: 114 }, (_, i) => i + 1),
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // M-9: size cap — reject absurdly long query strings before proxying.
+  if (url.search.length > 2048) {
+    return new Response(JSON.stringify({ error: 'Query string too long.' }), {
+      status: 414,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // M-9: per-IP rate limiting (best-effort via KV; fails open).
+  if (!(await checkApiRateLimit(env, request))) {
+    return new Response(
+      JSON.stringify({ error: 'Too many requests. Please try again shortly.' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -463,13 +576,70 @@ export const onRequestGet = async (context: {
     }
     const upstreamQs = buildUpstreamVersesParams(url.searchParams, false);
     upstreamPath = `/verses/by_key/${key}?${upstreamQs.toString()}`;
+  } else if (subPath.startsWith('verses/by_key/') || subPath.startsWith('quran/verses/by_key/')) {
+    // L-1: /api/verses/by_key/2:255 previously fell through to the generic
+    // passthrough with no default fields, so it returned metadata only (no
+    // Arabic, no translations) unless the caller passed ?fields= explicitly.
+    // It now gets the same defaults as verses/key/ and the other verse
+    // branches (buildUpstreamVersesParams).
+    const key = subPath.replace('verses/by_key/', '').replace('quran/verses/by_key/', '');
+    if (!/^\d{1,3}:\d{1,3}$/.test(key)) {
+      return new Response(JSON.stringify({ error: 'Provide a valid verse key (chapter:verse).' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const chId = Number(key.split(':')[0]);
+    if (environment === 'prelive' && chId > 2) {
+      return new Response(
+        JSON.stringify({
+          error: `Verse ${key} requires Production API approval. Pre-live sandbox provides Surah 1 & 2.`,
+          code: 'PRELIVE_LIMITED',
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    const upstreamQs = buildUpstreamVersesParams(url.searchParams, false);
+    upstreamPath = `/verses/by_key/${key}?${upstreamQs.toString()}`;
+  }
+
+  // M-9: drop unknown paths with 404 instead of proxying them upstream.
+  // (env-status, recitations, verses/keys and audio/chapter returned above.)
+  if (!isAllowedApiPath(subPath)) {
+    return new Response(JSON.stringify({ error: 'Unknown API path.' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // M-9: clamp per_page on the generic passthrough (the verse branches
+  // already clamp via buildUpstreamVersesParams; this is idempotent there).
+  {
+    const qs = new URLSearchParams(url.search);
+    if (qs.has('per_page')) {
+      const clamped = Math.min(50, Math.max(1, Number(qs.get('per_page')) || 30));
+      qs.set('per_page', String(clamped));
+      const qIndex = upstreamPath.indexOf('?');
+      upstreamPath =
+        qIndex >= 0
+          ? `${upstreamPath.slice(0, qIndex)}?${qs.toString()}`
+          : `${upstreamPath}?${qs.toString()}`;
+    }
   }
 
   try {
-    const upstreamRes = await fetch(`${baseUrl}${upstreamPath}`, { headers });
+    let upstreamRes = await fetch(`${baseUrl}${upstreamPath}`, { headers });
 
+    // L-8: on upstream 401, clear the cached token and retry once with a
+    // fresh token instead of handing the client a raw 401.
     if (upstreamRes.status === 401 && headers['x-auth-token']) {
       tokenCache = null;
+      const freshToken = await getOAuthToken(env);
+      if (freshToken && clientId) {
+        upstreamRes = await fetch(`${baseUrl}${upstreamPath}`, {
+          headers: { ...headers, 'x-auth-token': freshToken },
+        });
+      }
     }
 
     if (!upstreamRes.ok) {
@@ -496,8 +666,18 @@ export const onRequestGet = async (context: {
           );
         }
       }
+      // L-7: log the upstream detail server-side only; the client gets a
+      // generic message (the full upstream JSON used to leak verbatim).
+      console.error(
+        'Upstream API error',
+        upstreamRes.status,
+        subPath,
+        errText.slice(0, 500)
+      );
       return new Response(
-        JSON.stringify({ error: `Upstream error (${upstreamRes.status}): ${errText}` }),
+        JSON.stringify({
+          error: 'The Quran API returned an error. Please try again.',
+        }),
         { status: upstreamRes.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
