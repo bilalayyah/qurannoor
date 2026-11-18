@@ -1,12 +1,10 @@
-import { Clock, LocateFixed, MapPin, RotateCw } from 'lucide-react';
+import { Clock, LocateFixed, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { QiblaCompass } from '../components/QiblaCompass';
 import { ErrorBanner } from '../components/StatusStates';
-import { ThemedSelect, type ThemedSelectOption } from '../components/ThemedSelect';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import {
-  CALCULATION_METHODS,
   detectPrayerLocationAuto,
   fetchPrayerAndQiblaData,
   formatPrayerDisplayTime,
@@ -36,7 +34,7 @@ export function PrayerTimesPage() {
   });
 
   const initialPrefs = useMemo(() => loadPrayerPreferences(), []);
-  const [method, setMethod] = useState<number>(initialPrefs.method);
+  const [method] = useState<number>(initialPrefs.method);
   const [location, setLocation] = useState<PrayerLocation | null>(initialPrefs.location);
 
   const [prayerData, setPrayerData] = useState<PrayerDayData | null>(() =>
@@ -150,27 +148,6 @@ export function PrayerTimesPage() {
     return getNextPrayerCountdown(prayerData.timings, prayerData.timezone, nowTick);
   }, [prayerData, nowTick]);
 
-  const activeMethodOption = useMemo(
-    () => CALCULATION_METHODS.find((m) => m.id === method),
-    [method]
-  );
-
-  const methodOptions = useMemo<ThemedSelectOption[]>(
-    () =>
-      CALCULATION_METHODS.map((m) => ({
-        value: String(m.id),
-        label: m.name,
-        badge: m.shortName,
-        keywords: `${m.name} ${m.shortName}`,
-      })),
-    []
-  );
-
-  const displayTimezone =
-    prayerData?.timezone ||
-    location?.timezone ||
-    (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC');
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 space-y-8">
       <Breadcrumbs
@@ -192,66 +169,6 @@ export function PrayerTimesPage() {
           Today&apos;s five daily prayer times, live next-prayer countdown, and Qibla compass bearing powered by the free Aladhan API.
         </p>
       </div>
-
-      {/* Compact Detected Location Bar + Calculation Method Selector */}
-      <section
-        aria-label="Location and Calculation Method Settings"
-        className="rounded-2xl border p-4 sm:p-5"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-subtle)',
-        }}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
-            <MapPin
-              className="h-4 w-4 shrink-0 mt-0.5 sm:mt-0"
-              style={{ color: 'var(--accent-text)' }}
-            />
-            <div className="min-w-0">
-              <p
-                className="text-sm font-semibold truncate"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {location ? (
-                  <>
-                    {location.label}
-                    {displayTimezone ? ` · ${displayTimezone}` : ''}
-                  </>
-                ) : detectingLocation ? (
-                  'Detecting your location…'
-                ) : (
-                  'Location permission needed'
-                )}
-              </p>
-              <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-                Method: {activeMethodOption?.name || `Method ${method}`}
-              </p>
-            </div>
-          </div>
-
-          <div className="w-full sm:w-80 shrink-0 space-y-1">
-            <label
-              htmlFor="calculation-method-select"
-              className="block text-xs font-medium"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Calculation Method
-            </label>
-            <ThemedSelect
-              id="calculation-method-select"
-              ariaLabel="Calculation Method"
-              value={String(method)}
-              options={methodOptions}
-              onChange={(val) => setMethod(Number(val))}
-              searchPlaceholder="Search calculation method..."
-              searchable
-              emptyText="No calculation methods match your search"
-              className="w-full"
-            />
-          </div>
-        </div>
-      </section>
 
       {/* Main Content */}
       {locationError && !location ? (
