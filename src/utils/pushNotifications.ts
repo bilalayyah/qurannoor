@@ -131,11 +131,7 @@ export async function refreshPushStatus(): Promise<PushSnapshot> {
   return currentSnapshot;
 }
 
-export async function enableDailyReminder(options?: {
-  streak?: number;
-  goalTarget?: number;
-  goalUnit?: 'ayahs' | 'pages';
-}): Promise<PushSnapshot> {
+export async function enableDailyReminder(): Promise<PushSnapshot> {
   if (!isPushSupported()) {
     setSnapshot({
       status: 'unsupported',
@@ -230,9 +226,6 @@ export async function enableDailyReminder(options?: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         subscription: subscription.toJSON(),
-        streak: options?.streak || 0,
-        goalTarget: options?.goalTarget || 10,
-        goalUnit: options?.goalUnit || 'ayahs',
       }),
     });
 
@@ -320,11 +313,7 @@ export function usePushNotifications() {
     };
   }, []);
 
-  const enable = useCallback(
-    (options?: { streak?: number; goalTarget?: number; goalUnit?: 'ayahs' | 'pages' }) =>
-      enableDailyReminder(options),
-    []
-  );
+  const enable = useCallback(() => enableDailyReminder(), []);
 
   const disable = useCallback(() => disableDailyReminder(), []);
 

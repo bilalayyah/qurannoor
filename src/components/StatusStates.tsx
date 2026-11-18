@@ -47,7 +47,7 @@ export function ErrorBanner({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--accent)' }}
         >
           <RefreshCw className="h-4 w-4" />

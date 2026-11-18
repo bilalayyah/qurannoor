@@ -5,6 +5,7 @@ import { QiblaCompass } from '../components/QiblaCompass';
 import { ErrorBanner } from '../components/StatusStates';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import {
+  DEFAULT_CALCULATION_METHOD,
   detectPrayerLocationAuto,
   fetchPrayerAndQiblaData,
   formatPrayerDisplayTime,
@@ -29,12 +30,13 @@ export function PrayerTimesPage() {
   usePageMetadata({
     title: 'Prayer Times & Qibla Direction – QuranNoor',
     description:
-      'Accurate daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha), live next-prayer countdown, calculation method selector, and Qibla compass bearing from the Aladhan API.',
+      'Accurate daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha), live next-prayer countdown, and Qibla compass bearing from the Aladhan API.',
     canonicalPath: '/prayer-times',
   });
 
   const initialPrefs = useMemo(() => loadPrayerPreferences(), []);
-  const [method] = useState<number>(initialPrefs.method);
+  // Calculation method is fixed (Karachi, method 1) — no user-changeable picker.
+  const method = DEFAULT_CALCULATION_METHOD;
   const [location, setLocation] = useState<PrayerLocation | null>(initialPrefs.location);
 
   const [prayerData, setPrayerData] = useState<PrayerDayData | null>(() =>
@@ -196,7 +198,7 @@ export function PrayerTimesPage() {
           <button
             type="button"
             onClick={() => runAutoDetection(true)}
-            className="mt-4 inline-flex min-h-[42px] items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             <LocateFixed className="h-4 w-4" />

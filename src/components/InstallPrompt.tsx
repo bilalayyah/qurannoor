@@ -140,7 +140,7 @@ export function InstallPrompt() {
                   type="button"
                   disabled={installing}
                   onClick={handleInstall}
-                  className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: 'var(--accent)' }}
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -149,7 +149,7 @@ export function InstallPrompt() {
                 <button
                   type="button"
                   onClick={dismiss}
-                  className="inline-flex min-h-[38px] items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                   style={{
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-secondary)',
@@ -172,7 +172,7 @@ export function InstallPrompt() {
                 <button
                   type="button"
                   onClick={dismiss}
-                  className="inline-flex min-h-[38px] items-center justify-center rounded-xl px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent)' }}
                 >
                   Got it

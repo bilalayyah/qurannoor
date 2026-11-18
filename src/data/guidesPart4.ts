@@ -43,7 +43,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
       {
         heading: 'Track Streaks Gently and Recover Without Guilt',
         paragraphs: [
-          'Visual progress reinforces identity. Using QuranNoor’s Daily Reading Goal lets you pick an approachable target—such as 5 ayahs or 1 page daily—and watch your streak build cleanly in your own browser without public comparison.',
+          'Visual progress reinforces identity. Setting an approachable target—such as 5 ayahs or 1 page daily—and marking each completed day on a simple calendar or in a notebook lets you watch your habit build cleanly, without public comparison.',
           'When an unavoidable emergency or illness breaks your streak, avoid the all-or-nothing trap of quitting for a month. Never double or triple yesterday’s debt in panic; simply treat the next day as day one of your next steady stretch and keep your ten-minute slot alive.',
         ],
       },
@@ -71,7 +71,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
       {
         question: 'Should I set my daily goal by ayahs or by pages?',
         answer:
-          'Both work well. Beginners or those reading closely with translation often prefer 5–10 ayahs, while continuous readers enjoy 1–2 pages per day. QuranNoor’s Daily Reading Goal supports both.',
+          'Both work well. Beginners or those reading closely with translation often prefer 5–10 ayahs, while continuous readers enjoy 1–2 pages per day. Pick whichever measure keeps you reading steadily every day.',
       },
       {
         question: 'What if I lose focus during those ten minutes?',

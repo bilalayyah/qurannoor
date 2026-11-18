@@ -50,7 +50,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
       {
         heading: 'Track Consistency Without Turning Worship Into Pressure',
         paragraphs: [
-          'Simple tools like a daily ayah goal or a structured 30-day Khatm plan help make progress visible without turning reading into a race. If you miss a day, avoid harsh self-criticism or abandoning the entire plan. Simply resume from the ayah where you left off and protect tomorrow’s slot.',
+          'Simple habits like a small daily ayah goal or a 30-day reading plan you can follow help make progress visible without turning reading into a race. If you miss a day, avoid harsh self-criticism or abandoning the entire plan. Simply resume from the ayah where you left off and protect tomorrow’s slot.',
           'Consider writing down one short reflection each week—an ayah that comforted you, a divine attribute mentioned at the end of a passage, or a question to explore in Tafsir. Reflection transforms daily reading from a checkbox into lifelong companionship with the Quran.',
         ],
       },
@@ -402,7 +402,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
       {
         heading: 'Using Juz Navigation for Daily Reading and Revision',
         paragraphs: [
-          'Whether you follow a structured 30-day Khatm plan, review memorized portions in weekly cycles, or simply want a predictable daily reading measure of twenty pages, reading by Juz keeps your daily effort balanced from day one through day thirty. On QuranNoor, you can open any Juz directly from the Juz directory with its full Arabic and translation text.',
+          'Whether you follow a 30-day reading plan of your own, review memorized portions in weekly cycles, or simply want a predictable daily reading measure of twenty pages, reading by Juz keeps your daily effort balanced from day one through day thirty. On QuranNoor, you can open any Juz directly from the Juz directory with its full Arabic and translation text.',
         ],
       },
     ],

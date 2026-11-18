@@ -175,7 +175,7 @@ export function ThemedSelect({
           });
         }}
         className={`flex w-full items-center justify-between gap-2 rounded-xl border text-left outline-none transition-all duration-150 disabled:opacity-60 ${
-          compact ? 'min-h-[36px] px-3 py-1.5 text-xs' : 'min-h-[44px] px-3.5 py-2 text-sm'
+          compact ? 'min-h-[44px] px-3 py-1.5 text-xs' : 'min-h-[44px] px-3.5 py-2 text-sm'
         }`}
         style={{
           backgroundColor: 'var(--bg-canvas)',
@@ -245,7 +245,7 @@ export function ThemedSelect({
               }}
             >
               <div
-                className="flex min-h-[38px] items-center gap-2 rounded-xl border px-2.5 transition-colors focus-within:border-[var(--accent)]"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl border px-2.5 transition-colors focus-within:border-[var(--accent)]"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderColor: 'var(--border-subtle)',

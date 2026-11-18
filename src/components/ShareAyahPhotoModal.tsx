@@ -700,7 +700,7 @@ export function ShareAyahPhotoModal({
                 role="radio"
                 aria-checked={mode === 'arabic-only'}
                 onClick={() => setMode('arabic-only')}
-                className="min-h-[40px] rounded-lg px-3 py-2 text-xs font-semibold transition-all"
+                className="min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold transition-all"
                 style={{
                   backgroundColor: mode === 'arabic-only' ? 'var(--accent)' : 'transparent',
                   color: mode === 'arabic-only' ? '#FFFFFF' : 'var(--text-secondary)',
@@ -715,7 +715,7 @@ export function ShareAyahPhotoModal({
                 aria-checked={mode === 'arabic-english'}
                 disabled={!hasTranslation}
                 onClick={() => setMode('arabic-english')}
-                className="min-h-[40px] rounded-lg px-3 py-2 text-xs font-semibold transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+                className="min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold transition-all disabled:opacity-45 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: mode === 'arabic-english' ? 'var(--accent)' : 'transparent',
                   color: mode === 'arabic-english' ? '#FFFFFF' : 'var(--text-secondary)',

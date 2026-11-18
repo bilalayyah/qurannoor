@@ -1,3 +1,33 @@
+function toDatePartsInTimezone(
+  timezone: string,
+  date: Date = new Date()
+): { year: number; month: number; day: number } {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const getPart = (type: string): number =>
+      Number(parts.find((p) => p.type === type)?.value);
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return { year, month, day };
+    }
+  } catch {
+    // fall through to device-local date below
+  }
+  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+}
+
+function toDateKeyInTimezone(timezone: string, date: Date = new Date()): string {
+  const { year, month, day } = toDatePartsInTimezone(timezone, date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function toLocalDateKey(date: Date = new Date()): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -5,29 +35,10 @@ function toLocalDateKey(date: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-export interface CalculationMethodOption {
-  id: number;
-  name: string;
-  shortName: string;
-}
-
 export const DEFAULT_CALCULATION_METHOD = 1; // University of Islamic Sciences, Karachi
 
-export const CALCULATION_METHODS: readonly CalculationMethodOption[] = [
-  { id: 1, name: 'University of Islamic Sciences, Karachi', shortName: 'Karachi' },
-  { id: 2, name: 'Islamic Society of North America (ISNA)', shortName: 'ISNA' },
-  { id: 3, name: 'Muslim World League', shortName: 'MWL' },
-  { id: 4, name: 'Umm Al-Qura University, Makkah', shortName: 'Makkah' },
-  { id: 5, name: 'Egyptian General Authority of Survey', shortName: 'Egypt' },
-  { id: 8, name: 'Gulf Region', shortName: 'Gulf' },
-  { id: 9, name: 'Kuwait', shortName: 'Kuwait' },
-  { id: 10, name: 'Qatar', shortName: 'Qatar' },
-  { id: 11, name: 'Majlis Ugama Islam Singapura, Singapore', shortName: 'Singapore' },
-  { id: 12, name: 'Union Organization Islamic de France', shortName: 'UOIF France' },
-  { id: 13, name: 'Diyanet İşleri Başkanlığı, Turkey', shortName: 'Diyanet Turkey' },
-  { id: 15, name: 'Moonsighting Committee Worldwide', shortName: 'Moonsighting' },
-  { id: 16, name: 'Dubai', shortName: 'Dubai' },
-];
+// NOTE: the calculation method is intentionally NOT user-changeable (no picker UI).
+// It is hard-coded to Karachi (method 1) for the Aladhan API call.
 
 export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 
@@ -88,7 +99,10 @@ export function loadPrayerPreferences(): PrayerPreferences {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return { method: DEFAULT_CALCULATION_METHOD, location: null };
     const parsed = JSON.parse(raw) as Partial<PrayerPreferences>;
-    const methodValid = CALCULATION_METHODS.some((m) => m.id === parsed.method);
+    const methodValid =
+      typeof parsed.method === 'number' &&
+      Number.isInteger(parsed.method) &&
+      parsed.method > 0;
     const loc = parsed.location;
     const validSource = loc?.source === 'geolocation' || loc?.source === 'ip';
     const validLoc: PrayerLocation | null =
@@ -128,7 +142,9 @@ export function savePrayerPreferences(prefs: PrayerPreferences): void {
 export function getCachedPrayerData(
   location: PrayerLocation,
   method: number,
-  dateKey: string = toLocalDateKey()
+  dateKey: string = toDateKeyInTimezone(
+    location.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  )
 ): PrayerDayData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
@@ -191,13 +207,6 @@ function stripTimezoneTag(timeStr: unknown): string {
   return timeStr.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
-function formatAladhanDateParam(date: Date = new Date()): string {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-}
-
 export async function fetchPrayerAndQiblaData({
   location,
   method,
@@ -208,8 +217,14 @@ export async function fetchPrayerAndQiblaData({
   signal?: AbortSignal;
 }): Promise<PrayerDayData> {
   const now = new Date();
-  const dateParam = formatAladhanDateParam(now);
-  const dateKey = toLocalDateKey(now);
+  // Request the date as it falls in the prayer's timezone (not the device's),
+  // so a midnight boundary between the two zones cannot fetch the wrong day.
+  const requestTimezone =
+    location.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const requestParts = toDatePartsInTimezone(requestTimezone, now);
+  const dateParam = `${String(requestParts.day).padStart(2, '0')}-${String(
+    requestParts.month
+  ).padStart(2, '0')}-${requestParts.year}`;
 
   const timingsUrl = `https://api.aladhan.com/v1/timings/${dateParam}?latitude=${encodeURIComponent(
     location.latitude
@@ -255,15 +270,27 @@ export async function fetchPrayerAndQiblaData({
       ? `${hijri.day} ${hijri.month.en} ${hijri.year} AH`
       : '';
 
-  const methodOption = CALCULATION_METHODS.find((m) => m.id === method);
   const methodName =
-    timingsJson?.data?.meta?.method?.name || methodOption?.name || `Method ${method}`;
+    timingsJson?.data?.meta?.method?.name || `Method ${method}`;
 
   const resolvedTimezone =
     location.timezone ||
     timingsJson?.data?.meta?.timezone ||
     Intl.DateTimeFormat().resolvedOptions().timeZone ||
     'UTC';
+
+  // Derive dateKey from the resolved prayer timezone (authoritative: Aladhan's
+  // own Gregorian date for the returned timings), never from the device-local
+  // date, so the cache label cannot land on yesterday/tomorrow at a midnight
+  // boundary when the two timezones differ.
+  let dateKey = toDateKeyInTimezone(resolvedTimezone, now);
+  const gregorianDate = timingsJson?.data?.date?.gregorian?.date;
+  if (typeof gregorianDate === 'string') {
+    const match = gregorianDate.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (match) {
+      dateKey = `${match[3]}-${match[2]}-${match[1]}`;
+    }
+  }
 
   const data: PrayerDayData = {
     dateKey,

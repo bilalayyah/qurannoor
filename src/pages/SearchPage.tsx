@@ -168,7 +168,7 @@ export function SearchPage() {
           />
           <button
             type="submit"
-            className="min-h-[40px] shrink-0 rounded-xl px-5 py-2 text-sm font-medium text-white"
+            className="min-h-[44px] shrink-0 rounded-xl px-5 py-2 text-sm font-medium text-white"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             Search
@@ -188,7 +188,7 @@ export function SearchPage() {
                 key={term}
                 type="button"
                 onClick={() => setSearchParams({ q: term })}
-                className="min-h-[38px] rounded-xl border px-3.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className="min-h-[44px] rounded-xl border px-3.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderColor: 'var(--border-subtle)',
@@ -378,7 +378,7 @@ export function SearchPage() {
                     </span>
                     <Link
                       to={`/surah/${ch ? toSurahSlug(ch.name_simple) : item.chapterId}?ayah=${item.verseNumber}`}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
                       style={{
                         borderColor: 'var(--border-subtle)',
                         color: 'var(--text-primary)',

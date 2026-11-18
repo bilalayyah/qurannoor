@@ -68,13 +68,13 @@
   --text-tertiary: #94A098;
   --border-subtle: #232D27;
   --border-strong: #34413A;
-  --accent: #1F9D70;
-  --accent-hover: #28B583;
-  --accent-soft: rgba(31, 157, 112, 0.14);
+  --accent: #12805C;
+  --accent-hover: #0F7351;
+  --accent-soft: rgba(18, 128, 92, 0.14);
   --accent-text: #3FD09A;
   --gold: #D4AC5E;
   --gold-soft: rgba(212, 172, 94, 0.12);
-  --highlight-ayah: rgba(31, 157, 112, 0.08);
+  --highlight-ayah: rgba(18, 128, 92, 0.08);
 }
 
 html {

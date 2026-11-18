@@ -119,7 +119,7 @@ export function ReaderSettings() {
                     key={mode}
                     type="button"
                     onClick={() => setTheme(mode)}
-                    className="min-h-[40px] rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors"
+                    className="min-h-[44px] rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors"
                     style={{
                       backgroundColor: active ? 'var(--bg-surface)' : 'transparent',
                       color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -154,7 +154,7 @@ export function ReaderSettings() {
                     key={opt.id}
                     type="button"
                     onClick={() => updateSettings({ script: opt.id })}
-                    className="min-h-[40px] rounded-lg px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap"
+                    className="min-h-[44px] rounded-lg px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap"
                     style={{
                       backgroundColor: active ? 'var(--bg-surface)' : 'transparent',
                       color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
