@@ -187,10 +187,12 @@ async function networkFirst(request) {
     }
     return response;
   } catch {
-    // Offline: fall back to the cached copy of this URL, then to the shell.
+    // Offline: fall back to the cached copy of this exact URL (query string
+    // included — a cached page must never be served for a different query),
+    // then to the shell.
     try {
       const cache = await caches.open(CACHE_STATIC);
-      const cached = await cache.match(request, { ignoreSearch: true });
+      const cached = await cache.match(request);
       if (cached) return cached;
       const shell = await cache.match('/');
       if (shell) return shell;

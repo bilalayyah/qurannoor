@@ -1,6 +1,7 @@
-# Minimal CI: typecheck the app and the push worker, plus grep guards that
-# pin past audit fixes (AdSense removal, QPC-Hafs Arabic, removed features).
-# No build step: `npm run build` is intentionally not run here.
+# CI: typecheck the app and the push worker, run a production build, validate
+# the sitemap + prerendered SEO metadata, syntax-check the service worker,
+# scan for leaked secrets, and run grep guards that pin past audit fixes
+# (AdSense removal, QPC-Hafs Arabic, removed features).
 name: CI
 
 on:
@@ -19,9 +20,9 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # Root install needs --legacy-peer-deps: vite 8.3.8's peerOptional
-      # esbuild range (^0.27.0 || ^0.28.0) conflicts with the project's
-      # pinned esbuild ^0.25.0. Plain `npm ci` fails ERESOLVE on this tree.
+      # Root install needs --legacy-peer-deps (see .npmrc): vite 8.3.8's
+      # peerOptional esbuild range (^0.27.0 || ^0.28.0) is not satisfied by
+      # the tree, and plain `npm ci` fails ERESOLVE on it.
       - name: Install root dependencies
         run: npm ci --legacy-peer-deps
 
@@ -29,10 +30,98 @@ jobs:
         run: npm ci --prefix workers/push-worker
 
       - name: Typecheck app
-        run: npm run lint
+        run: npm run typecheck
 
       - name: Typecheck push worker
         run: npm run lint:worker
+
+      - name: Production build
+        run: npm run build
+
+      - name: Syntax-check service worker
+        run: node --check public/sw.js
+
+      - name: Validate sitemap XML + spot-check URLs
+        # Parse public/sitemap.xml (stdlib only): every <loc> must be an
+        # https://qurannoor.com URL, and every non-homepage URL must have a
+        # matching prerendered file (the homepage '/' is served from the
+        # app shell, so it has no public/index.html). Then curl a small
+        # sample of the live URLs to confirm they resolve.
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          tree = ET.parse('public/sitemap.xml')
+          ns = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+          locs = [el.text.strip() for el in tree.getroot().findall('.//sm:loc', ns)]
+          if not locs:
+              print('ERROR: sitemap.xml contains no <loc> entries.')
+              sys.exit(1)
+          print(f'sitemap.xml: {len(locs)} URLs')
+          missing = []
+          for loc in locs:
+              if not loc.startswith('https://qurannoor.com/'):
+                  print(f'ERROR: unexpected sitemap URL: {loc}')
+                  sys.exit(1)
+              path = loc.removeprefix('https://qurannoor.com').strip('/')
+              if not path:
+                  continue  # homepage: served from the app shell
+              if not (pathlib.Path('public') / path / 'index.html').is_file():
+                  missing.append(loc)
+          if missing:
+              print('ERROR: sitemap URLs with no prerendered file:')
+              for loc in missing:
+                  print(f'  {loc}')
+              sys.exit(1)
+          print('sitemap OK: all URLs are on qurannoor.com and prerendered.')
+          PY
+          for url in $(grep -o '<loc>[^<]*</loc>' public/sitemap.xml | sed 's/<[^>]*>//g' | head -5); do
+            echo "Checking $url"
+            curl -fsS -o /dev/null --max-time 15 "$url"
+          done
+
+      - name: Check canonical / title / h1 on prerendered HTML
+        # Every prerendered page must carry exactly one canonical link, one
+        # <title>, and one <h1>. (stdlib python, no new dependencies.)
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          bad = []
+          count = 0
+          for path in sorted(pathlib.Path('public').rglob('index.html')):
+              count += 1
+              html = path.read_text(encoding='utf-8', errors='ignore')
+              canonical = len(re.findall(r'<link[^>]*rel=["\']canonical["\']', html, re.I))
+              title = len(re.findall(r'<title[^>]*>.*?</title>', html, re.I | re.S))
+              h1 = len(re.findall(r'<h1[\s>]', html, re.I))
+              if not (canonical == 1 and title == 1 and h1 == 1):
+                  bad.append(f'{path}: canonical={canonical} title={title} h1={h1}')
+          print(f'checked {count} prerendered pages')
+          if bad:
+              print('ERROR: pages without exactly 1 canonical + 1 title + 1 h1:')
+              for line in bad:
+                  print(f'  {line}')
+              sys.exit(1)
+          print('SEO metadata OK.')
+          PY
+
+      - name: Secret scan — no hardcoded credentials in source
+        # Grep for high-entropy assignments to secret-looking names. Scans
+        # source dirs only: node_modules/dist are excluded (vendored
+        # miniflare/wrangler bundles contain example secret strings), and
+        # .env.example is not scanned (it holds placeholders by design).
+        # Placeholder-looking hits are filtered out before failing.
+        run: |
+          if grep -rEin --exclude-dir=node_modules --exclude-dir=dist '(api[_-]?key|secret|token|password)[[:space:]]*[:=][[:space:]]*['\''"][A-Za-z0-9+/=_-]{16,}' src functions workers server.ts | grep -viE 'placeholder|example|your-|dummy|changeme|test[-_]?key'; then
+            echo 'ERROR: possible hardcoded secret in source — use env vars / secrets, never literals.'
+            exit 1
+          fi
+          echo 'Secret scan OK: no hardcoded credentials found.'
 
       - name: Guard — no AdSense script in source
         # AdSense was removed from all sites (audit follow-up). ads.txt is a

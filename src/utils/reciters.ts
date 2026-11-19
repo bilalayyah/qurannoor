@@ -1,4 +1,5 @@
 import type { Reciter } from '../types/quran';
+import { normalizeArabicForSearch, normalizeLatinForSearch } from './localSearch';
 
 const RECITER_ARABIC_BY_ID: Record<number, string> = {
   1: 'عبد الباسط عبد الصمد',
@@ -15,7 +16,6 @@ const RECITER_ARABIC_BY_ID: Record<number, string> = {
   12: 'محمود خليل الحصري',
   13: 'سعد الغامدي',
   19: 'أحمد بن علي العجمي',
-  97: 'ياسر الدوسري',
   158: 'عبد الله علي جابر',
   159: 'ماهر المعيقلي',
   160: 'بندر بليلة',
@@ -53,26 +53,10 @@ const RECITER_ARABIC_BY_KEY: Array<[string, string]> = [
   ['dosari', 'ياسر الدوسري'],
   ['sharida', 'عبد الله حمد أبو شريدة'],
   ['tahoun', 'أحمد عبد الحميد طاحون'],
-  ['mostafaismail', 'مصطفى إسماعيل'],
   ['mustafaismail', 'مصطفى إسماعيل'],
-  ['banna', 'محمود علي البنا'],
 ];
 
 const ARABIC_CHAR_REGEX = /[\u0600-\u06FF]/;
-
-function normalizeEnglishKey(value: string): string {
-  return value.toLowerCase().replace(/[^a-z]/g, '');
-}
-
-export function normalizeArabicSearchText(value: string): string {
-  return value
-    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export function getReciterArabicName(reciter: Reciter): string {
   const byId = RECITER_ARABIC_BY_ID[reciter.id];
@@ -82,7 +66,10 @@ export function getReciterArabicName(reciter: Reciter): string {
     return reciter.translated_name.name;
   }
 
-  const normalized = normalizeEnglishKey(reciter.reciter_name);
+  // Shared normaliser (localSearch.ts) lowercases and strips diacritics;
+  // spaces/colons are stripped here because the lookup keys are
+  // concatenated ('abdulbaset', not 'abdul baset').
+  const normalized = normalizeLatinForSearch(reciter.reciter_name).replace(/[\s:]/g, '');
   for (const [needle, arabicName] of RECITER_ARABIC_BY_KEY) {
     if (normalized.includes(needle)) {
       return arabicName;
@@ -133,8 +120,8 @@ export function matchesReciterQuery(reciter: Reciter, rawQuery: string): boolean
 
   const arabicName = getReciterArabicName(reciter);
   if (arabicName) {
-    const normArabic = normalizeArabicSearchText(arabicName);
-    const normQuery = normalizeArabicSearchText(q);
+    const normArabic = normalizeArabicForSearch(arabicName);
+    const normQuery = normalizeArabicForSearch(q);
     if (normArabic.includes(normQuery) || arabicName.includes(q)) return true;
   }
 

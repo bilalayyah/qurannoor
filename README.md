@@ -15,6 +15,6 @@ View your app in AI Studio: https://ai.studio/apps/0cbf296b-c7f7-4337-a47d-025e8
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. (Optional) Set `QURAN_CLIENT_ID` and `QURAN_CLIENT_SECRET` in [.env.local](.env.local) for the authenticated Quran Foundation API — when omitted, the server falls back to the official public API v4 endpoint (see [.env.example](.env.example))
 3. Run the app:
    `npm run dev`
