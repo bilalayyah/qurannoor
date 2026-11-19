@@ -9,6 +9,11 @@ import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
 import { ThemedSelect, type ThemedSelectOption } from './ThemedSelect';
 
+// NOTE (re-audit L-19): the 'scheherazade' id is a historical identifier
+// for the UthmanicHafs font option (the label says UthmanicHafs and
+// getArabicFontClass('scheherazade') returns the UthmanicHafs-first stack).
+// Do NOT rename the id without a stored-settings migration: existing users
+// have 'scheherazade' saved as their arabicFont setting.
 const FONT_OPTIONS: Array<{ id: ArabicFontFamily; label: string; scriptHint: string }> = [
   { id: 'scheherazade', label: 'UthmanicHafs', scriptHint: 'Madinah Mushaf (Hafs)' },
   { id: 'noto-naskh', label: 'Noto Naskh Arabic', scriptHint: 'Clean Naskh' },

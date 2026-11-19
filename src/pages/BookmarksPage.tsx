@@ -5,6 +5,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { useReader } from '../context/ReaderContext';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { toSurahSlug } from '../utils/slugs';
+import { getQpcArabicMap } from '../utils/localSearch';
 import { getArabicFontClass, toArabicIndicDigits } from '../utils/text';
 
 export function BookmarksPage() {
@@ -22,15 +23,11 @@ export function BookmarksPage() {
   useEffect(() => {
     if (settings.script === 'indopak' || bookmarks.length === 0) return;
     let cancelled = false;
-    fetch('/quran-search-index.json')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((rows: Array<[string, string, string, string]> | null) => {
-        if (cancelled || !Array.isArray(rows)) return;
-        const next = new Map<string, string>();
-        for (const [key, ar] of rows) {
-          next.set(key, ar);
-        }
-        setQpcMap(next);
+    // M-8 (re-audit): share localSearch's cached index loader instead of
+    // fetching '/quran-search-index.json' a second time.
+    getQpcArabicMap()
+      .then((next) => {
+        if (!cancelled) setQpcMap(next);
       })
       .catch(() => undefined);
     return () => {

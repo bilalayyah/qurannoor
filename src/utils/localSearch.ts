@@ -97,6 +97,16 @@ async function loadSearchIndex(): Promise<IndexedVerse[]> {
   return cachedIndexPromise;
 }
 
+// M-8 (re-audit): single shared loader for the search index.
+// BookmarksPage used to fetch '/quran-search-index.json' a second time to
+// build its verseKey -> QPC-Arabic map; it now shares this module's cached
+// promise, so a session that visits Search then Bookmarks (or vice versa)
+// issues exactly one fetch (plus the service worker's cache-first layer).
+export async function getQpcArabicMap(): Promise<Map<string, string>> {
+  const verses = await loadSearchIndex();
+  return new Map(verses.map((v) => [v.verseKey, v.ar]));
+}
+
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
