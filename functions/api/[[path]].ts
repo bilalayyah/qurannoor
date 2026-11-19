@@ -43,11 +43,25 @@ async function hashClientIp(ip: string): Promise<string> {
     .slice(0, 32);
 }
 
+// M-4 (re-audit): fail-open is kept, but silent fail-open is now visible.
+// A missing KV binding / missing client IP logs once per isolate, and any
+// KV error is logged in the catch below.
+let apiRateLimitUnavailableWarned = false;
+
 async function checkApiRateLimit(env: Env, request: Request): Promise<boolean> {
   try {
     const kv = env.PUSH_KV;
     const ip = request.headers.get('CF-Connecting-IP');
-    if (!kv || !ip) return true;
+    if (!kv || !ip) {
+      if (!apiRateLimitUnavailableWarned) {
+        apiRateLimitUnavailableWarned = true;
+        console.warn(
+          'API rate limiting disabled (failing open):',
+          !kv ? 'PUSH_KV binding missing' : 'CF-Connecting-IP header missing'
+        );
+      }
+      return true;
+    }
     const windowId = Math.floor(Date.now() / 60_000);
     const key = `rl:api:${await hashClientIp(ip)}:${windowId}`;
     const raw = await kv.get(key);
@@ -65,42 +79,36 @@ async function checkApiRateLimit(env: Env, request: Request): Promise<boolean> {
 // gets a 404 instead of falling through to the upstream (the old open-proxy
 // behaviour). "contact" and "push" are deliberately NOT here — they are
 // handled by their own route files (functions/api/contact.ts,
-// functions/api/push/*). The quran/* variants are the legacy URL shapes the
-// preview server also serves; they map to the same upstream paths.
+// functions/api/push/*). The legacy 'quran/...' URL shapes are accepted
+// because the handler strips a leading 'quran/' prefix once at entry
+// (M-2, re-audit); this list holds the post-strip paths. The
+// 'verses/chapter', 'verses/juz' and 'resources/*' entries are the
+// post-strip forms of the old 'quran/verses/chapter', 'quran/verses/juz'
+// and 'quran/resources/*' shapes.
 const ALLOWED_API_PATHS: RegExp[] = [
   /^env-status$/,
   /^chapters$/,
   /^chapters\/\d+$/,
-  /^quran\/chapters$/,
-  /^quran\/chapters\/\d+$/,
   /^verses\/by_chapter\/\d+$/,
-  /^quran\/verses\/chapter\/\d+$/,
+  /^verses\/chapter\/\d+$/,
   /^verses\/by_juz\/\d{1,2}$/,
-  /^quran\/verses\/juz\/\d{1,2}$/,
+  /^verses\/juz\/\d{1,2}$/,
   /^verses\/by_key\/\d{1,3}:\d{1,3}$/,
-  /^quran\/verses\/by_key\/\d{1,3}:\d{1,3}$/,
   /^verses\/key\/\d{1,3}:\d{1,3}$/,
-  /^quran\/verses\/key\/\d{1,3}:\d{1,3}$/,
   /^verses\/keys$/,
-  /^quran\/verses\/keys$/,
   /^juz$/,
   /^juzs$/,
-  /^quran\/juzs$/,
   /^translations$/,
-  /^quran\/resources\/translations$/,
+  /^resources\/translations$/,
   /^tafsirs$/,
-  /^quran\/resources\/tafsirs$/,
+  /^resources\/tafsirs$/,
   /^tafsirs\/\d+\/by_ayah\/\d{1,3}:\d{1,3}$/,
-  /^quran\/tafsirs\/\d+\/by_ayah\/\d{1,3}:\d{1,3}$/,
   /^recitations$/,
-  /^quran\/resources\/recitations$/,
+  /^resources\/recitations$/,
   /^recitations\/\d+\/by_chapter\/\d+$/,
-  /^quran\/recitations\/\d+\/by_chapter\/\d+$/,
   /^audio$/,
   /^audio\/chapter\/\d+\/\d+$/,
-  /^quran\/audio\/chapter\/\d+\/\d+$/,
   /^search$/,
-  /^quran\/search$/,
 ];
 
 function isAllowedApiPath(subPath: string): boolean {
@@ -239,7 +247,15 @@ export const onRequestGet = async (context: {
 }): Promise<Response> => {
   const { request, env, params } = context;
   const url = new URL(request.url);
-  const subPath = (params.path || []).join('/');
+  // M-2 (re-audit): strip a leading 'quran/' prefix ONCE here. The old
+  // per-branch chained String.replace calls stripped the inner pattern out
+  // of 'quran/...' paths (e.g. 'quran/verses/key/2:255' -> 'quran/2:255',
+  // which upstream rejected with 403/404/400). Every branch below now
+  // matches the stripped path only.
+  const rawSubPath = (params.path || []).join('/');
+  const subPath = rawSubPath.startsWith('quran/')
+    ? rawSubPath.slice('quran/'.length)
+    : rawSubPath;
 
   const clientId = (env.QURAN_CLIENT_ID || env.QF_CLIENT_ID)?.trim();
   // L-8: hasCredentials must reflect id AND secret, matching the preview
@@ -295,7 +311,7 @@ export const onRequestGet = async (context: {
   }
 
   // Merge official verse-by-verse and chapter reciters dynamically from upstream API
-  if (subPath === 'recitations' || subPath === 'quran/resources/recitations') {
+  if (subPath === 'recitations' || subPath === 'resources/recitations') {
     try {
       const [verseResp, chapterResp] = await Promise.all([
         fetch(`${baseUrl}/resources/recitations?language=en`, { headers }),
@@ -368,15 +384,18 @@ export const onRequestGet = async (context: {
         }
       );
     } catch (e) {
+      // L-4 (re-audit): log the upstream detail server-side only; the
+      // client gets a generic message.
+      console.error('Recitations upstream error', e);
       return new Response(
-        JSON.stringify({ error: e instanceof Error ? e.message : 'Failed to load reciters' }),
+        JSON.stringify({ error: 'Failed to load reciters. Please try again.' }),
         { status: 502, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }
 
   // Handle /api/verses/keys?keys=1:1,2:255,...
-  if (subPath === 'verses/keys' || subPath === 'quran/verses/keys') {
+  if (subPath === 'verses/keys') {
     const keysParam = url.searchParams.get('keys') || '';
     const keys = keysParam
       .split(',')
@@ -434,8 +453,11 @@ export const onRequestGet = async (context: {
         }
       );
     } catch (e) {
+      // L-4 (re-audit): the thrown error includes the upstream status; log
+      // it server-side only and return a generic message.
+      console.error('Verses/keys upstream error', e);
       return new Response(
-        JSON.stringify({ error: e instanceof Error ? e.message : 'Failed to load requested verses' }),
+        JSON.stringify({ error: 'Failed to load requested verses. Please try again.' }),
         { status: 502, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -444,8 +466,8 @@ export const onRequestGet = async (context: {
   let upstreamPath = `/${subPath}${url.search}`;
 
   // Map route patterns
-  if (subPath.startsWith('chapters/') || subPath.startsWith('quran/chapters/')) {
-    const id = Number(subPath.replace('chapters/', '').replace('quran/chapters/', ''));
+  if (subPath.startsWith('chapters/')) {
+    const id = Number(subPath.replace('chapters/', ''));
     if (environment === 'prelive' && id > 2) {
       return new Response(
         JSON.stringify({
@@ -458,11 +480,11 @@ export const onRequestGet = async (context: {
       );
     }
     upstreamPath = `/chapters/${id}${url.search}`;
-  } else if (subPath === 'chapters' || subPath === 'quran/chapters') {
+  } else if (subPath === 'chapters') {
     upstreamPath = `/chapters${url.search}`;
-  } else if (subPath.startsWith('verses/by_chapter/') || subPath.startsWith('quran/verses/chapter/')) {
+  } else if (subPath.startsWith('verses/by_chapter/') || subPath.startsWith('verses/chapter/')) {
     const chapterId = Number(
-      subPath.replace('verses/by_chapter/', '').replace('quran/verses/chapter/', '')
+      subPath.replace('verses/by_chapter/', '').replace('verses/chapter/', '')
     );
     if (environment === 'prelive' && chapterId > 2) {
       return new Response(
@@ -477,8 +499,8 @@ export const onRequestGet = async (context: {
     }
     const upstreamQs = buildUpstreamVersesParams(url.searchParams, true);
     upstreamPath = `/verses/by_chapter/${chapterId}?${upstreamQs.toString()}`;
-  } else if (subPath.startsWith('verses/by_juz/') || subPath.startsWith('quran/verses/juz/')) {
-    const juzId = Number(subPath.replace('verses/by_juz/', '').replace('quran/verses/juz/', ''));
+  } else if (subPath.startsWith('verses/by_juz/') || subPath.startsWith('verses/juz/')) {
+    const juzId = Number(subPath.replace('verses/by_juz/', '').replace('verses/juz/', ''));
     if (environment === 'prelive' && juzId > 2) {
       return new Response(
         JSON.stringify({
@@ -492,14 +514,14 @@ export const onRequestGet = async (context: {
     }
     const upstreamQs = buildUpstreamVersesParams(url.searchParams, true);
     upstreamPath = `/verses/by_juz/${juzId}?${upstreamQs.toString()}`;
-  } else if (subPath === 'juz' || subPath === 'juzs' || subPath === 'quran/juzs') {
+  } else if (subPath === 'juz' || subPath === 'juzs') {
     upstreamPath = `/juzs${url.search}`;
-  } else if (subPath === 'translations' || subPath === 'quran/resources/translations') {
+  } else if (subPath === 'translations' || subPath === 'resources/translations') {
     const tQs = new URLSearchParams(url.searchParams);
     if (!tQs.has('language')) tQs.set('language', 'en');
     upstreamPath = `/resources/translations?${tQs.toString()}`;
-  } else if (subPath.startsWith('audio/chapter/') || subPath.startsWith('quran/audio/chapter/')) {
-    const rest = subPath.replace('audio/chapter/', '').replace('quran/audio/chapter/', '');
+  } else if (subPath.startsWith('audio/chapter/')) {
+    const rest = subPath.replace('audio/chapter/', '');
     const [reciterId, chapterIdStr] = rest.split('/');
     const chapterId = Number(chapterIdStr);
     if (environment === 'prelive' && chapterId > 2) {
@@ -511,8 +533,18 @@ export const onRequestGet = async (context: {
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    const chapterRes = await fetch(`${baseUrl}/chapter_recitations/${rest}${url.search}`, { headers });
-    if (chapterRes.ok) {
+    // A fetch that throws (network/TLS failure) must NOT escape this
+    // branch: an uncaught throw leaves onRequestGet, the middleware
+    // falls through to Pages, and an API URL would serve the SPA shell
+    // HTML with 200. Guard both fetches and fall through to the
+    // verse-sequence fallback, then to the generic 502 below.
+    let chapterRes: Response | null = null;
+    try {
+      chapterRes = await fetch(`${baseUrl}/chapter_recitations/${rest}${url.search}`, { headers });
+    } catch (e) {
+      console.error('Chapter audio fetch failed', rest, e);
+    }
+    if (chapterRes?.ok) {
       const json = (await chapterRes.json()) as { audio_file?: { audio_url?: string } };
       if (json.audio_file?.audio_url) {
         json.audio_file = { ...json.audio_file, audio_url: normalizeAudioUrl(json.audio_file.audio_url) };
@@ -522,10 +554,15 @@ export const onRequestGet = async (context: {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
       });
     }
-    const verseSeqRes = await fetch(`${baseUrl}/recitations/${reciterId}/by_chapter/${chapterId}?per_page=300`, {
-      headers,
-    });
-    if (verseSeqRes.ok) {
+    let verseSeqRes: Response | null = null;
+    try {
+      verseSeqRes = await fetch(`${baseUrl}/recitations/${reciterId}/by_chapter/${chapterId}?per_page=300`, {
+        headers,
+      });
+    } catch (e) {
+      console.error('Chapter audio fallback fetch failed', rest, e);
+    }
+    if (verseSeqRes?.ok) {
       const vJson = (await verseSeqRes.json()) as {
         audio_files?: Array<{ verse_key: string; url: string }>;
       };
@@ -545,10 +582,13 @@ export const onRequestGet = async (context: {
         }
       );
     }
-    return new Response(JSON.stringify({ error: `Upstream error (${chapterRes.status})` }), {
-      status: chapterRes.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // L-4 (re-audit): generic message + 502; the upstream status is logged
+    // server-side only, never returned to the client.
+    console.error('Chapter audio upstream error', chapterRes?.status, rest);
+    return new Response(
+      JSON.stringify({ error: 'The Quran API returned an error. Please try again.' }),
+      { status: 502, headers: { 'Content-Type': 'application/json' } }
+    );
   } else if (subPath === 'audio') {
     const reciterId = url.searchParams.get('reciter_id') || url.searchParams.get('reciterId') || '7';
     const chapterId = url.searchParams.get('chapter_id') || url.searchParams.get('chapterId') || '1';
@@ -562,8 +602,8 @@ export const onRequestGet = async (context: {
       );
     }
     upstreamPath = `/chapter_recitations/${reciterId}/${chapterId}`;
-  } else if (subPath.startsWith('verses/key/') || subPath.startsWith('quran/verses/key/')) {
-    const key = subPath.replace('verses/key/', '').replace('quran/verses/key/', '');
+  } else if (subPath.startsWith('verses/key/')) {
+    const key = subPath.replace('verses/key/', '');
     const chId = Number(key.split(':')[0]);
     if (environment === 'prelive' && chId > 2) {
       return new Response(
@@ -576,13 +616,13 @@ export const onRequestGet = async (context: {
     }
     const upstreamQs = buildUpstreamVersesParams(url.searchParams, false);
     upstreamPath = `/verses/by_key/${key}?${upstreamQs.toString()}`;
-  } else if (subPath.startsWith('verses/by_key/') || subPath.startsWith('quran/verses/by_key/')) {
+  } else if (subPath.startsWith('verses/by_key/')) {
     // L-1: /api/verses/by_key/2:255 previously fell through to the generic
     // passthrough with no default fields, so it returned metadata only (no
     // Arabic, no translations) unless the caller passed ?fields= explicitly.
     // It now gets the same defaults as verses/key/ and the other verse
     // branches (buildUpstreamVersesParams).
-    const key = subPath.replace('verses/by_key/', '').replace('quran/verses/by_key/', '');
+    const key = subPath.replace('verses/by_key/', '');
     if (!/^\d{1,3}:\d{1,3}$/.test(key)) {
       return new Response(JSON.stringify({ error: 'Provide a valid verse key (chapter:verse).' }), {
         status: 400,
@@ -645,7 +685,7 @@ export const onRequestGet = async (context: {
     if (!upstreamRes.ok) {
       const errText = await upstreamRes.text().catch(() => '');
       if (upstreamRes.status === 403 && (errText.includes('scope') || environment === 'prelive')) {
-        if (subPath === 'search' || subPath === 'quran/search') {
+        if (subPath === 'search') {
           return new Response(
             JSON.stringify({
               search: {
@@ -734,8 +774,11 @@ export const onRequestGet = async (context: {
       },
     });
   } catch (e) {
+    // L-4 (re-audit): log the detail server-side only; the client gets a
+    // generic message.
+    console.error('API proxy error', subPath, e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Network error' }),
+      JSON.stringify({ error: 'The Quran API returned an error. Please try again.' }),
       { status: 502, headers: { 'Content-Type': 'application/json' } }
     );
   }

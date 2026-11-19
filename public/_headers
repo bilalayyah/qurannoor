@@ -11,7 +11,10 @@
 #   for defence-in-depth if a direct call is ever made): api.quran.com,
 #   apis.quran.foundation, apis-prelive.quran.foundation,
 #   oauth2.quran.foundation, prelive-oauth2.quran.foundation
-# - Audio: verses.quran.com (API audio URLs), cdn.islamic.network (Urdu audio)
+# - Audio (live survey of all 23 reciters, re-audit H-2): chapter audio lives
+#   only on download.quranicaudio.com (21 reciters); verse audio on
+#   verses.quran.com (9 reciters) and mirrors.quranicaudio.com (reciters 6,
+#   12, 11); Urdu audio on cdn.islamic.network.
 # - Prayer times / Qibla: api.aladhan.com
 # - Reverse-geocode + IP fallback (src/services/prayerApi.ts):
 #   api.bigdatacloud.net, nominatim.openstreetmap.org, ipapi.co, ipwho.is,
@@ -34,15 +37,19 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://verses.quran.foundation; img-src 'self' data: blob:; media-src 'self' https://verses.quran.com https://verses.quran.foundation https://cdn.islamic.network; connect-src 'self' https://api.quran.com https://apis.quran.foundation https://apis-prelive.quran.foundation https://oauth2.quran.foundation https://prelive-oauth2.quran.foundation https://verses.quran.foundation https://verses.quran.com https://api.aladhan.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://get.geojs.io https://cdn.islamic.network https://formsubmit.co; worker-src 'self'; manifest-src 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://verses.quran.foundation; img-src 'self' data: blob:; media-src 'self' https://verses.quran.com https://verses.quran.foundation https://cdn.islamic.network https://download.quranicaudio.com https://mirrors.quranicaudio.com; connect-src 'self' https://api.quran.com https://apis.quran.foundation https://apis-prelive.quran.foundation https://oauth2.quran.foundation https://prelive-oauth2.quran.foundation https://verses.quran.foundation https://verses.quran.com https://api.aladhan.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://get.geojs.io https://cdn.islamic.network https://formsubmit.co; worker-src 'self'; manifest-src 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
 
-/api/*
-  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()
-  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+# L-11 (re-audit): serve the service worker with no cache so updates reach
+# clients promptly. (public/sw.js and src/main.tsx are owned by another
+# worker; this is the headers half only.)
+/sw.js
+  Cache-Control: no-cache
+
+# L-5 (re-audit): the /api/* headers block was REMOVED. _headers does not
+# reliably cover Pages Functions responses, and the block caused HEAD
+# requests to /api/* to return the SPA shell (200, HTML) with duplicated
+# security headers (onRequestGet is not invoked for HEAD).
+# functions/_middleware.ts already owns the headers on Functions responses.
 
 # Edge-cache for prerendered HTML (audit L-4, 2026-11-19).
 # Prerendering (H-1, Scope A) is now complete (185/185 routes), so the HTML

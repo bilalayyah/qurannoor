@@ -22,9 +22,6 @@ interface SubscriptionPayload {
       auth?: string;
     };
   };
-  streak?: number;
-  goalTarget?: number;
-  goalUnit?: string;
 }
 
 const JSON_HEADERS = {
@@ -136,14 +133,16 @@ export const onRequestPost = async (context: {
     );
   }
 
+  // L-9 (re-audit): https: ONLY — an http: endpoint would let the push
+  // payload travel unencrypted to the push service.
   try {
     const parsedUrl = new URL(endpoint);
-    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+    if (parsedUrl.protocol !== 'https:') {
       throw new Error('Unsupported endpoint protocol');
     }
   } catch {
     return new Response(
-      JSON.stringify({ ok: false, error: 'Invalid push subscription endpoint URL.' }),
+      JSON.stringify({ ok: false, error: 'Push subscription endpoint must use https.' }),
       { status: 400, headers: JSON_HEADERS }
     );
   }
@@ -160,15 +159,6 @@ export const onRequestPost = async (context: {
       expirationTime:
         typeof rawSub.expirationTime === 'number' ? rawSub.expirationTime : null,
       keys: { p256dh, auth },
-      streak:
-        typeof body.streak === 'number' && Number.isFinite(body.streak) && body.streak > 0
-          ? Math.floor(body.streak)
-          : 0,
-      goalTarget:
-        typeof body.goalTarget === 'number' && Number.isFinite(body.goalTarget) && body.goalTarget > 0
-          ? Math.floor(body.goalTarget)
-          : 10,
-      goalUnit: body.goalUnit === 'pages' ? 'pages' : 'ayahs',
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     };
@@ -180,11 +170,11 @@ export const onRequestPost = async (context: {
       { status: 200, headers: JSON_HEADERS }
     );
   } catch (err) {
+    // L-9 (re-audit): log the detail server-side only; the client gets a
+    // generic message.
+    console.error('Failed to store push subscription', err);
     return new Response(
-      JSON.stringify({
-        ok: false,
-        error: err instanceof Error ? err.message : 'Failed to store push subscription.',
-      }),
+      JSON.stringify({ ok: false, error: 'Failed to store push subscription.' }),
       { status: 500, headers: JSON_HEADERS }
     );
   }

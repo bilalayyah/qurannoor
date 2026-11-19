@@ -16,8 +16,17 @@
 // exclusion for "contact" is needed in the proxy. (The proxy only handles
 // GET requests anyway.)
 
+interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
 interface Env {
   CONTACT_ENDPOINT?: string;
+  // M-3 (re-audit): PUSH_KV is bound project-wide in wrangler.toml, so it
+  // is available to this Function too. Used ONLY for the best-effort
+  // per-IP rate-limit counters below (keys prefixed rl:contact:).
+  PUSH_KV?: KVNamespaceLike;
 }
 
 interface ContactPayload {
@@ -29,11 +38,53 @@ interface ContactPayload {
   source?: unknown;
 }
 
+// M-3 (re-audit): max field lengths (previously only minima were checked).
+const MAX_NAME_LENGTH = 100;
+const MAX_SUBJECT_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 5000;
+// M-3 (re-audit): body-size cap (~16 KB). Read as text first so an
+// oversized body is rejected before JSON parsing.
+const MAX_BODY_CHARS = 16384;
+
 function jsonResponse(body: Record<string, unknown>, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+// M-3 (re-audit): best-effort per-IP rate limiting via KV, reusing the push
+// pattern (functions/api/push/subscribe.ts): 5 submissions/hour/IP.
+// Fail-open: a KV error, a missing binding, or a missing CF-Connecting-IP
+// skips limiting rather than breaking the contact form. The IP is SHA-256
+// hashed before storage; no raw IP is written to KV.
+async function hashString(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
+}
+
+async function checkContactRateLimit(
+  kv: KVNamespaceLike | undefined,
+  request: Request
+): Promise<boolean> {
+  try {
+    if (!kv) return true;
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (!ip) return true;
+    const windowId = Math.floor(Date.now() / 3600_000);
+    const key = `rl:contact:submit:${await hashString(ip)}:${windowId}`;
+    const raw = await kv.get(key);
+    const count = raw ? parseInt(raw, 10) || 0 : 0;
+    if (count >= 5) return false;
+    await kv.put(key, String(count + 1), { expirationTtl: 3660 });
+    return true;
+  } catch (e) {
+    console.error('Contact rate-limit check failed (failing open)', e);
+    return true;
+  }
 }
 
 export const onRequestPost = async (context: {
@@ -42,9 +93,21 @@ export const onRequestPost = async (context: {
 }): Promise<Response> => {
   const { request, env } = context;
 
+  // M-3 (re-audit): rate-limit before parsing the body.
+  if (!(await checkContactRateLimit(env.PUSH_KV, request))) {
+    return jsonResponse(
+      { error: 'Too many messages. Please try again later.' },
+      429
+    );
+  }
+
   let payload: ContactPayload;
   try {
-    payload = (await request.json()) as ContactPayload;
+    const text = await request.text();
+    if (text.length > MAX_BODY_CHARS) {
+      return jsonResponse({ error: 'Request body too large.' }, 413);
+    }
+    payload = JSON.parse(text) as ContactPayload;
   } catch {
     return jsonResponse({ error: 'Request body must be valid JSON.' }, 400);
   }
@@ -63,11 +126,29 @@ export const onRequestPost = async (context: {
   if (name.length < 2) {
     return jsonResponse({ error: 'Please enter your name (at least 2 characters).' }, 400);
   }
+  if (name.length > MAX_NAME_LENGTH) {
+    return jsonResponse(
+      { error: 'Please keep your name to 100 characters or fewer.' },
+      400
+    );
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return jsonResponse({ error: 'Please enter a valid email address.' }, 400);
   }
+  if (subject.length > MAX_SUBJECT_LENGTH) {
+    return jsonResponse(
+      { error: 'Please keep the subject to 200 characters or fewer.' },
+      400
+    );
+  }
   if (message.length < 15) {
     return jsonResponse({ error: 'Please enter a clear message (at least 15 characters).' }, 400);
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return jsonResponse(
+      { error: 'Please keep your message to 5000 characters or fewer.' },
+      400
+    );
   }
 
   const endpoint = env.CONTACT_ENDPOINT?.trim();

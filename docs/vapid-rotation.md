@@ -9,13 +9,61 @@
   `workers/push-worker/wrangler.toml`):
   - `vapid:public` — base64url-encoded P-256 public key (no padding).
   - `vapid:private` — base64url-encoded P-256 private scalar (no padding).
-- The keys are **auto-generated on first run** by `generateVapidKeys()` in
-  `workers/push-worker/src/index.ts` (WebCrypto `ECDSA` / `P-256`) when
-  either key is missing from KV. They are never in code, never in git, and
+- The keys are **created once manually** and written to KV (see
+  "First-time setup" below). They are never in code, never in git, and
   never in `wrangler.toml`.
+- The worker **only reads** the keys from KV — it never generates them.
+  `ensureVapidKeys()` in `workers/push-worker/src/index.ts` throws (fails
+  loudly) if either half is missing instead of silently regenerating a
+  pair (see "Incomplete keypair" below). First-run auto-generation was
+  removed in the re-audit (L-7): KV has no atomic compare-and-set, so a
+  lease/lock could not prevent two concurrent first runs from generating
+  different pairs, and regenerating when only one half was missing
+  discarded the surviving half and invalidated every live subscription.
 - The public key is served to browsers by `GET /api/push/vapid-key`
   (`functions/api/push/vapid-key.ts`), which reads `vapid:public` from KV.
-  The worker signs with both keys via `webpush.setVapidDetails()`.
+  It returns 503 while the key is not initialised. The worker signs with
+  both keys via `webpush.setVapidDetails()`.
+
+## First-time setup
+
+Do this once, before the first scheduled push run (or if both keys were
+ever deleted from KV):
+
+1. **Generate a keypair** (locally, never in the repo):
+   `npx web-push generate-vapid-keys`
+   Record the `Public Key` and `Private Key` values (base64url, no padding).
+2. **Write both halves to KV** (namespace id `1468946869394dcc803dec2a6d5cb3d6`,
+   private first, then public, with no delay between them):
+   `wrangler kv:key put --namespace-id 1468946869394dcc803dec2a6d5cb3d6 vapid:private "<NEW_PRIVATE_KEY>"`
+   `wrangler kv:key put --namespace-id 1468946869394dcc803dec2a6d5cb3d6 vapid:public "<NEW_PUBLIC_KEY>"`
+   Never put either value in a file, a commit, or `wrangler.toml`.
+3. **Verify the public key is live:**
+   `curl https://qurannoor.com/api/push/vapid-key`
+   It must return the new public key (200). A 503 here means the key was
+   not written.
+4. **Test with one subscribed device:** the next 07:00 Dubai run should
+   deliver the daily reminder. (There is no manual "send test push"
+   button; the next scheduled run is the test.)
+
+Until both halves are in KV, the worker throws on every run and sends
+nothing — this is intentional (fail loudly, not silently broken).
+
+## Incomplete keypair (only one half in KV)
+
+- **Symptom:** the worker throws `VAPID keypair is incomplete in KV...`
+  in the Workers logs and no daily reminders go out. `GET
+  /api/push/vapid-key` still returns the stored public half if it is the
+  one present (or 503 if the public half is the missing one).
+- **Cause:** one half was deleted or overwritten by mistake, or a rotation
+  was interrupted between the two KV writes.
+- **Recovery:** restore the missing half from your backup of the keypair.
+  Do NOT generate a fresh pair to fill the gap — a fresh pair would not
+  match the surviving half, and subscriptions are tied to the public key
+  they were created with. If the missing half is unrecoverable, treat it
+  as a rotation (below): generate a new pair, write BOTH halves, and tell
+  users to re-subscribe.
+- The worker deliberately does **not** self-heal this state.
 
 ## When to rotate
 
@@ -41,12 +89,12 @@ existing subscription (see below).
 1. **Generate a new keypair** (do this locally, never in the repo):
    `npx web-push generate-vapid-keys`
    Record the `Public Key` and `Private Key` values (base64url, no padding).
-2. **Pause the daily cron** while you swap the keys, so the worker cannot
-   run mid-swap and auto-generate a different pair (it regenerates whenever
-   either key is missing). In the Cloudflare dashboard, open the
-   `qurannoor-push-worker` → Settings → Triggers and disable the
-   `0 3 * * *` cron trigger. (Alternatively, do the swap in the minutes
-   just after 03:00 UTC, when the next run is ~24 h away.)
+2. **Pause the daily cron** while you swap the keys, so no run executes
+   mid-swap and throws on the temporarily incomplete pair (a run between
+   the two KV writes would send nothing that day). In the Cloudflare
+   dashboard, open the `qurannoor-push-worker` → Settings → Triggers and
+   disable the `0 3 * * *` cron trigger. (Alternatively, do the swap in the
+   minutes just after 03:00 UTC, when the next run is ~24 h away.)
 3. **Write the new keys to KV** (namespace id `1468946869394dcc803dec2a6d5cb3d6`,
    private first, then public, with no delay between them):
    `wrangler kv:key put --namespace-id 1468946869394dcc803dec2a6d5cb3d6 vapid:private "<NEW_PRIVATE_KEY>"`
@@ -67,9 +115,11 @@ existing subscription (see below).
 
 ## Known quirks (do not "fix" during a rotation)
 
-- **First-write race:** if two worker invocations run while both keys are
-  missing, each generates its own pair and the last write wins. That is why
-  step 2 pauses the cron and step 3 writes both keys back-to-back.
-- The worker only regenerates when a key is **missing**; writing a wrong or
-  mismatched pair does not self-heal — verify step 4 before re-enabling
-  the cron.
+- **No auto-generation:** the worker never writes keys. If both halves are
+  missing it throws; if only one half is present it throws. The old
+  first-write race (two concurrent runs generating different pairs, last
+  write wins) is gone because nothing generates anymore — but that also
+  means a fresh environment sends no pushes until the manual first-time
+  setup above is done.
+- The worker only regenerates nothing — writing a wrong or mismatched pair
+  does not self-heal; verify step 4 before re-enabling the cron.

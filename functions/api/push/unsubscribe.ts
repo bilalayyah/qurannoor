@@ -127,11 +127,11 @@ export const onRequestPost = async (context: {
       { status: 200, headers: JSON_HEADERS }
     );
   } catch (err) {
+    // L-9 (re-audit): log the detail server-side only; the client gets a
+    // generic message.
+    console.error('Failed to remove push subscription', err);
     return new Response(
-      JSON.stringify({
-        ok: false,
-        error: err instanceof Error ? err.message : 'Failed to remove push subscription.',
-      }),
+      JSON.stringify({ ok: false, error: 'Failed to remove push subscription.' }),
       { status: 500, headers: JSON_HEADERS }
     );
   }

@@ -24,13 +24,15 @@ export const onRequestGet = async (context: { env: Env }): Promise<Response> => 
   try {
     const publicKey = await env.PUSH_KV.get('vapid:public');
     if (!publicKey) {
+      // L-10 (re-audit): the key is not initialised yet — 503, not 200
+      // with { publicKey: null }.
       return new Response(
         JSON.stringify({
           publicKey: null,
           preview: false,
           error: 'VAPID public key has not been initialized yet.',
         }),
-        { status: 200, headers: JSON_HEADERS }
+        { status: 503, headers: JSON_HEADERS }
       );
     }
 
@@ -39,11 +41,11 @@ export const onRequestGet = async (context: { env: Env }): Promise<Response> => 
       { status: 200, headers: JSON_HEADERS }
     );
   } catch (err) {
+    // L-9 (re-audit): log the detail server-side only; the client gets a
+    // generic message.
+    console.error('Failed to read VAPID public key', err);
     return new Response(
-      JSON.stringify({
-        publicKey: null,
-        error: err instanceof Error ? err.message : 'Unable to read VAPID public key.',
-      }),
+      JSON.stringify({ publicKey: null, error: 'Unable to read VAPID public key.' }),
       { status: 500, headers: JSON_HEADERS }
     );
   }

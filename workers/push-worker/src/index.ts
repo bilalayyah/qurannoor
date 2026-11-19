@@ -15,36 +15,10 @@ interface StoredSubscription {
   streak?: number;
 }
 
-function toBase64Url(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 1) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function generateVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
-  const keyPair = (await crypto.subtle.generateKey(
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    true,
-    ['sign', 'verify']
-  )) as CryptoKeyPair;
-
-  // exportKey('raw', …) is typed as ArrayBuffer | JsonWebKey in the installed
-  // @cloudflare/workers-types, but 'raw' always yields an ArrayBuffer at runtime.
-  const rawPublic = (await crypto.subtle.exportKey('raw', keyPair.publicKey)) as ArrayBuffer;
-  const jwkPrivate = (await crypto.subtle.exportKey('jwk', keyPair.privateKey)) as JsonWebKey;
-
-  if (!jwkPrivate.d) {
-    throw new Error('Failed to export P-256 private scalar for VAPID keypair.');
-  }
-
-  return {
-    publicKey: toBase64Url(rawPublic),
-    privateKey: jwkPrivate.d.replace(/=+$/, ''),
-  };
-}
+// L-7 (re-audit): the old generateVapidKeys()/toBase64Url() helpers were
+// removed with first-run auto-generation — keypairs are now created once
+// manually (see docs/vapid-rotation.md, "First-time setup") and the worker
+// only reads them from KV.
 
 async function ensureVapidKeys(kv: KVNamespace): Promise<{ publicKey: string; privateKey: string }> {
   const [existingPublic, existingPrivate] = await Promise.all([
@@ -56,13 +30,32 @@ async function ensureVapidKeys(kv: KVNamespace): Promise<{ publicKey: string; pr
     return { publicKey: existingPublic, privateKey: existingPrivate };
   }
 
-  const generated = await generateVapidKeys();
-  await Promise.all([
-    kv.put('vapid:public', generated.publicKey),
-    kv.put('vapid:private', generated.privateKey),
-  ]);
+  // L-7 (re-audit): NEVER silently regenerate a pair when the stored one is
+  // incomplete or missing.
+  //
+  // Only one half present: regenerating a brand-new pair would discard the
+  // surviving half and invalidate every live subscription signed with it.
+  // Fail loudly instead — an operator must restore the missing half
+  // (see docs/vapid-rotation.md, "Incomplete keypair").
+  if (existingPublic || existingPrivate) {
+    throw new Error(
+      'VAPID keypair is incomplete in KV: only one of vapid:public / vapid:private ' +
+        'is present. Refusing to regenerate a mismatched pair — restore the ' +
+        'missing half manually (see docs/vapid-rotation.md).'
+    );
+  }
 
-  return generated;
+  // Both halves missing: KV has no atomic compare-and-set, so a lease/lock
+  // built on kv.put cannot prevent two concurrent first runs from each
+  // generating a pair (last write wins, and subscriptions created against
+  // the losing pair break). Fail loudly instead — generate the pair once
+  // manually and write both halves to KV (see docs/vapid-rotation.md,
+  // "First-time setup"). First-run auto-generation is intentionally gone.
+  throw new Error(
+    'No VAPID keypair in KV (vapid:public / vapid:private both missing). ' +
+      'Generate a pair once and write both halves to KV ' +
+      '(see docs/vapid-rotation.md, "First-time setup").'
+  );
 }
 
 const TOTAL_QURAN_VERSES = 6236;
