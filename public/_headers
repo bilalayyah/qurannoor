@@ -43,3 +43,52 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()
   Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+# Edge-cache for prerendered HTML (audit L-4, 2026-11-19).
+# Prerendering (H-1, Scope A) is now complete (185/185 routes), so the HTML
+# carries real content and is worth caching at the edge. 30 minutes is the
+# balance: pages load from the edge, and updates propagate quickly. Cloudflare
+# Pages purges the cache on every deploy, so a new deploy never serves stale
+# HTML referencing an old bundle hash. Home (/) is deliberately excluded —
+# it is the SPA shell (not prerendered) and must stay max-age=0. /search and
+# /bookmarks are excluded (user-specific, robots-disallowed).
+/surah/*
+  Cache-Control: public, max-age=1800, must-revalidate
+/juz/*
+  Cache-Control: public, max-age=1800, must-revalidate
+/guides/*
+  Cache-Control: public, max-age=1800, must-revalidate
+/ayah/*
+  Cache-Control: public, max-age=1800, must-revalidate
+/popular/*
+  Cache-Control: public, max-age=1800, must-revalidate
+/quran
+  Cache-Control: public, max-age=1800, must-revalidate
+/surahs
+  Cache-Control: public, max-age=1800, must-revalidate
+/listen
+  Cache-Control: public, max-age=1800, must-revalidate
+/prayer-times
+  Cache-Control: public, max-age=1800, must-revalidate
+/about
+  Cache-Control: public, max-age=1800, must-revalidate
+/contact
+  Cache-Control: public, max-age=1800, must-revalidate
+/privacy-policy
+  Cache-Control: public, max-age=1800, must-revalidate
+/terms-and-conditions
+  Cache-Control: public, max-age=1800, must-revalidate
+/disclaimer
+  Cache-Control: public, max-age=1800, must-revalidate
+/cookie-policy
+  Cache-Control: public, max-age=1800, must-revalidate
+/copyright
+  Cache-Control: public, max-age=1800, must-revalidate
+/accessibility
+  Cache-Control: public, max-age=1800, must-revalidate
+/quran-text-and-translation-methodology
+  Cache-Control: public, max-age=1800, must-revalidate
+/brand
+  Cache-Control: public, max-age=1800, must-revalidate
+/guides
+  Cache-Control: public, max-age=1800, must-revalidate
