@@ -652,18 +652,23 @@ export const onRequestGet = async (context: {
     });
   }
 
-  // M-9: clamp per_page on the generic passthrough (the verse branches
-  // already clamp via buildUpstreamVersesParams; this is idempotent there).
+  // M-9: clamp per_page on the generic passthrough. Clamp INSIDE
+  // upstreamPath's own query string — rebuilding it from the raw incoming
+  // query (url.search) discards the defaults buildUpstreamVersesParams
+  // added (fields, translations, audio), which made by_chapter/by_juz
+  // return metadata-only verses (blank Arabic + "Translation unavailable"
+  // in the reader). The old code did exactly that rebuild; do not restore it.
   {
-    const qs = new URLSearchParams(url.search);
-    if (qs.has('per_page')) {
-      const clamped = Math.min(50, Math.max(1, Number(qs.get('per_page')) || 30));
-      qs.set('per_page', String(clamped));
-      const qIndex = upstreamPath.indexOf('?');
-      upstreamPath =
-        qIndex >= 0
-          ? `${upstreamPath.slice(0, qIndex)}?${qs.toString()}`
-          : `${upstreamPath}?${qs.toString()}`;
+    const qIndex = upstreamPath.indexOf('?');
+    if (qIndex >= 0) {
+      const qs = new URLSearchParams(upstreamPath.slice(qIndex + 1));
+      if (qs.has('per_page')) {
+        qs.set(
+          'per_page',
+          String(Math.min(50, Math.max(1, Number(qs.get('per_page')) || 30)))
+        );
+        upstreamPath = `${upstreamPath.slice(0, qIndex)}?${qs.toString()}`;
+      }
     }
   }
 
