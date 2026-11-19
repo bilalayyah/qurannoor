@@ -221,7 +221,7 @@ export function PopularPassagePage() {
               {section.title} · Awaiting Production API Access
             </h2>
             <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              This application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">Noor Quran</span>) is authenticated with Quran Foundation Pre-live credentials. The developer sandbox provides full authentic access to <strong>Surah 1 (Al-Fatihah)</strong> and <strong>Surah 2 (Al-Baqarah)</strong>.
+              This application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">QuranNoor</span>) is authenticated with Quran Foundation Pre-live credentials. The developer sandbox provides full authentic access to <strong>Surah 1 (Al-Fatihah)</strong> and <strong>Surah 2 (Al-Baqarah)</strong>.
             </p>
             <p className="mt-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
               Verses for Surah {section.chapterId} will become active immediately once Production API approval is granted by the Quran Foundation.

@@ -355,7 +355,7 @@ export function ReaderSettings() {
                     className="block text-xs font-medium"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
-                    Translation
+                    Translation / Transliteration
                   </label>
                   <ThemedSelect
                     id="settings-translation-select"

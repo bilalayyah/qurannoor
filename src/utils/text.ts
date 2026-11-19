@@ -60,9 +60,17 @@ export function getEnglishTranslation<
   );
 }
 
+// Strips only the trailing ayah-end marker (whitespace/NBSP + Arabic-Indic
+// digits) from QPC Hafs text. Verse text itself is never altered.
 export function stripQpcHafsEndMarker(text?: string | null): string {
   if (!text) return '';
   return text.replace(/[\s\u00A0]+[\u0660-\u0669]+$/, '');
+}
+
+// Removes U+06DF (۟) — the character the UthmanicHafs font renders as a
+// black dot. Used only as a safeguard on the text_uthmani fallback path.
+function stripBlackDotChar(text: string): string {
+  return text.replace(/\u06DF/g, '');
 }
 
 export function getVerseArabicText(
@@ -76,7 +84,11 @@ export function getVerseArabicText(
   if (script === 'indopak' && verse.text_indopak) {
     return verse.text_indopak;
   }
-  return stripQpcHafsEndMarker(verse.text_qpc_hafs) || verse.text_uthmani || '';
+  return (
+    stripQpcHafsEndMarker(verse.text_qpc_hafs) ||
+    (verse.text_uthmani ? stripBlackDotChar(verse.text_uthmani) : '') ||
+    ''
+  );
 }
 
 export function getWordArabicText(

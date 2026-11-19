@@ -123,7 +123,7 @@ export function InstallPrompt() {
               type="button"
               onClick={dismiss}
               aria-label="Dismiss install prompt"
-              className="-mr-1 -mt-1 inline-flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              className="-mr-1 -mt-1 inline-flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
               style={{ color: 'var(--text-tertiary)' }}
             >
               <X className="h-4 w-4" />

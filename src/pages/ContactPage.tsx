@@ -306,7 +306,7 @@ export function ContactPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-2">
           <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
             <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-text)' }} />
-            <span>Protected by honeypot filtering & client validation (Turnstile-ready).</span>
+            <span>Protected by honeypot filtering, client validation &amp; server-side rate limiting.</span>
           </p>
 
           <button
@@ -328,8 +328,8 @@ export function ContactPage() {
           Spam Protection & Privacy Note
         </h2>
         <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          When live delivery is configured on Cloudflare Pages, we recommend pairing the endpoint
-          with Cloudflare Turnstile verification and server-side rate limiting. Submitted details are
+          Your message is sent to our server-side contact endpoint, where it is protected by
+          honeypot filtering, client validation, and server-side rate limiting. Submitted details are
           governed by our{' '}
           <Link to="/privacy-policy" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
             Privacy Policy

@@ -173,7 +173,7 @@ export function ListenPage() {
                     ? 'Supports both full Surah streaming and individual Ayah playback.'
                     : activeReciter.audio_capabilities.full_surah
                     ? 'Full Surah recitation with segment-timed Ayah playback where indexed.'
-                    : 'Streams full Surah sequentially Ayah-by-Ayah from individual verse audio.'}
+                    : 'This reciter has no single full-Surah audio file: playback runs Ayah by Ayah from individual verse audio (chapter segments).'}
                 </p>
               )}
             </div>
@@ -267,6 +267,10 @@ export function ListenPage() {
               playbackKind === 'surah' && activeChapterId === ch.id && isPlaying;
             const isThisSurahLoaded =
               playbackKind === 'surah' && activeChapterId === ch.id;
+            // Reciters without a single full-Surah file (e.g. Minshawi Mujawwad,
+            // Tablawi) play Ayah by Ayah from chapter segments instead.
+            const playsPerAyah =
+              activeReciter?.audio_capabilities?.full_surah === false;
 
             return (
               <div
@@ -294,7 +298,14 @@ export function ListenPage() {
                     aria-label={
                       isThisSurahPlaying
                         ? `Pause Surah ${ch.name_simple}`
+                        : playsPerAyah
+                        ? `Play Surah ${ch.name_simple} Ayah by Ayah (no single full-Surah file for this reciter)`
                         : `Play Surah ${ch.name_simple}`
+                    }
+                    title={
+                      playsPerAyah && !isThisSurahLoaded
+                        ? 'This reciter plays Ayah by Ayah via chapter segments — no single full-Surah file.'
+                        : undefined
                     }
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-95"
                     style={{ backgroundColor: 'var(--accent)' }}

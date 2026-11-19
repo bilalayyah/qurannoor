@@ -208,8 +208,9 @@ export function MethodologyPage() {
           <p>
             English translations are displayed directly beneath each Ayah in{' '}
             <strong>Source Serif 4</strong> so they remain visually distinct from the Arabic
-            revelation. Users can select their preferred translation inside Reader Settings, where
-            each translation&apos;s translator name is clearly displayed.
+            revelation. The English translation is selectable inside Reader Settings, where
+            each translation&apos;s translator name is clearly displayed; the Urdu translation
+            is fixed to Fateh Muhammad Jalandhari.
           </p>
           {translations.length > 0 && (
             <div

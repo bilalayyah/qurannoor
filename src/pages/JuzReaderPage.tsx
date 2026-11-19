@@ -794,7 +794,7 @@ export function JuzReaderPage() {
               Juz {juzId} · Awaiting Production API Access
             </h2>
             <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              This application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">Noor Quran</span>) is authenticated with Quran Foundation Pre-live developer credentials. The sandbox provides verified verses for <strong>Juz 1</strong> and <strong>Juz 2</strong> (covering Surah 1 & 2).
+              This application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">QuranNoor</span>) is authenticated with Quran Foundation Pre-live developer credentials. The sandbox provides verified verses for <strong>Juz 1</strong> and <strong>Juz 2</strong> (covering Surah 1 & 2).
             </p>
             <p className="mt-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
               Juz 3 to 30 will be enabled automatically once Production API approval is granted by the Quran Foundation.

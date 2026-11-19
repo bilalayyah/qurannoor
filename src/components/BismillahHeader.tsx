@@ -9,6 +9,11 @@ export function BismillahHeader() {
       className="border-b py-5 text-center"
       style={{ borderColor: 'var(--border-subtle)' }}
     >
+      {/*
+        Bismillah literal below is verified byte-identical to Ayah 1:1
+        (text_qpc_hafs). It must never be hand-edited, retyped, or
+        normalised — any change must come from the official API field.
+      */}
       <p
         dir="rtl"
         lang="ar"
@@ -26,7 +31,7 @@ export function BismillahHeader() {
             className="font-editorial text-sm italic"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            In the Name of God, the Lord of Mercy, the Giver of Mercy
+            In the Name of God, the Lord of Mercy, the Giver of Mercy (Abdel Haleem)
           </p>
           <span className="text-[10px]" style={{ color: 'var(--gold)' }} aria-hidden="true">
             ✦

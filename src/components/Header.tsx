@@ -212,7 +212,7 @@ export function Header() {
           <Link
             to="/search"
             aria-label="Search the Quran"
-            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-11 w-11 sm:h-11 sm:w-11 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             <Search className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
@@ -222,7 +222,7 @@ export function Header() {
             type="button"
             onClick={cycleTheme}
             aria-label={settings.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-11 w-11 sm:h-11 sm:w-11 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             {settings.theme === 'dark' ? (
@@ -236,7 +236,7 @@ export function Header() {
             type="button"
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Reader settings"
-            className="inline-flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
+            className="inline-flex h-11 w-11 sm:h-11 sm:w-11 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
             style={{ color: 'var(--text-primary)' }}
           >
             <Settings className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
@@ -247,7 +247,7 @@ export function Header() {
             onClick={() => setMobileMenuOpen((v) => !v)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
-            className="inline-flex md:hidden h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex md:hidden h-11 w-11 sm:h-11 sm:w-11 items-center justify-center rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{ color: 'var(--text-primary)' }}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

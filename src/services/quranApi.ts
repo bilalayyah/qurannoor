@@ -220,7 +220,7 @@ export async function fetchTranslations(): Promise<TranslationResource[]> {
   return data.translations;
 }
 
-export const DEFAULT_TAFSIR_ID = 169; // Ibn Kathir (Abridged)
+export const DEFAULT_TAFSIR_ID = 14; // Tafsir Ibn Kathir (Arabic) — matches the UI default language on first open
 
 export async function fetchVerseTafsir(
   verseKey: string,

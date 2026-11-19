@@ -50,10 +50,10 @@ function LegalLayout({
         }}
       >
         <p>
-          <strong>Informational Notice:</strong> This page is provided as a transparent informational
-          policy template tailored to the current technical configuration of QuranNoor.com. It is not
+          <strong>Informational Notice:</strong> This page sets out the live policies of
+          QuranNoor.com, tailored to the current technical configuration of the site. It is not
           legal counsel and should be reviewed by qualified legal advisors in the operator&apos;s
-          jurisdiction prior to commercial operation.
+          jurisdiction.
         </p>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 font-ui font-medium" style={{ color: 'var(--accent-text)' }}>
           <Link to="/privacy-policy" className="hover:underline underline-offset-4">
@@ -118,11 +118,12 @@ export function PrivacyPolicyPage() {
             Contact Us
           </Link>{' '}
           form is live. When you submit it, the name, email address, subject, and message you
-          voluntarily provide are sent to the third-party form service FormSubmit, which delivers
-          your message to us by email so we can respond to your inquiry. We use the information
-          you submit solely for that purpose and retain it only as long as needed to handle your
-          inquiry; FormSubmit&apos;s own handling of the submission is governed by its privacy
-          policy.
+          voluntarily provide are first sent to QuranNoor&apos;s own server-side contact endpoint
+          (<code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>/api/contact</code>),
+          which then delivers your message to us by email using FormSubmit as the delivery
+          service, so we can respond to your inquiry. We use the information you submit solely
+          for that purpose and retain it only as long as needed to handle your inquiry;
+          FormSubmit&apos;s own handling of the submission is governed by its privacy policy.
         </p>
       </LegalSection>
 
@@ -182,9 +183,10 @@ export function PrivacyPolicyPage() {
             and streamed from verified Quran Foundation media endpoints.
           </li>
           <li>
-            <strong>FormSubmit:</strong> Our live contact form sends the name, email address,
-            subject, and message you submit to FormSubmit, which delivers your message to us by
-            email. See section 1 above for what is sent and how it is retained.
+            <strong>FormSubmit:</strong> Our live contact form first sends the name, email address,
+            subject, and message you submit to our own server-side contact endpoint, which then
+            delivers your message to us by email using FormSubmit as the delivery service. See
+            section 1 above for what is sent and how it is retained.
           </li>
           <li>
             <strong>Aladhan Prayer Times API:</strong> When you use the prayer-times feature, your
@@ -318,18 +320,20 @@ export function TermsPage() {
       <LegalSection heading="4. Service Availability & Limitation of Liability">
         <p>
           QuranNoor.com is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis.
-          Temporary service interruptions, upstream API sandbox limitations (such as pre-live chapter
-          limits prior to production approval), or audio CDN outages may occur. To the maximum extent
-          permitted by applicable law, the operator shall not be liable for indirect or
-          consequential damages arising from your use of or inability to access the platform.
+          Temporary service interruptions, upstream API limitations, or audio CDN outages may
+          occur. To the maximum extent permitted by applicable law, the operator shall not be
+          liable for indirect or consequential damages arising from your use of or inability to
+          access the platform.
         </p>
       </LegalSection>
 
       <LegalSection heading="5. Governing Law & Changes to These Terms">
         <p>
-          These Terms may be updated as the platform evolves. Governing law and venue provisions will
-          reflect the website operator&apos;s designated jurisdiction upon formal publication. Continued
-          use of QuranNoor.com following updates constitutes acceptance of the revised Terms.
+          These Terms may be updated as the platform evolves. Any dispute arising from your use
+          of QuranNoor.com is governed by the laws of the website operator&apos;s home
+          jurisdiction, and the operator will designate the applicable venue in connection with
+          any formal claim. Continued use of QuranNoor.com following updates constitutes
+          acceptance of the revised Terms.
         </p>
       </LegalSection>
     </LegalLayout>
@@ -662,7 +666,7 @@ export function AccessibilityPage() {
           </li>
           <li>
             <strong>Scalable Arabic &amp; Translation Typography:</strong> Reader Settings allow direct
-            adjustment of Arabic script sizes (16px–48px, default 21px) and translation sizes
+            adjustment of Arabic script sizes (16px–48px, default 28px) and translation sizes
             (14px–24px, default 17px), alongside Uthmani (Hafs) and IndoPak scripts across three
             Arabic fonts (Scheherazade New, Noto Naskh Arabic, and Lateef).
           </li>
