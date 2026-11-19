@@ -219,9 +219,12 @@ export async function onRequest(context: {
       // canonical no-slash URL returns 200 instead of Pages' 308 to the
       // slash URL (which would loop against the M-4 301 above). No file
       // (alias, numeric id, user page) -> fall through to the SPA shell.
+      // NOTE: ASSETS.fetch('<path>/index.html') itself 308s (Pages strips
+      // /index.html), so fetch the directory URL '<path>/' which serves
+      // the index file directly with 200.
       if (path !== '/') {
         const assetRes = await context.env.ASSETS.fetch(
-          new Request(new URL(`${path}/index.html`, request.url), request),
+          new Request(new URL(`${path}/`, request.url), request),
         );
         if (assetRes.status === 200) {
           return withSecurityHeaders(assetRes);
