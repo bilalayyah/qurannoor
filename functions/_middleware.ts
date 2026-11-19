@@ -12,16 +12,24 @@
 //   the no-slash URL to the slash URL for a directory index, which loops
 //   against the M-4 slash-strip 301 above (loop found live 2026-11-19:
 //   /surah/al-baqarah <-> /surah/al-baqarah/). Routes without a prerendered
-//   file (aliases, numeric ids, user pages) fall through to the SPA shell.
+//   file (user pages) fall through to the SPA shell. The home route '/' is
+//   served the same way from public/__home__/index.html (Cache-Control:
+//   public, max-age=1800, must-revalidate); /__home__/ itself 301s to '/'.
+// - L-1: numeric chapter ids and non-canonical alias slugs 301 to the
+//   canonical slug (/surah/2 -> /surah/al-baqarah). L-2: /qibla, /privacy,
+//   /terms 301 to their canonical pages. L-3: /search and /bookmarks get
+//   X-Robots-Tag: noindex + Cache-Control: no-store.
 //
 // Valid slugs are embedded statically (derived 2026-11-18 from the route
 // definitions in src/App.tsx, the 186 sitemap URLs in public/sitemap.xml, the
 // slug aliases in src/utils/slugs.ts, and verse counts in
 // server/chaptersCatalog.json). The client also resolves numeric chapter ids
-// (/surah/2) and alias slugs (/surah/fatihah, /surah/yaseen, ...), so those are
-// accepted here too — 404ing them would break working client routes.
-// /qibla, /privacy and /terms are client-side redirects and are valid routes:
-// they are NOT 404ed.
+// (/surah/2) and alias slugs (/surah/fatihah, /surah/yaseen, ...), but those
+// are 301-redirected to the canonical slug below (L-1) instead of being
+// served — 404ing them would break working client routes, serving them
+// would duplicate content.
+// /qibla, /privacy and /terms 301 to their canonical pages (L-2); they
+// remain in EXACT_ROUTES only as a fallback.
 
 const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
@@ -30,7 +38,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()',
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://verses.quran.foundation; img-src 'self' data: blob:; media-src 'self' https://verses.quran.com https://verses.quran.foundation https://cdn.islamic.network; connect-src 'self' https://api.quran.com https://apis.quran.foundation https://apis-prelive.quran.foundation https://oauth2.quran.foundation https://prelive-oauth2.quran.foundation https://verses.quran.foundation https://verses.quran.com https://api.aladhan.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://get.geojs.io https://cdn.islamic.network https://formsubmit.co; worker-src 'self'; manifest-src 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://verses.quran.foundation; img-src 'self' data: blob:; media-src 'self' https://verses.quran.com https://verses.quran.foundation https://cdn.islamic.network https://download.quranicaudio.com https://mirrors.quranicaudio.com; connect-src 'self' https://api.quran.com https://apis.quran.foundation https://apis-prelive.quran.foundation https://oauth2.quran.foundation https://prelive-oauth2.quran.foundation https://verses.quran.foundation https://verses.quran.com https://api.aladhan.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://get.geojs.io https://cdn.islamic.network https://formsubmit.co; worker-src 'self'; manifest-src 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
 };
 
 // Verse counts per chapter id (1..114), from server/chaptersCatalog.json.
@@ -90,6 +98,49 @@ const SURAH_SLUG_TO_ID: Record<string, number> = {
   'tariq': 86, 'tawbah': 9, 'tin': 95, 'tur': 52, 'waqiah': 56, 'ya-sin': 36,
   'yaseen': 36, 'yasin': 36, 'yunus': 10, 'yusuf': 12, 'zalzalah': 99,
   'zukhruf': 43, 'zumar': 39,
+};
+
+// Canonical slug per chapter id (1..114), inverted from SURAH_SLUG_TO_ID
+// using the 114 canonical slugs in public/sitemap.xml (verified 2026-11-19:
+// every sitemap slug is in the map, ids 1..114 covered exactly once).
+// L-1 redirects numeric ids and alias slugs to these.
+const SURAH_ID_TO_CANONICAL_SLUG: Record<number, string> = {
+  1: 'al-fatihah', 2: 'al-baqarah', 3: 'ali-imran', 4: 'an-nisa',
+  5: 'al-maidah', 6: 'al-anam', 7: 'al-araf', 8: 'al-anfal',
+  9: 'at-tawbah', 10: 'yunus', 11: 'hud', 12: 'yusuf',
+  13: 'ar-rad', 14: 'ibrahim', 15: 'al-hijr', 16: 'an-nahl',
+  17: 'al-isra', 18: 'al-kahf', 19: 'maryam', 20: 'taha',
+  21: 'al-anbya', 22: 'al-hajj', 23: 'al-muminun', 24: 'an-nur',
+  25: 'al-furqan', 26: 'ash-shuara', 27: 'an-naml', 28: 'al-qasas',
+  29: 'al-ankabut', 30: 'ar-rum', 31: 'luqman', 32: 'as-sajdah',
+  33: 'al-ahzab', 34: 'saba', 35: 'fatir', 36: 'ya-sin',
+  37: 'as-saffat', 38: 'sad', 39: 'az-zumar', 40: 'ghafir',
+  41: 'fussilat', 42: 'ash-shuraa', 43: 'az-zukhruf', 44: 'ad-dukhan',
+  45: 'al-jathiyah', 46: 'al-ahqaf', 47: 'muhammad', 48: 'al-fath',
+  49: 'al-hujurat', 50: 'qaf', 51: 'adh-dhariyat', 52: 'at-tur',
+  53: 'an-najm', 54: 'al-qamar', 55: 'ar-rahman', 56: 'al-waqiah',
+  57: 'al-hadid', 58: 'al-mujadila', 59: 'al-hashr', 60: 'al-mumtahanah',
+  61: 'as-saf', 62: 'al-jumuah', 63: 'al-munafiqun', 64: 'at-taghabun',
+  65: 'at-talaq', 66: 'at-tahrim', 67: 'al-mulk', 68: 'al-qalam',
+  69: 'al-haqqah', 70: 'al-maarij', 71: 'nuh', 72: 'al-jinn',
+  73: 'al-muzzammil', 74: 'al-muddaththir', 75: 'al-qiyamah', 76: 'al-insan',
+  77: 'al-mursalat', 78: 'an-naba', 79: 'an-naziat', 80: 'abasa',
+  81: 'at-takwir', 82: 'al-infitar', 83: 'al-mutaffifin', 84: 'al-inshiqaq',
+  85: 'al-buruj', 86: 'at-tariq', 87: 'al-ala', 88: 'al-ghashiyah',
+  89: 'al-fajr', 90: 'al-balad', 91: 'ash-shams', 92: 'al-layl',
+  93: 'ad-duhaa', 94: 'ash-sharh', 95: 'at-tin', 96: 'al-alaq',
+  97: 'al-qadr', 98: 'al-bayyinah', 99: 'az-zalzalah', 100: 'al-adiyat',
+  101: 'al-qariah', 102: 'at-takathur', 103: 'al-asr', 104: 'al-humazah',
+  105: 'al-fil', 106: 'quraysh', 107: 'al-maun', 108: 'al-kawthar',
+  109: 'al-kafirun', 110: 'an-nasr', 111: 'al-masad', 112: 'al-ikhlas',
+  113: 'al-falaq', 114: 'an-nas',
+};
+
+// Legacy short paths (L-2) and their canonical targets.
+const LEGACY_REDIRECTS: Record<string, string> = {
+  '/qibla': '/prayer-times',
+  '/privacy': '/privacy-policy',
+  '/terms': '/terms-and-conditions',
 };
 
 const GUIDE_SLUGS = new Set([
@@ -168,6 +219,14 @@ function withSecurityHeaders(res: Response): Response {
   });
 }
 
+function redirect301(target: string): Response {
+  const headers = new Headers();
+  headers.set('Location', target);
+  headers.set('Cache-Control', 'public, max-age=86400');
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+  return new Response(null, { status: 301, headers });
+}
+
 function isStaticAsset(path: string): boolean {
   return (
     path.startsWith('/assets/') ||
@@ -192,6 +251,11 @@ export async function onRequest(context: {
     }
 
     if (request.method === 'GET' || request.method === 'HEAD') {
+      // H-1: the raw home-prerender path is never a public URL.
+      if (path === '/__home__' || path === '/__home__/') {
+        return redirect301(`/${url.search}`);
+      }
+
       // M-4: lowercase + strip trailing slash (except root), one 301.
       const normalized =
         path.length > 1 ? path.toLowerCase().replace(/\/+$/, '') : path;
@@ -201,6 +265,28 @@ export async function onRequest(context: {
         headers.set('Cache-Control', 'public, max-age=86400');
         for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
         return new Response(null, { status: 301, headers });
+      }
+
+      // L-2: legacy short paths 301 to their canonical pages.
+      if (LEGACY_REDIRECTS[path]) {
+        return redirect301(`${LEGACY_REDIRECTS[path]}${url.search}`);
+      }
+
+      // L-1: numeric chapter ids and non-canonical alias slugs 301 to the
+      // canonical slug, preserving an ayah segment (/surah/2/255 ->
+      // /surah/al-baqarah/255, /surah/baqarah -> /surah/al-baqarah).
+      {
+        const parts = path.split('/').filter(Boolean);
+        if (parts[0] === 'surah' && parts.length >= 2 && parts.length <= 3) {
+          const id = resolveSurahId(parts[1]);
+          if (id !== null) {
+            const canonical = SURAH_ID_TO_CANONICAL_SLUG[id];
+            if (parts[1] !== canonical) {
+              const target = `/surah/${canonical}${parts[2] ? `/${parts[2]}` : ''}${url.search}`;
+              return redirect301(target);
+            }
+          }
+        }
       }
 
       // M-2: unmatched route / invalid slug -> true 404, SPA shell body.
@@ -215,14 +301,50 @@ export async function onRequest(context: {
         return new Response(shell.body, { status: 404, headers });
       }
 
+      // L-3: /search and /bookmarks are user pages, not content — keep
+      // them out of the index (client-side meta alone is not enough).
+      if (path === '/search' || path === '/bookmarks') {
+        const shell = await context.next();
+        const headers = new Headers(shell.headers);
+        for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+          if (!headers.has(k)) headers.set(k, v);
+        }
+        headers.set('X-Robots-Tag', 'noindex');
+        headers.set('Cache-Control', 'no-store');
+        return new Response(shell.body, {
+          status: shell.status,
+          statusText: shell.statusText,
+          headers,
+        });
+      }
+
       // Prerendered HTML: serve public/<path>/index.html via ASSETS so the
       // canonical no-slash URL returns 200 instead of Pages' 308 to the
       // slash URL (which would loop against the M-4 301 above). No file
-      // (alias, numeric id, user page) -> fall through to the SPA shell.
+      // (user page) -> fall through to the SPA shell.
       // NOTE: ASSETS.fetch('<path>/index.html') itself 308s (Pages strips
       // /index.html), so fetch the directory URL '<path>/' which serves
       // the index file directly with 200.
-      if (path !== '/') {
+      if (path === '/') {
+        // H-1: the home prerender lives at public/__home__/index.html
+        // (Vite overwrites public/index.html on every build). Same
+        // directory-URL pattern as other routes; no file yet (prerender
+        // not re-run) -> fall through to the SPA shell.
+        const homeRes = await context.env.ASSETS.fetch(
+          new Request(new URL('/__home__/', request.url), request),
+        );
+        if (homeRes.status === 200) {
+          const headers = new Headers(homeRes.headers);
+          headers.set('Cache-Control', 'public, max-age=1800, must-revalidate');
+          return withSecurityHeaders(
+            new Response(homeRes.body, {
+              status: homeRes.status,
+              statusText: homeRes.statusText,
+              headers,
+            }),
+          );
+        }
+      } else {
         const assetRes = await context.env.ASSETS.fetch(
           new Request(new URL(`${path}/`, request.url), request),
         );

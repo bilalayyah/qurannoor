@@ -33,11 +33,12 @@
  * fallback — the verse text is identical either way; only the reciter list
  * differs, 14 public vs 23 authenticated, which the client hydrates).
  *
- * Route list: public/sitemap.xml (186 URLs). The home route '/' is SKIPPED
- * on purpose: public/index.html would be copied to dist/index.html and
- * Vite's own index.html output overwrites it on every build (verified
- * 2026-11-18 with a marker test). Home needs no prerender file — the SPA
- * shell serves it as today.
+ * Route list: public/sitemap.xml (186 URLs, including '/'). The home route
+ * '/' is rendered to public/__home__/index.html — NOT public/index.html,
+ * which Vite overwrites with its own index.html output on every build
+ * (verified 2026-11-18 with a marker test). The middleware serves that
+ * file for path '/' via ASSETS (see functions/_middleware.ts) and 301s
+ * /__home__/ back to '/', so the raw path is never a public URL.
  *
  * Scope: first ~15-ayah chunk only per Surah/Juz page (Scope A, approved
  * 2026-11-18). The reader loads further chunks on scroll (IntersectionObserver);
@@ -49,6 +50,15 @@
  * screenshot-tool checkout (~/workspace/compressmypic/screenshot-tool/) via
  * createRequire; a plain require('playwright') is tried first so the script
  * also works if playwright is ever installed in this repo.
+ *
+ * REPRODUCIBILITY (I-11): Chromium only reaches the network through the
+ * relay proxy at ~/workspace/compressmypic/screenshot-tool/relay.js
+ * (listening on 127.0.0.1:18080 — see PROXY_ARGS); start the relay before
+ * running this script. On low-memory machines use --concurrency 1.
+ * BUILD FRESHNESS: distIsCurrent() below only compares dist/ against
+ * src/main.tsx — after changes to any OTHER source file, an old dist/
+ * still looks current. Rebuild (or delete dist/) before rendering when
+ * anything besides main.tsx changed.
  *
  * Hard rules (from CMP's blank-site incident, 2026-11-17):
  * - HASH RULE: never push a source-only change that alters bundle hashes
@@ -160,7 +170,9 @@ function readRoutes() {
 function outPathFor(routePath) {
   // '/surah/al-baqarah' -> public/surah/al-baqarah/index.html
   const clean = routePath.replace(/\/+$/, '') || '/';
-  if (clean === '/') return null; // home: skipped on purpose, see header
+  // Home renders to public/__home__/index.html, never public/index.html
+  // (Vite overwrites that on every build). The middleware serves it for '/'.
+  if (clean === '/') return path.join(PUBLIC_DIR, '__home__', 'index.html');
   return path.join(PUBLIC_DIR, ...clean.split('/').filter(Boolean), 'index.html');
 }
 
@@ -205,6 +217,46 @@ function distIsCurrent() {
   }
 }
 
+// Delete every stale prerendered file from dist/ (all nested index.html
+// files — dist/<route>/index.html and dist/__home__/index.html — but NEVER
+// the SPA shell dist/index.html). Vite copies public/ into dist/ on every
+// build, so after build 1/2 dist/ holds the PREVIOUS run's snapshots; the
+// Express server's express.static() would serve those stale files instead
+// of the SPA shell, and the run would silently re-snapshot stale HTML
+// (old bundle hash, old canonicals) instead of rendering the current app
+// — observed 2026-11-19: 185/185 files rewritten with stale content plus
+// one blank line of DOM-serialisation noise. Called after build 1/2 (or
+// its distIsCurrent() fallback) and BEFORE the server starts, so every
+// route renders from the live shell. Build 2/2 re-copies the fresh
+// public/ files into dist/ afterwards.
+function removeStalePrerenderedFromDist() {
+  const distDir = path.join(REPO_ROOT, 'dist');
+  let removed = 0;
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name === 'index.html' && dir !== distDir) {
+        try {
+          fs.rmSync(p, { force: true });
+          removed += 1;
+        } catch {
+          // A single undeletable stale file is reported by the caller via
+          // the render check below (its snapshot would still be stale).
+        }
+      }
+    }
+  };
+  walk(distDir);
+  return removed;
+}
+
 function viteBuild() {
   let lastErr;
   for (let attempt = 1; attempt <= 6; attempt += 1) {
@@ -245,8 +297,9 @@ function sanitizePrerenderedHtml(html, baseUrl) {
   // absolute-origin <link>: the canonical link's href is also absolute
   // at render time, and removing it would leave prerendered pages with
   // no canonical at all — found live 2026-11-19. The canonical survives
-  // here and the baseUrl strip below makes it root-relative; the client
-  // sets the absolute live URL at runtime.)
+  // here and the baseUrl rewrite below makes it absolute on the live
+  // origin; root-relative canonicals/og URLs fail validators — M-1 fix
+  // 2026-11-19. The client also sets the absolute live URL at runtime.)
   const escaped = baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let out = html.replace(
     new RegExp(`<link[^>]*rel="modulepreload"[^>]*href="${escaped}[^"]*"[^>]*>`, 'g'),
@@ -256,7 +309,10 @@ function sanitizePrerenderedHtml(html, baseUrl) {
     new RegExp(`<link[^>]*href="${escaped}[^"]*"[^>]*rel="modulepreload"[^>]*>`, 'g'),
     '',
   );
-  out = out.split(baseUrl).join('');
+  // M-1: rewrite the render-time origin to the LIVE origin instead of
+  // stripping it — stripping left root-relative canonical / og:url /
+  // og:image / twitter:image / BreadcrumbList URLs in all 185 files.
+  out = out.split(baseUrl).join(SITE_ORIGIN);
   return out;
 }
 
@@ -373,8 +429,7 @@ async function main() {
   }
   // --limit applies after --skip-existing so it counts remaining work.
   if (opts.limit > 0) renderList = renderList.slice(0, opts.limit);
-  const skippedHome = routes.length - toRender.length;
-  console.log(`[prerender] ${renderList.length} routes to render (${skippedHome} home route skipped), concurrency ${opts.concurrency}${opts.fullText ? ', --full-text ON' : ', Scope A (first chunk only)'}`);
+  console.log(`[prerender] ${renderList.length} routes to render (home '/' -> public/__home__/index.html), concurrency ${opts.concurrency}${opts.fullText ? ', --full-text ON' : ', Scope A (first chunk only)'}`);
   if (renderList.length === 0) {
     console.log('[prerender] nothing to render — exiting without building.');
     process.exit(0);
@@ -392,6 +447,10 @@ async function main() {
     if (!distIsCurrent()) {
       console.warn('[prerender] WARNING dist/ does not look current (newest asset older than src/main.tsx) — rendering against a stale build; run `npm run build` first when the EPERM wave passes');
     }
+    // The external server may itself serve stale prerendered HTML from
+    // its dist/ (see removeStalePrerenderedFromDist) — nothing this
+    // script can do about that; start the server from a clean dist/.
+    console.warn('[prerender] WARNING --preview-url: make sure the external server was started from a dist/ WITHOUT stale prerendered route files, or this run will re-snapshot stale HTML.');
   } else {
     console.log('[prerender] build 1/2: vite build');
     try {
@@ -408,6 +467,13 @@ async function main() {
         throw e;
       }
     }
+
+    // Remove stale prerendered HTML from dist/ BEFORE starting the
+    // server (see removeStalePrerenderedFromDist) — otherwise
+    // express.static() serves the previous run's snapshots and the
+    // render silently re-snapshots stale content.
+    const staleRemoved = removeStalePrerenderedFromDist();
+    console.log(`[prerender] removed ${staleRemoved} stale prerendered file(s) from dist/`);
 
     console.log(`[prerender] starting Express server (production mode) on port ${opts.port}`);
     server = spawn(
