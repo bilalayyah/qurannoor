@@ -239,12 +239,23 @@ function sanitizePrerenderedHtml(html, baseUrl) {
   // with ABSOLUTE urls of the render-time origin (this local server,
   // e.g. http://127.0.0.1:4182/assets/SurahReaderPage-*.js). Shipping those
   // would make every live page request chunks from a localhost server
-  // (connection refused, console errors on every page). Drop the injected
-  // preload links entirely — the app's relative dynamic imports fetch the
-  // same chunks from the live origin anyway — and rewrite any other
-  // preview-origin URL to a root-relative one.
+  // (connection refused, console errors on every page). Drop ONLY the
+  // injected preload links — the app's relative dynamic imports fetch the
+  // same chunks from the live origin anyway. (Do NOT drop every
+  // absolute-origin <link>: the canonical link's href is also absolute
+  // at render time, and removing it would leave prerendered pages with
+  // no canonical at all — found live 2026-11-19. The canonical survives
+  // here and the baseUrl strip below makes it root-relative; the client
+  // sets the absolute live URL at runtime.)
   const escaped = baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let out = html.replace(new RegExp(`<link[^>]*href="${escaped}[^"]*"[^>]*>`, 'g'), '');
+  let out = html.replace(
+    new RegExp(`<link[^>]*rel="modulepreload"[^>]*href="${escaped}[^"]*"[^>]*>`, 'g'),
+    '',
+  );
+  out = out.replace(
+    new RegExp(`<link[^>]*href="${escaped}[^"]*"[^>]*rel="modulepreload"[^>]*>`, 'g'),
+    '',
+  );
   out = out.split(baseUrl).join('');
   return out;
 }
