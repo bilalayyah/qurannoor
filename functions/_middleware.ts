@@ -7,6 +7,12 @@
 // - Valid routes, /api/*, and static assets pass through untouched (status preserved).
 // - Also applies the H-2 security headers to every response, including /api/*
 //   Function responses (public/_headers does not reliably cover Functions).
+// - Serves prerendered HTML (public/<path>/index.html) directly via
+//   env.ASSETS for valid canonical routes. Pages would otherwise 308-redirect
+//   the no-slash URL to the slash URL for a directory index, which loops
+//   against the M-4 slash-strip 301 above (loop found live 2026-11-19:
+//   /surah/al-baqarah <-> /surah/al-baqarah/). Routes without a prerendered
+//   file (aliases, numeric ids, user pages) fall through to the SPA shell.
 //
 // Valid slugs are embedded statically (derived 2026-11-18 from the route
 // definitions in src/App.tsx, the 186 sitemap URLs in public/sitemap.xml, the
@@ -173,6 +179,7 @@ function isStaticAsset(path: string): boolean {
 export async function onRequest(context: {
   request: Request;
   next: () => Promise<Response>;
+  env: { ASSETS: { fetch: (req: Request) => Promise<Response> } };
 }): Promise<Response> {
   const { request } = context;
   try {
@@ -206,6 +213,19 @@ export async function onRequest(context: {
         headers.set('X-Robots-Tag', 'noindex');
         headers.set('Cache-Control', 'no-store');
         return new Response(shell.body, { status: 404, headers });
+      }
+
+      // Prerendered HTML: serve public/<path>/index.html via ASSETS so the
+      // canonical no-slash URL returns 200 instead of Pages' 308 to the
+      // slash URL (which would loop against the M-4 301 above). No file
+      // (alias, numeric id, user page) -> fall through to the SPA shell.
+      if (path !== '/') {
+        const assetRes = await context.env.ASSETS.fetch(
+          new Request(new URL(`${path}/index.html`, request.url), request),
+        );
+        if (assetRes.status === 200) {
+          return withSecurityHeaders(assetRes);
+        }
       }
     }
 
