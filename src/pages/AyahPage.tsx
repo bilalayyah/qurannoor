@@ -309,7 +309,7 @@ export function AyahPage() {
               }}
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Ayah {verseNum - 1}</span>
+              <span>{`Ayah ${verseNum - 1}`}</span>
             </Link>
           ) : (
             <div />
@@ -324,7 +324,7 @@ export function AyahPage() {
               color: 'var(--accent-text)',
             }}
           >
-            Full Surah {chapter.name_simple}
+            {`Full Surah ${chapter.name_simple}`}
           </Link>
 
           {verseNum < chapter.verses_count ? (
@@ -337,7 +337,7 @@ export function AyahPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              <span>Ayah {verseNum + 1}</span>
+              <span>{`Ayah ${verseNum + 1}`}</span>
               <ChevronRight className="h-4 w-4" />
             </Link>
           ) : (

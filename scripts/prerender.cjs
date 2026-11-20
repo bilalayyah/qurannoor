@@ -420,6 +420,23 @@ function sanitizePrerenderedHtml(html, baseUrl) {
 async function renderRoute(browser, baseUrl, routePath, opts, attempt) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   try {
+    // Iteration 5 (M-4): /prayer-times must snapshot as its loading
+    // skeleton, never the location-error branch. Hanging Aladhan (below)
+    // is not enough: detection itself runs first — browser geolocation is
+    // denied in the prerender browser and the IP fallback (ipwho.is /
+    // geojs.io through the egress proxy) fails fast, so detection returns
+    // null and the page snapshots the "Enable location permission…"
+    // error branch (iteration 4: prayer mobile CLS 0.31, 418 = 1).
+    // Grant geolocation with a fixed Dubai position for this route only:
+    // step 1 of detectPrayerLocationAuto then always succeeds, detection
+    // never returns null, and the snapshot stays the skeleton while the
+    // hung Aladhan fetch keeps `loading` true. No other route uses
+    // geolocation. (Each newPage gets its own browser context, so this
+    // permission is scoped to this page.)
+    if (routePath === '/prayer-times') {
+      await page.context().grantPermissions(['geolocation']);
+      await page.context().setGeolocation({ latitude: 25.2048, longitude: 55.2708 });
+    }
     // Defensive: AdSense was removed from this site (2026-11-18) and GA4 is
     // not wired, so no third-party ad/analytics script should ever load.
     // Block them anyway so a stray tag can never pollute the snapshot or

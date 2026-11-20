@@ -6,7 +6,16 @@
   src:
     url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2'),
     url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.ttf') format('truetype');
-  font-display: swap;
+  /* H-1 (iteration 5): `swap` caused a 0.13–0.17 CLS on ayah pages — the
+     fallback font lays the Arabic paragraph out much taller (2:255: 652px
+     mobile) and the swap to UthmanicHafs shrinks it, jumping everything
+     below up. `block` still shifts (0.08 in isolation). `optional` never
+     swaps after first paint: slow first visits render the (correct-text)
+     Scheherazade fallback with zero shift; fast/cached visits render
+     UthmanicHafs. Preloaded in index.html so it is ready before first
+     paint whenever the connection allows. Quran TEXT is unchanged — this
+     is presentation only. */
+  font-display: optional;
 }
 
 /* ==========================================================================

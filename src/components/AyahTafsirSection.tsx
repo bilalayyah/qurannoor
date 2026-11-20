@@ -122,7 +122,18 @@ export function AyahTafsirSection({
     window.dispatchEvent(new CustomEvent<TafsirLanguage>(TAFSIR_LANG_EVENT, { detail: nextLang }));
   };
 
+  // H-1 (iteration 4): the reset must NOT run on mount. The old version
+  // cleared the seeded tafsir (and the fetched-request marker) 0 ms after
+  // hydration, flipping the section to the loading spinner and tripping
+  // React 418 on every ayah page — the iteration-2 seeding was nullified
+  // by its own mount effect. Only reset when the verse or tafsir resource
+  // actually changes (client navigation / stored-language switch).
+  const prevTafsirRequestRef = useRef<{ verseKey: string; resourceId: number } | null>(null);
   useEffect(() => {
+    const prev = prevTafsirRequestRef.current;
+    prevTafsirRequestRef.current = { verseKey, resourceId: activeOption.resourceId };
+    if (prev === null) return; // mount: keep the seeded tafsir
+    if (prev.verseKey === verseKey && prev.resourceId === activeOption.resourceId) return;
     setTafsir(null);
     setError(null);
     setShowFull(false);
