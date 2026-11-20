@@ -291,10 +291,10 @@ export function AyahCard({
             className="tabular-nums hover:underline underline-offset-4"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Juz {verse.juz_number}
+            {`Juz ${verse.juz_number}`}
           </Link>
           <span aria-hidden="true">·</span>
-          <span className="tabular-nums">Page {verse.page_number}</span>
+          <span className="tabular-nums">{`Page ${verse.page_number}`}</span>
           {showChapterLink && (
             <>
               <span aria-hidden="true">·</span>
@@ -569,13 +569,13 @@ export function AyahCard({
               )
             ) : (
               arabicText
-            )}{' '}
+            )}
             <span
               className="inline-block select-none px-1 text-[0.76em] font-normal"
               style={{ color: 'var(--gold)' }}
               aria-label={`Ayah ${verse.verse_number}`}
             >
-              ﴿{toArabicIndicDigits(verse.verse_number)}﴾
+              {` ﴿${toArabicIndicDigits(verse.verse_number)}﴾`}
             </span>
           </p>
         </div>

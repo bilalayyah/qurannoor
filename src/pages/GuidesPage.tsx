@@ -33,7 +33,7 @@ export function GuidesIndexPage() {
 
       <header className="space-y-4 border-b pb-8" style={{ borderColor: 'var(--border-subtle)' }}>
         <p className="text-xs font-medium tracking-wide" style={{ color: 'var(--gold)' }}>
-          QuranNoor Reading &amp; Study Library · {GUIDE_ARTICLES.length} Guides
+          {`QuranNoor Reading & Study Library · ${GUIDE_ARTICLES.length} Guides`}
         </p>
         <h1
           className="text-3xl sm:text-4xl font-semibold tracking-tight text-balance"
@@ -91,7 +91,7 @@ export function GuidesIndexPage() {
                     ·
                   </span>
                   <span className="tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-                    {article.readingTimeMinutes} min read
+                    {`${article.readingTimeMinutes} min read`}
                   </span>
                 </div>
                 <span
@@ -130,7 +130,7 @@ export function GuidesIndexPage() {
               className="mt-5 flex items-center justify-between border-t pt-4 text-xs"
               style={{ borderColor: 'var(--border-subtle)' }}
             >
-              <span style={{ color: 'var(--text-tertiary)' }}>By {article.author}</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>{`By ${article.author}`}</span>
               <span
                 className="inline-flex items-center gap-1 font-medium whitespace-nowrap"
                 style={{ color: 'var(--accent-text)' }}
@@ -248,7 +248,7 @@ export function GuideArticlePage() {
           </span>
           <span className="inline-flex items-center gap-1 tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
             <Clock className="h-3.5 w-3.5" />
-            <span>{article.readingTimeMinutes} min read</span>
+            <span>{`${article.readingTimeMinutes} min read`}</span>
           </span>
           <span aria-hidden="true" style={{ color: 'var(--border-strong)' }}>
             ·

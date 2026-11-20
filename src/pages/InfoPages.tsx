@@ -42,19 +42,7 @@ export function AboutPage() {
           </h2>
           <p>
             Every core feature on QuranNoor is structured around effortless study and daily
-            recitation: clear navigation across all{' '}
-            <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              114 Surahs
-            </Link>{' '}
-            and{' '}
-            <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              30 Juz
-            </Link>
-            , direct verse-by-verse and full-Surah{' '}
-            <Link to="/listen" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              audio recitations
-            </Link>
-            , adjustable Arabic and English typography, and local-first bookmarking and reading
+            recitation: clear navigation across all <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>114 Surahs</Link> and <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>30 Juz</Link>, direct verse-by-verse and full-Surah <Link to="/listen" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>audio recitations</Link>, adjustable Arabic and English typography, and local-first bookmarking and reading
             progress without forced account walls.
           </p>
         </section>
@@ -67,15 +55,7 @@ export function AboutPage() {
             QuranNoor never fabricates, summarizes, or alters Quranic Arabic text using AI. All
             Arabic scripts and translations are sourced from verified Quran Foundation API endpoints
             with explicit translator and reciter attribution. Full technical details are published on
-            our{' '}
-            <Link
-              to="/quran-text-and-translation-methodology"
-              className="underline underline-offset-4"
-              style={{ color: 'var(--accent-text)' }}
-            >
-              Quran Text &amp; Translation Methodology
-            </Link>{' '}
-            page.
+            our <Link to="/quran-text-and-translation-methodology" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Quran Text &amp; Translation Methodology</Link> page.
           </p>
         </section>
       </div>
@@ -148,30 +128,12 @@ export function MethodologyPage() {
             1. Arabic Quran Text Source &amp; API Configuration Status
           </h2>
           <p>
-            QuranNoor connects to the official{' '}
-            <a
-              href="https://api-docs.quran.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4"
-              style={{ color: 'var(--accent-text)' }}
-            >
-              Quran Foundation Content API (v4)
-            </a>{' '}
-            for verified Uthmani Hafs and IndoPak Arabic script, verse numbering, Juz boundaries,
+            QuranNoor connects to the official <a href="https://api-docs.quran.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Quran Foundation Content API (v4)</a> for verified Uthmani Hafs and IndoPak Arabic script, verse numbering, Juz boundaries,
             and page markers. No Quranic Arabic text is ever generated, paraphrased, or modified by
             artificial intelligence.
           </p>
           <p>
-            QuranNoor&apos;s Production content and audio integrations are live and active, serving all{' '}
-            <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              114 Surahs
-            </Link>
-            ,{' '}
-            <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              30 Juz
-            </Link>
-            , and 6,236 Ayahs—alongside translations, Ibn Kathir tafsir, and audio recitations—without
+            QuranNoor&apos;s Production content and audio integrations are live and active, serving all <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>114 Surahs</Link>, <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>30 Juz</Link>, and 6,236 Ayahs—alongside translations, Ibn Kathir tafsir, and audio recitations—without
             any chapter restrictions. Because the separate upstream search endpoint (
             <code className="font-ui text-xs">content.search.read</code>) is not active on this
             client, keyword search runs locally in the browser across the complete Arabic text,
@@ -189,14 +151,12 @@ export function MethodologyPage() {
             Quran Foundation font CDN), with <strong>Scheherazade New</strong> as the fallback and
             optional <strong>Noto Naskh Arabic</strong> and <strong>Lateef</strong> (IndoPak style)
             fonts, and Urdu rendered in <strong>Noto Nastaliq Urdu</strong>. The displayed Arabic
-            text comes from the official Quran Foundation API field{' '}
-            <code className="font-ui text-xs">text_qpc_hafs</code>. UthmanicHafs is provided under
+            text comes from the official Quran Foundation API field <code className="font-ui text-xs">text_qpc_hafs</code>. UthmanicHafs is provided under
             the KFGQPC licence (free to use, copy and distribute; not to be sold or modified),
             while Scheherazade New, Noto Naskh Arabic, Lateef and Noto Nastaliq Urdu are licensed
             under the open-source SIL Open Font License (OFL 1.1). Every Arabic verse enforces
             right-to-left Unicode isolation (
-            <code className="font-ui text-xs">dir="rtl"</code>) and carries{' '}
-            <code className="font-ui text-xs">translate="no"</code> attributes to prevent automated
+            <code className="font-ui text-xs">dir="rtl"</code>) and carries <code className="font-ui text-xs">translate="no"</code> attributes to prevent automated
             browser translation extensions from altering sacred text.
           </p>
         </section>
@@ -206,8 +166,7 @@ export function MethodologyPage() {
             3. Translation &amp; Translator Attribution
           </h2>
           <p>
-            English translations are displayed directly beneath each Ayah in{' '}
-            <strong>Source Serif 4</strong> so they remain visually distinct from the Arabic
+            English translations are displayed directly beneath each Ayah in <strong>Source Serif 4</strong> so they remain visually distinct from the Arabic
             revelation. The English translation is selectable inside Reader Settings, where
             each translation&apos;s translator name is clearly displayed; the Urdu translation
             is fixed to Fateh Muhammad Jalandhari.
@@ -262,11 +221,7 @@ export function MethodologyPage() {
           </h2>
           <p>
             If you observe any missing diacritic, glyph clipping, audio mismatch, or translation
-            display error, please report the exact Surah and Ayah reference via our{' '}
-            <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-              Contact page
-            </Link>
-            .
+            display error, please report the exact Surah and Ayah reference via our <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact page</Link>.
           </p>
         </section>
       </div>

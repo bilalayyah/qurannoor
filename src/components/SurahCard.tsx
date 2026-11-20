@@ -46,7 +46,7 @@ export function SurahCard({ chapter }: { chapter: Chapter }) {
             className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] tabular-nums"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            <span>{chapter.verses_count} Ayahs</span>
+            <span>{`${chapter.verses_count} Ayahs`}</span>
             <span aria-hidden="true">·</span>
             <span className="whitespace-nowrap">{revelationLabel}</span>
             {chapter.available_in_prelive === false && (

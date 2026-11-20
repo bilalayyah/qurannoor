@@ -113,11 +113,7 @@ export function PrivacyPolicyPage() {
           bookmarks on our servers.
         </p>
         <p>
-          Our{' '}
-          <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Contact Us
-          </Link>{' '}
-          form is live. When you submit it, the name, email address, subject, and message you
+          Our <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact Us</Link> form is live. When you submit it, the name, email address, subject, and message you
           voluntarily provide are first sent to QuranNoor&apos;s own server-side contact endpoint
           (<code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>/api/contact</code>),
           which then delivers your message to us by email using FormSubmit as the delivery
@@ -140,15 +136,7 @@ export function PrivacyPolicyPage() {
         <p>
           Instead of requiring an account, QuranNoor saves your reader preferences (selected theme,
           Arabic script, font size, preferred English translation, preferred reciter), bookmarked
-          Ayahs, and last-read Surah progress exclusively inside your own browser&apos;s{' '}
-          <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>
-            localStorage
-          </code>
-          . You can clear this data at any time through your browser settings. Please see our{' '}
-          <Link to="/cookie-policy" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Cookie Policy
-          </Link>{' '}
-          for full details.
+          Ayahs, and last-read Surah progress exclusively inside your own browser&apos;s <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>localStorage</code>. You can clear this data at any time through your browser settings. Please see our <Link to="/cookie-policy" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Cookie Policy</Link> for full details.
         </p>
       </LegalSection>
 
@@ -232,11 +220,7 @@ export function PrivacyPolicyPage() {
           control over retention and deletion. Where contact submissions or server logs are
           processed, data is retained only as long as operationally necessary. Depending on your
           applicable laws (such as GDPR or CCPA/CPRA), you may request access, correction, or
-          deletion of any personal correspondence via our{' '}
-          <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Contact page
-          </Link>
-          .
+          deletion of any personal correspondence via our <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact page</Link>.
         </p>
       </LegalSection>
 
@@ -292,27 +276,13 @@ export function TermsPage() {
           website architecture, and interface design) belong to the platform operator. Quranic
           Arabic scripts, translations, and audio recitations remain the intellectual property or
           licensed material of their respective translators, reciters, scholars, and the Quran
-          Foundation API. Please review our{' '}
-          <Link to="/copyright" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Copyright &amp; Content Attribution
-          </Link>{' '}
-          page for detailed attribution terms.
+          Foundation API. Please review our <Link to="/copyright" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Copyright &amp; Content Attribution</Link> page for detailed attribution terms.
         </p>
       </LegalSection>
 
       <LegalSection heading="3. External Links">
         <p>
-          QuranNoor.com may link to external documentation or upstream content providers (such as{' '}
-          <a
-            href="https://api-docs.quran.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4"
-            style={{ color: 'var(--accent-text)' }}
-          >
-            Quran Foundation API Documentation
-          </a>
-          ). We do not control or assume responsibility for the content or privacy practices of
+          QuranNoor.com may link to external documentation or upstream content providers (such as <a href="https://api-docs.quran.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Quran Foundation API Documentation</a>). We do not control or assume responsibility for the content or privacy practices of
           third-party websites.
         </p>
       </LegalSection>
@@ -379,11 +349,7 @@ export function DisclaimerPage() {
           and retain their respective ownership and usage terms. While we take care to preserve exact
           Arabic text without alteration and disable automated browser translation on Arabic verses,
           technical rendering issues or upstream service interruptions may occur. If you spot any
-          error, please report it through our{' '}
-          <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Contact page
-          </Link>
-          .
+          error, please report it through our <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact page</Link>.
         </p>
       </LegalSection>
     </LegalLayout>
@@ -409,18 +375,10 @@ export function CookiePolicyPage() {
         <p>
           QuranNoor.com currently sets <strong>no third-party tracking or advertising cookies</strong>.
           To make the reader usable without forcing account logins, the application uses your
-          browser&apos;s{' '}
-          <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>
-            localStorage
-          </code>{' '}
-          strictly on your device for essential reader state:
+          browser&apos;s <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>localStorage</code> strictly on your device for essential reader state:
         </p>
         <p>
-          The site stores the following kinds of information in your browser&apos;s{' '}
-          <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>
-            localStorage
-          </code>{' '}
-          strictly on your device. No single list here is exhaustive, because keys may be added
+          The site stores the following kinds of information in your browser&apos;s <code className="font-ui text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-muted)' }}>localStorage</code> strictly on your device. No single list here is exhaustive, because keys may be added
           or retired as features change; the categories below describe everything the site
           currently stores:
         </p>
@@ -557,17 +515,7 @@ export function CopyrightPage() {
         <p>
           QuranNoor.com does <strong>not</strong> claim copyright ownership over the Arabic text of
           the Noble Quran, scholarly English translations, or reciter audio recordings. Quranic
-          content, metadata, and audio streams are retrieved from the{' '}
-          <a
-            href="https://api-docs.quran.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4"
-            style={{ color: 'var(--accent-text)' }}
-          >
-            Quran Foundation Content API
-          </a>{' '}
-          subject to their published terms and upstream licensing.
+          content, metadata, and audio streams are retrieved from the <a href="https://api-docs.quran.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Quran Foundation Content API</a> subject to their published terms and upstream licensing.
         </p>
       </LegalSection>
 
@@ -624,11 +572,7 @@ export function CopyrightPage() {
       <LegalSection heading="6. Reporting Concerns or Removal Requests">
         <p>
           If you are a rights holder or scholar and believe any translation, audio file, or metadata
-          requires updated attribution, correction, or removal, please notify us via the{' '}
-          <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Contact page
-          </Link>
-          .
+          requires updated attribution, correction, or removal, please notify us via the <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact page</Link>.
         </p>
       </LegalSection>
     </LegalLayout>
@@ -671,8 +615,7 @@ export function AccessibilityPage() {
             Arabic fonts (Scheherazade New, Noto Naskh Arabic, and Lateef).
           </li>
           <li>
-            <strong>RTL &amp; Reduced Motion:</strong> Strict right-to-left{' '}
-            <code className="font-ui text-xs">dir="rtl"</code> isolation preserves Arabic verse
+            <strong>RTL &amp; Reduced Motion:</strong> Strict right-to-left <code className="font-ui text-xs">dir="rtl"</code> isolation preserves Arabic verse
             integrity, and motion respects <code className="font-ui text-xs">prefers-reduced-motion</code>.
           </li>
         </ul>
@@ -690,11 +633,7 @@ export function AccessibilityPage() {
         <p>
           If you experience difficulty using a screen reader, keyboard navigation, or audio player
           controls on any device, please report the issue and your browser/assistive technology
-          details on our{' '}
-          <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Contact page
-          </Link>
-          .
+          details on our <Link to="/contact" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Contact page</Link>.
         </p>
       </LegalSection>
     </LegalLayout>

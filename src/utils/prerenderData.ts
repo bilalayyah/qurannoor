@@ -43,6 +43,7 @@ import type {
   Juz,
   PaginationInfo,
   Reciter,
+  TafsirContent,
   TranslationResource,
   Verse,
 } from '../types/quran';
@@ -116,6 +117,10 @@ export function versesByKeysKey(
   reciterId: number
 ): string {
   return `verses:keys:${keys.join(',')}:${buildTranslationsParam(translationId)}:${reciterId}`;
+}
+
+export function tafsirKey(tafsirId: number, verseKey: string): string {
+  return `tafsirs:${tafsirId}:by_ayah:${verseKey}`;
 }
 
 // --- Metadata (seeded into ReaderContext) ---
@@ -227,4 +232,22 @@ export function getEmbeddedVersesByKeys(
   const rec = asRecord(getRaw(versesByKeysKey(keys, translationId, reciterId)));
   const list = rec ? rec.verses : null;
   return Array.isArray(list) && list.length > 0 ? (list as Verse[]) : null;
+}
+
+// --- Tafsir (seeded into AyahTafsirSection on Ayah pages) ---
+// The raw payload is the verbatim /api/tafsirs/<id>/by_ayah/<key> response
+// ({tafsir} or {tafsirs: [...]}) — resolved the same way fetchVerseTafsir
+// resolves it, so the seeded content is exactly what the snapshot shows.
+export function getEmbeddedTafsir(
+  tafsirId: number,
+  verseKey: string
+): TafsirContent | null {
+  const rec = asRecord(getRaw(tafsirKey(tafsirId, verseKey)));
+  if (!rec) return null;
+  const resolved =
+    (rec.tafsir as TafsirContent | null) ||
+    (Array.isArray(rec.tafsirs) ? (rec.tafsirs[0] as TafsirContent) : undefined) ||
+    (typeof rec.text === 'string' ? (rec as unknown as TafsirContent) : undefined);
+  if (!resolved || typeof resolved.text !== 'string') return null;
+  return resolved;
 }

@@ -1,5 +1,5 @@
 import { Clock, LocateFixed, RotateCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { QiblaCompass } from '../components/QiblaCompass';
 import { ErrorBanner } from '../components/StatusStates';
@@ -219,42 +219,21 @@ export function PrayerTimesPage() {
             }
           }}
         />
-      ) : (loading || detectingLocation) && !prayerData ? (
-        <div className="space-y-3" aria-busy="true">
-          {/* H-1: the snapshot shows the "Loading…" text (detection had
-              finished by snapshot time); a fresh load starts in the
-              "Detecting…" state. Same line, same size — suppress the
-              hydration warning for this expected text difference. */}
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }} suppressHydrationWarning>
-            {detectingLocation
-              ? 'Detecting your location and fetching today’s prayer times…'
-              : 'Loading today’s prayer times and Qibla bearing…'}
-          </p>
-          {/* M-4: the skeleton boxes reserve the resolved content's space
-              (measured live: prayer section ~642px mobile / ~564px desktop,
-              Qibla column ~632px mobile / ~608px desktop). The old h-96
-              (384px) boxes were ~half the resolved height, so the column
-              grew by ~0.86 CLS when the data arrived. */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 animate-pulse">
-            <div
-              className="lg:col-span-7 min-h-[642px] lg:min-h-[564px] rounded-2xl border"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-subtle)',
-              }}
-            />
-            <div
-              className="lg:col-span-5 min-h-[632px] lg:min-h-[608px] rounded-2xl border"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-subtle)',
-              }}
-            />
-          </div>
-        </div>
-      ) : prayerData ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          {/* Prayer Times + Countdown */}
+      ) : (
+        <div
+          className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start"
+          aria-busy={!prayerData}
+        >
+          {/* M-4 (iteration 3): the two branches are KEYED fragments.
+              Without keys, React's index-based fragment reconciliation
+              REUSES the skeleton placeholder div (a <div>) for the
+              resolved meta row (also a <div>, same index) — the meta row
+              inherits the skeleton box's 556px-tall rect as its
+              "previous" rect and Chrome records a ~0.29 layout shift for
+              it. Different keys force a full unmount/remount: the skeleton
+              nodes are deleted and the resolved nodes are created fresh,
+              so nothing "moves" — only the section height changes by a
+              few px (footer moves ~20px, ~0.01 CLS). No DOM change. */}
           <section
             aria-label="Today's Prayer Times"
             className="lg:col-span-7 rounded-2xl border p-6 space-y-5"
@@ -263,6 +242,8 @@ export function PrayerTimesPage() {
               borderColor: 'var(--border-subtle)',
             }}
           >
+            {prayerData ? (
+              <Fragment key="prayer-resolved">
             {/* Next Prayer Countdown Banner */}
             {countdown && (
               <div
@@ -400,17 +381,51 @@ export function PrayerTimesPage() {
                 );
               })}
             </div>
+              </Fragment>
+            ) : (
+              <Fragment key="prayer-skeleton">
+                {/* H-1: the snapshot shows the "Loading…" text (detection had
+                    finished by snapshot time); a fresh load starts in the
+                    "Detecting…" state. Same line, same size — suppress the
+                    hydration warning for this expected text difference. */}
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }} suppressHydrationWarning>
+                  {detectingLocation
+                    ? 'Detecting your location and fetching today’s prayer times…'
+                    : 'Loading today’s prayer times and Qibla bearing…'}
+                </p>
+                {/* Skeleton placeholder: section p-6 (48px) + <p> (~20px) +
+                    space-y-5 gap (20px) + this box = the resolved section
+                    height (~644px mobile / ~566px desktop). */}
+                <div
+                  className="min-h-[556px] lg:min-h-[478px] rounded-2xl border animate-pulse"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-subtle)',
+                  }}
+                />
+              </Fragment>
+            )}
           </section>
 
           {/* Qibla Compass Dial */}
           <div className="lg:col-span-5">
-            <QiblaCompass
-              qiblaDirection={prayerData.qiblaDirection}
-              locationLabel={prayerData.location.label}
-            />
+            {prayerData ? (
+              <QiblaCompass
+                qiblaDirection={prayerData.qiblaDirection}
+                locationLabel={prayerData.location.label}
+              />
+            ) : (
+              <div
+                className="min-h-[632px] lg:min-h-[608px] rounded-2xl border animate-pulse"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-subtle)',
+                }}
+              />
+            )}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

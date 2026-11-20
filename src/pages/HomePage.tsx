@@ -104,8 +104,7 @@ export function HomePage() {
               className="text-xs sm:text-sm font-medium tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              114 Surahs <span aria-hidden="true">·</span> 30 Juz{' '}
-              <span aria-hidden="true">·</span> 6,236 Ayahs
+              114 Surahs <span aria-hidden="true">·</span> 30 Juz <span aria-hidden="true">·</span> 6,236 Ayahs
             </p>
             <Link
               to="/quran"

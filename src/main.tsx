@@ -1,5 +1,5 @@
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import App from './App.tsx';
+import App, { preloadRouteForPath } from './App.tsx';
 import './index.css';
 
 // H-1 (final audit): the site ships prerendered HTML (186 routes), but
@@ -19,9 +19,25 @@ import './index.css';
 // the embedded prerender data (src/utils/prerenderData.ts), stored
 // settings are gated behind mount (ReaderContext), and time-derived
 // text carries suppressHydrationWarning (Header pill, Footer year).
+//
+// H-1 (iteration 2): the route chunk must ALSO be in memory before
+// hydrateRoot runs. Every route is React.lazy behind one <Suspense>;
+// a plain awaited import is NOT enough, because React.lazy suspends on
+// first render even for an already-fetched chunk (its .then callbacks
+// are microtasks — see src/utils/lazyRoute.ts). preloadRouteForPath
+// loads the current route's chunk AND makes its lazy factory resolve
+// synchronously from the loaded module, so the first render is the
+// resolved page, not the "Loading..." fallback (which mismatches the
+// snapshot → React error 418 → the page is discarded and
+// client-rendered). If the preload fails (offline / bad chunk),
+// hydrate anyway — the lazy import retries and the app still works.
 const rootEl = document.getElementById('root')!;
 if (rootEl.children.length > 0) {
-  hydrateRoot(rootEl, <App />);
+  preloadRouteForPath(window.location.pathname)
+    .catch(() => undefined)
+    .then(() => {
+      hydrateRoot(rootEl, <App />);
+    });
 } else {
   createRoot(rootEl).render(<App />);
 }

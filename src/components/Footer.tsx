@@ -46,11 +46,7 @@ export function Footer() {
             </Link>
             <p className="text-xs leading-relaxed max-w-sm" style={{ color: 'var(--text-secondary)' }}>
               Read. Listen. Reflect. A calm, distraction-free sanctuary for reading and listening to
-              the Noble Quran on{' '}
-              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                QuranNoor.com
-              </span>
-              .
+              the Noble Quran on <span className="font-medium" style={{ color: 'var(--text-primary)' }}>QuranNoor.com</span>.
             </p>
           </div>
 
@@ -110,7 +106,7 @@ export function Footer() {
         >
           {/* H-1: the year is time-derived; suppress the hydration warning
               if a prerender and a load ever straddle New Year. */}
-          <p suppressHydrationWarning>© {year} QuranNoor.com. Original design &amp; interface. Sacred Quran text attributed to upstream sources.</p>
+          <p suppressHydrationWarning>{`© ${year} QuranNoor.com. Original design & interface. Sacred Quran text attributed to upstream sources.`}</p>
           <p>Read. Listen. Reflect.</p>
         </div>
       </div>

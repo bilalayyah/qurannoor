@@ -720,13 +720,13 @@ export function JuzReaderPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-medium tabular-nums" style={{ color: 'var(--accent-text)' }}>
-              Quran Section · {maxVerseCount > 0 ? `${maxVerseCount} Verses` : 'Juz'}
+              {`Quran Section · ${maxVerseCount > 0 ? `${maxVerseCount} Verses` : 'Juz'}`}
             </p>
             <h1
               className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums"
               style={{ color: 'var(--text-primary)' }}
             >
-              Juz {juzId}
+              {`Juz ${juzId}`}
             </h1>
           </div>
 
@@ -806,7 +806,7 @@ export function JuzReaderPage() {
                 className="inline-flex min-h-[44px] items-center font-medium hover:underline underline-offset-4 tabular-nums"
                 style={{ color: 'var(--accent-text)' }}
               >
-                {item.id}. {item.name} ({item.range})
+                {`${item.id}. ${item.name} (${item.range})`}
               </Link>
             ))}
           </div>
@@ -934,10 +934,10 @@ export function JuzReaderPage() {
                           className="inline-flex min-h-[44px] items-center text-base font-semibold hover:underline"
                           style={{ color: 'var(--text-primary)' }}
                         >
-                          {ch.id}. {ch.name_simple}
+                          {`${ch.id}. ${ch.name_simple}`}
                         </Link>
                         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                          {ch.translated_name?.name} · {ch.verses_count} Verses
+                          {`${ch.translated_name?.name} · ${ch.verses_count} Verses`}
                         </p>
                       </div>
                       <p
@@ -1036,7 +1036,7 @@ export function JuzReaderPage() {
             }}
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>Juz {juzId - 1}</span>
+            <span>{`Juz ${juzId - 1}`}</span>
           </Link>
         ) : (
           <div />
@@ -1064,7 +1064,7 @@ export function JuzReaderPage() {
               color: 'var(--text-primary)',
             }}
           >
-            <span>Juz {juzId + 1}</span>
+            <span>{`Juz ${juzId + 1}`}</span>
             <ChevronRight className="h-4 w-4" />
           </Link>
         ) : (

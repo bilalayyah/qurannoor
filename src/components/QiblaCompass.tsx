@@ -507,11 +507,7 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
           }}
         >
           <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Point toward{' '}
-            <span className="font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-              {roundedBearing}° {cardinal}
-            </span>{' '}
-            from North
+            Point toward <span className="font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>{`${roundedBearing}° ${cardinal}`}</span> from North
           </p>
         </div>
       )}

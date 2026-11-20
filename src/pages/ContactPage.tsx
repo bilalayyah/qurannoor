@@ -330,11 +330,7 @@ export function ContactPage() {
         <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           Your message is sent to our server-side contact endpoint, where it is protected by
           honeypot filtering, client validation, and server-side rate limiting. Submitted details are
-          governed by our{' '}
-          <Link to="/privacy-policy" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>
-            Privacy Policy
-          </Link>
-          .
+          governed by our <Link to="/privacy-policy" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>Privacy Policy</Link>.
         </p>
       </section>
     </div>

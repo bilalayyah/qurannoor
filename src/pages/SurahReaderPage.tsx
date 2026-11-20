@@ -891,7 +891,7 @@ export function SurahReaderPage() {
                   className="text-xl sm:text-2xl font-semibold tracking-tight tabular-nums"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  {activeChapter.id}. Surah {activeChapter.name_simple}
+                  {`${activeChapter.id}. Surah ${activeChapter.name_simple}`}
                 </h1>
                 {activeChapter.translated_name?.name && (
                   <p
@@ -906,7 +906,7 @@ export function SurahReaderPage() {
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   <span>{verseCountLabel}</span>
-                  {revelationCity ? <span> · Revealed in {revelationCity}</span> : null}
+                  {revelationCity ? <span>{` · Revealed in ${revelationCity}`}</span> : null}
                   {juzRangeLabel && surahJuzNumbers[0] ? (
                     <>
                       {' · '}
@@ -986,7 +986,7 @@ export function SurahReaderPage() {
                     {revelationCity ? ` (${revelationCity})` : ''}
                     {activeChapter.revelation_order ? (
                       <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
-                        {' '}· Order #{activeChapter.revelation_order}
+                        {` · Order #${activeChapter.revelation_order}`}
                       </span>
                     ) : null}
                   </dd>
@@ -1000,7 +1000,7 @@ export function SurahReaderPage() {
                     {verseCountLabel}
                     {activeChapter.pages && activeChapter.pages.length === 2 ? (
                       <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
-                        {' '}· Pages {activeChapter.pages[0]}–{activeChapter.pages[1]}
+                        {` · Pages ${activeChapter.pages[0]}–${activeChapter.pages[1]}`}
                       </span>
                     ) : null}
                   </dd>
@@ -1024,7 +1024,7 @@ export function SurahReaderPage() {
                                 className="hover:underline underline-offset-4"
                                 style={{ color: 'var(--accent-text)' }}
                               >
-                                Juz {jNum}
+                                {`Juz ${jNum}`}
                               </Link>
                             </Fragment>
                           ))}
@@ -1138,7 +1138,7 @@ export function SurahReaderPage() {
               <BookOpen className="h-6 w-6" />
             </div>
             <h2 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              Surah {chapterId} · Awaiting Production API Access
+              {`Surah ${chapterId} · Awaiting Production API Access`}
             </h2>
             <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               This application (<span className="font-semibold text-emerald-800 dark:text-emerald-400">Noor Quran</span>) is authenticated with Quran Foundation Pre-live credentials. The developer sandbox provides full verified access to <strong>Surah 1 (Al-Fatihah)</strong> and <strong>Surah 2 (Al-Baqarah)</strong>.
@@ -1283,8 +1283,7 @@ export function SurahReaderPage() {
               className="py-6 text-center text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              End of Surah {chapter.name_simple} · {chapter.verses_count}{' '}
-              {chapter.verses_count === 1 ? 'ayah' : 'ayahs'}
+              {`End of Surah ${chapter.name_simple} · ${chapter.verses_count} ${chapter.verses_count === 1 ? 'ayah' : 'ayahs'}`}
             </p>
           )}
         </div>
@@ -1300,7 +1299,7 @@ export function SurahReaderPage() {
           }}
         >
           <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Featured Passages in {chapter.name_simple}:
+            {`Featured Passages in ${chapter.name_simple}:`}
           </span>
           <div className="flex flex-wrap items-center gap-4">
             {relatedPopular.map((item) => (
@@ -1336,7 +1335,7 @@ export function SurahReaderPage() {
             >
               <ChevronLeft className="h-4 w-4" />
               <span>
-                {prevChapter.id}. {prevChapter.name_simple}
+                {`${prevChapter.id}. ${prevChapter.name_simple}`}
               </span>
             </Link>
           ) : (
@@ -1366,7 +1365,7 @@ export function SurahReaderPage() {
               }}
             >
               <span>
-                {nextChapter.id}. {nextChapter.name_simple}
+                {`${nextChapter.id}. ${nextChapter.name_simple}`}
               </span>
               <ChevronRight className="h-4 w-4" />
             </Link>

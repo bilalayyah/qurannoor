@@ -57,9 +57,9 @@ export function ContinueReading() {
           </div>
 
           <p className="text-sm tabular-nums" style={{ color: 'var(--text-secondary)' }}>
-            Ayah {lastRead.verseNumber} of {totalVerses}
+            {`Ayah ${lastRead.verseNumber} of ${totalVerses}`}
             <span aria-hidden="true"> · </span>
-            <span>{progressPct}% complete</span>
+            <span>{`${progressPct}% complete`}</span>
           </p>
 
           <div

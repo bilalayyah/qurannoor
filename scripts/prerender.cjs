@@ -123,6 +123,7 @@ const VERSE_PAGE_PREFIXES = ['/surah/', '/juz/', '/ayah/', '/popular/'];
 //   verses:by_juz:<n>:<page>:<perPage>:<translationParam>:<reciterId>
 //   verses:by_key:<key>:<translationParam>:<reciterId>
 //   verses:keys:<keysCsv>:<translationParam>:<reciterId>
+//   tafsirs:<tafsirId>:by_ayah:<verseKey>
 // The translation param is the exact client-sent string (e.g. '20,234'
 // via buildTranslationsParam); the reciter id is the client's reciterId.
 // Only first-render data endpoints are recorded — never /api/push/*,
@@ -169,6 +170,15 @@ function buildPrerenderDataKey(requestUrl) {
     const keys = q.get('keys');
     if (!keys) return null;
     return `verses:keys:${keys}:${translationParam}:${reciterId}`;
+  }
+  if (rest.length === 4 && rest[0] === 'tafsirs' && rest[2] === 'by_ayah') {
+    let key;
+    try {
+      key = decodeURIComponent(rest[3]);
+    } catch {
+      return null;
+    }
+    return `tafsirs:${rest[1]}:by_ayah:${key}`;
   }
   return null;
 }
@@ -389,6 +399,21 @@ function sanitizePrerenderedHtml(html, baseUrl) {
   // stripping it — stripping left root-relative canonical / og:url /
   // og:image / twitter:image / BreadcrumbList URLs in all 185 files.
   out = out.split(baseUrl).join(SITE_ORIGIN);
+  // H-1 (iteration 2): React's hydrateRoot needs Suspense boundary markers
+  // (<!--$--> ... <!--/$-->) around the <Suspense> content to hydrate it.
+  // The app renders every route behind ONE <Suspense> that is the sole
+  // child of <main> (src/App.tsx), and the client-rendered snapshot has no
+  // markers (createRoot never emits them — only renderToString does), so
+  // hydration throws React error 418 ("the server rendered HTML didn't
+  // match the client") on every page. Inject the markers here so all 186
+  // snapshots carry them: <!--$--> right after <main ...>, <!--/$--> right
+  // before </main>. Idempotent — skipped when markers are already present.
+  if (!out.includes('<!--$-->')) {
+    out = out.replace(/(<main\b[^>]*>)/, '$1<!--$-->');
+  }
+  if (!out.includes('<!--/$-->')) {
+    out = out.replace('</main>', '<!--/$--></main>');
+  }
   return out;
 }
 
@@ -402,6 +427,25 @@ async function renderRoute(browser, baseUrl, routePath, opts, attempt) {
     await page.route('**/*', (route) => {
       const u = route.request().url();
       if (/googlesyndication\.com|doubleclick\.net|googleadservices\.com|googletagmanager\.com|google-analytics\.com/.test(u)) return route.abort();
+      // H-1 (iteration 2, M-4): the prayer-times page MUST snapshot as its
+      // loading skeleton, not resolved content. The snapshot is
+      // location-agnostic (the client first render is the skeleton and the
+      // prayer fetch is location-specific), but the Aladhan API resolves
+      // during the prerender's settle wait — and it resolves to the
+      // egress proxy's location (Chicago, US), not the user's. Seeding
+      // that data would show every user Chicago prayer times on first
+      // paint. So, for /prayer-times only, HANG the Aladhan requests
+      // (never respond): the fetch stays pending, `loading` stays true,
+      // and the page snapshots as the skeleton — which is exactly what
+      // the first client render shows. The header pill fetch is also
+      // hung on this route, but the pill is stripped from snapshots
+      // anyway (see below). Other routes are unaffected.
+      if (
+        routePath === '/prayer-times' &&
+        /api\.aladhan\.com/.test(u)
+      ) {
+        return; // hang: never continue / abort / fulfill
+      }
       return route.continue();
     });
     const errors = [];

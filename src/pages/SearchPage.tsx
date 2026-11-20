@@ -261,13 +261,13 @@ export function SearchPage() {
                     fontSize: `${settings.arabicFontSize}px`,
                   }}
                 >
-                  {getVerseArabicText(directVerse, settings.script)}{' '}
+                  {getVerseArabicText(directVerse, settings.script)}
                   <span
                     className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}
                     aria-label={`Ayah ${directVerse.verse_number}`}
                   >
-                    ﴿{toArabicIndicDigits(directVerse.verse_number)}﴾
+                    {` ﴿${toArabicIndicDigits(directVerse.verse_number)}﴾`}
                   </span>
                 </p>
                 {(() => {
@@ -401,13 +401,13 @@ export function SearchPage() {
                       fontSize: `${settings.arabicFontSize}px`,
                     }}
                   >
-                    {item.textArabic}{' '}
+                    {item.textArabic}
                     <span
                       className="inline-block select-none px-1 text-[0.76em] font-normal"
                       style={{ color: 'var(--gold)' }}
                       aria-label={`Ayah ${item.verseNumber}`}
                     >
-                      ﴿{toArabicIndicDigits(item.verseNumber)}﴾
+                      {` ﴿${toArabicIndicDigits(item.verseNumber)}﴾`}
                     </span>
                   </p>
 

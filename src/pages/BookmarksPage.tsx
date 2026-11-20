@@ -66,10 +66,10 @@ export function BookmarksPage() {
           >
             <div>
               <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {readingProgress.chapterName} · Ayah {readingProgress.verseNumber}
+                {`${readingProgress.chapterName} · Ayah ${readingProgress.verseNumber}`}
               </p>
               <p className="mt-0.5 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-                {readingProgress.verseNumber} of {readingProgress.totalVerses} Ayahs
+                {`${readingProgress.verseNumber} of ${readingProgress.totalVerses} Ayahs`}
               </p>
             </div>
             <Link
@@ -177,13 +177,13 @@ export function BookmarksPage() {
                   }}
                 >
                   {(settings.script !== 'indopak' && qpcMap?.get(item.verseKey)) ||
-                    item.textArabic}{' '}
+                    item.textArabic}
                   <span
                     className="inline-block select-none px-1 text-[0.76em] font-normal"
                     style={{ color: 'var(--gold)' }}
                     aria-label={`Ayah ${item.verseNumber}`}
                   >
-                    ﴿{toArabicIndicDigits(item.verseNumber)}﴾
+                    {` ﴿${toArabicIndicDigits(item.verseNumber)}﴾`}
                   </span>
                 </p>
 

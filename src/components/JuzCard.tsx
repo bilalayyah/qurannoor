@@ -60,7 +60,7 @@ export function JuzCard({ juz, chapters }: JuzCardProps) {
               className="text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              {juz.verses_count} Ayahs
+              {`${juz.verses_count} Ayahs`}
             </span>
           </div>
         </div>

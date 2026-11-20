@@ -1,7 +1,8 @@
 import { AlertCircle, BookText, ChevronDown, ChevronUp, Loader2, RotateCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchVerseTafsir } from '../services/quranApi';
+import { DEFAULT_TAFSIR_ID, fetchVerseTafsir } from '../services/quranApi';
 import type { TafsirContent } from '../types/quran';
+import { getEmbeddedTafsir } from '../utils/prerenderData';
 import { getShortTafsirSlice, parseTafsirBlocks } from '../utils/tafsir';
 
 export type TafsirLanguage = 'arabic' | 'english' | 'urdu';
@@ -62,13 +63,34 @@ export function AyahTafsirSection({
   isExpanded,
   standaloneCard = false,
 }: AyahTafsirSectionProps) {
-  const [language, setLanguage] = useState<TafsirLanguage>(() => getStoredTafsirLanguage());
-  const [tafsir, setTafsir] = useState<TafsirContent | null>(null);
+  // H-1: default language on first render (= the prerendered HTML); the
+  // stored language is applied by the mount effect below, after hydration,
+  // so a returning user with a non-default tafsir language still hydrates
+  // against the default-Arabic snapshot.
+  const [language, setLanguage] = useState<TafsirLanguage>('arabic');
+  // H-1: seed the tafsir from the embedded prerender data (the same
+  // /api/tafsirs response the snapshot was rendered from), so the first
+  // client render shows the loaded tafsir instead of the "No tafsir"
+  // empty state. Falls back to fetching when the data is absent.
+  const [tafsir, setTafsir] = useState<TafsirContent | null>(() =>
+    getEmbeddedTafsir(DEFAULT_TAFSIR_ID, verseKey)
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFull, setShowFull] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const fetchedRequestKeyRef = useRef<string | null>(null);
+  // H-1: when the tafsir was seeded, mark its request as already fetched so
+  // the mount fetch effect skips it (no redundant fetch, no loading flicker).
+  const fetchedRequestKeyRef = useRef<string | null>(
+    tafsir ? `${verseKey}:${DEFAULT_TAFSIR_ID}:0` : null
+  );
+
+  // H-1: apply the stored tafsir language AFTER the first render
+  // (post-hydration). Changing the language clears the seeded tafsir via
+  // the reset effect below and fetches the stored language's tafsir.
+  useEffect(() => {
+    setLanguage(getStoredTafsirLanguage());
+  }, []);
 
   const activeOption = useMemo(
     () =>
@@ -184,7 +206,7 @@ export function AyahTafsirSection({
               {activeOption.title}
             </p>
             <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
-              Source: Quran Foundation API · {apiSourceName}
+              {`Source: Quran Foundation API · ${apiSourceName}`}
             </p>
           </div>
         </div>

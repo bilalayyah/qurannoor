@@ -34,7 +34,7 @@ export function GuidesHomeSection() {
           className="inline-flex items-center gap-1 text-sm font-medium hover:underline whitespace-nowrap shrink-0"
           style={{ color: 'var(--accent-text)' }}
         >
-          <span>All {GUIDE_ARTICLES.length} Guides</span>
+          <span>{`All ${GUIDE_ARTICLES.length} Guides`}</span>
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -57,7 +57,7 @@ export function GuidesHomeSection() {
                   ·
                 </span>
                 <span className="tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-                  {guide.readingTimeMinutes} min read
+                  {`${guide.readingTimeMinutes} min read`}
                 </span>
               </div>
               <h3

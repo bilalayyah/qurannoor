@@ -171,20 +171,19 @@ export function AyahPage() {
         >
           <div className="space-y-1.5">
             <p className="text-xs font-medium tabular-nums" style={{ color: 'var(--gold)' }}>
-              Surah {chapter.id} · Ayah {verseNum} of {chapter.verses_count}
-              {verse ? ` · Juz ${verse.juz_number}` : ''}
+              {`Surah ${chapter.id} · Ayah ${verseNum} of ${chapter.verses_count}${verse ? ` · Juz ${verse.juz_number}` : ''}`}
             </p>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              {chapter.name_simple} — Ayah {verseNum}
+              {`${chapter.name_simple} — Ayah ${verseNum}`}
             </h1>
             <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
               <Link to={`/surah/${canonicalSlug}?ayah=${verseNum}`} className="inline-flex min-h-[44px] items-center hover:underline underline-offset-4">
-                Read Full Surah {chapter.name_simple}
+                {`Read Full Surah ${chapter.name_simple}`}
               </Link>
               {verse && (
                 <Link to={`/juz/${verse.juz_number}`} className="inline-flex min-h-[44px] items-center gap-1 hover:underline underline-offset-4">
                   <Layers className="h-3.5 w-3.5" />
-                  <span>Open Juz {verse.juz_number}</span>
+                  <span>{`Open Juz ${verse.juz_number}`}</span>
                 </Link>
               )}
             </div>
