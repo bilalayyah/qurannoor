@@ -27,6 +27,7 @@ import { useReader } from '../context/ReaderContext';
 import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchChapterDetails, fetchVersesByChapter } from '../services/quranApi';
+import { getEmbeddedChapter, getEmbeddedVersesByChapter } from '../utils/prerenderData';
 import type { Chapter, Verse } from '../types/quran';
 import { POPULAR_SECTIONS, resolveChapterIdFromParam, toSurahSlug } from '../utils/slugs';
 import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
@@ -66,13 +67,34 @@ export function SurahReaderPage() {
     [slug, chapters]
   );
 
-  const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [chapterInfoText, setChapterInfoText] = useState<string>('');
+  // H-1: seed the first render from the embedded prerender data (the same
+  // responses the prerendered HTML was rendered from), so hydration
+  // reproduces the 15 prerendered articles instead of a skeleton. The
+  // embedded data is keyed to the DEFAULT settings (the settings the
+  // prerender used), so the lookups only hit while settings are still
+  // defaults — after hydration applies stored settings they miss and the
+  // existing settings-refresh effect re-fetches. On client-side
+  // navigation they miss too (no embedded data for that page) and the
+  // fetch path runs, unchanged.
+  const startChunk = targetAyahParam && targetAyahParam > 0
+    ? Math.ceil(targetAyahParam / CHUNK_SIZE)
+    : 1;
+  const seededChapter = chapterId !== null ? getEmbeddedChapter(chapterId) : null;
+  const seededVerses = chapterId !== null
+    ? getEmbeddedVersesByChapter(chapterId, startChunk, CHUNK_SIZE, settings.translationId, settings.reciterId)
+    : null;
+
+  const [chapter, setChapter] = useState<Chapter | null>(() => seededChapter?.chapter ?? null);
+  const [chapterInfoText, setChapterInfoText] = useState<string>(() => seededChapter?.chapter_info?.short_text || '');
   const [showSurahInfo, setShowSurahInfo] = useState(false);
 
-  const [chunksByPage, setChunksByPage] = useState<Record<number, Verse[]>>({});
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [chunksByPage, setChunksByPage] = useState<Record<number, Verse[]>>(() =>
+    seededVerses ? { [startChunk]: seededVerses.verses } : {}
+  );
+  const [totalPages, setTotalPages] = useState<number>(() =>
+    seededVerses ? Math.max(1, seededVerses.pagination?.total_pages || 1) : 1
+  );
+  const [loadingInitial, setLoadingInitial] = useState(() => seededVerses === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
@@ -80,7 +102,9 @@ export function SurahReaderPage() {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [jumpAyahInput, setJumpAyahInput] = useState('');
   const [highlightedVerseKey, setHighlightedVerseKey] = useState<string | null>(null);
-  const [forcedMountPage, setForcedMountPage] = useState<number | null>(null);
+  const [forcedMountPage, setForcedMountPage] = useState<number | null>(() =>
+    seededVerses ? startChunk : null
+  );
 
   const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -152,6 +176,54 @@ export function SurahReaderPage() {
     }
   }, [chunks]);
 
+  // Applies a loaded first chunk (fetched or seeded) — shared tail of the
+  // initial load: chapter metadata, the chunk, the anchor, highlight and
+  // the reading-progress save.
+  const applyInitialLoad = useCallback((
+    details: { chapter: Chapter; chapter_info?: { short_text?: string } | null },
+    versesData: { verses: Verse[]; pagination?: { total_pages?: number } | null },
+  ) => {
+    loadedSessionChapterRef.current = details.chapter.id;
+    setChapter(details.chapter);
+    setChapterInfoText(details.chapter_info?.short_text || '');
+    setChunksByPage({ [startChunk]: versesData.verses });
+    setTotalPages(Math.max(1, versesData.pagination?.total_pages || 1));
+    setForcedMountPage(startChunk);
+
+    if (targetAyahParam && targetAyahParam > 0) {
+      const key = `${details.chapter.id}:${targetAyahParam}`;
+      setHighlightedVerseKey(key);
+      pendingScrollTargetKeyRef.current = key;
+      jumpCooldownUntilRef.current = Date.now() + 900;
+    } else {
+      setHighlightedVerseKey(null);
+      pendingScrollTargetKeyRef.current = null;
+    }
+
+    const firstVerse = versesData.verses[0];
+    if (firstVerse && details.chapter) {
+      const targetVerse = targetAyahParam
+        ? versesData.verses.find((v) => v.verse_number === targetAyahParam) || firstVerse
+        : firstVerse;
+
+      saveReadingProgress({
+        chapterId: details.chapter.id,
+        chapterName: details.chapter.name_simple,
+        chapterArabicName: details.chapter.name_arabic,
+        chapterSlug: toSurahSlug(details.chapter.name_simple),
+        verseNumber: targetVerse.verse_number,
+        verseKey: targetVerse.verse_key,
+        totalVerses: details.chapter.verses_count,
+        juzNumber: targetVerse.juz_number,
+      });
+    }
+  }, [
+    startChunk,
+    targetAyahParam,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    saveReadingProgress,
+  ]);
+
   // Initial load on chapter change or deep-linked targetAyahParam
   const loadInitialSurah = useCallback(async () => {
     if (!chapterId) {
@@ -163,9 +235,22 @@ export function SurahReaderPage() {
     }
 
     const reqVersion = ++requestVersionRef.current;
-    const startChunk = targetAyahParam && targetAyahParam > 0
-      ? Math.ceil(targetAyahParam / CHUNK_SIZE)
-      : 1;
+
+    // H-1: seeded fast-path — the embedded payload is the data the
+    // prerendered HTML was rendered from, so apply it without fetching.
+    // The state initializers already hold it; this applies the success
+    // tail (anchor, highlight, progress save) and marks the session
+    // loaded so the settings-refresh effect can re-fetch after hydration
+    // applies stored settings.
+    if (seededVerses && seededChapter) {
+      activeSettingsRef.current = {
+        translationId: settings.translationId,
+        reciterId: settings.reciterId,
+      };
+      applyInitialLoad(seededChapter, seededVerses);
+      setLoadingInitial(false);
+      return;
+    }
 
     setShowSurahInfo(false);
     setLoadingInitial(true);
@@ -198,40 +283,7 @@ export function SurahReaderPage() {
 
       if (reqVersion !== requestVersionRef.current) return;
 
-      loadedSessionChapterRef.current = details.chapter.id;
-      setChapter(details.chapter);
-      setChapterInfoText(details.chapter_info?.short_text || '');
-      setChunksByPage({ [startChunk]: versesData.verses });
-      setTotalPages(Math.max(1, versesData.pagination?.total_pages || 1));
-      setForcedMountPage(startChunk);
-
-      if (targetAyahParam && targetAyahParam > 0) {
-        const key = `${details.chapter.id}:${targetAyahParam}`;
-        setHighlightedVerseKey(key);
-        pendingScrollTargetKeyRef.current = key;
-        jumpCooldownUntilRef.current = Date.now() + 900;
-      } else {
-        setHighlightedVerseKey(null);
-        pendingScrollTargetKeyRef.current = null;
-      }
-
-      const firstVerse = versesData.verses[0];
-      if (firstVerse && details.chapter) {
-        const targetVerse = targetAyahParam
-          ? versesData.verses.find((v) => v.verse_number === targetAyahParam) || firstVerse
-          : firstVerse;
-
-        saveReadingProgress({
-          chapterId: details.chapter.id,
-          chapterName: details.chapter.name_simple,
-          chapterArabicName: details.chapter.name_arabic,
-          chapterSlug: toSurahSlug(details.chapter.name_simple),
-          verseNumber: targetVerse.verse_number,
-          verseKey: targetVerse.verse_key,
-          totalVerses: details.chapter.verses_count,
-          juzNumber: targetVerse.juz_number,
-        });
-      }
+      applyInitialLoad(details, versesData);
     } catch (err: unknown) {
       if (reqVersion !== requestVersionRef.current) return;
       pendingAutoAdvanceRef.current = null;
@@ -249,8 +301,12 @@ export function SurahReaderPage() {
     chapterId,
     chapters.length,
     targetAyahParam,
+    applyInitialLoad,
+    // NOTE: seededVerses/seededChapter are intentionally NOT deps — they
+    // are mount/navigation-time constants; including them would re-run the
+    // initial load (full reset + fetch) when hydration applies stored
+    // settings, duplicating the settings-refresh effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    saveReadingProgress,
     cancelPageAdvance,
   ]);
 

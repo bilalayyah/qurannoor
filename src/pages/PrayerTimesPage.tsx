@@ -39,12 +39,15 @@ export function PrayerTimesPage() {
   const method = DEFAULT_CALCULATION_METHOD;
   const [location, setLocation] = useState<PrayerLocation | null>(initialPrefs.location);
 
-  const [prayerData, setPrayerData] = useState<PrayerDayData | null>(() =>
-    initialPrefs.location ? getCachedPrayerData(initialPrefs.location, initialPrefs.method) : null
-  );
-  const [loading, setLoading] = useState<boolean>(() =>
-    !(initialPrefs.location && getCachedPrayerData(initialPrefs.location, initialPrefs.method))
-  );
+  // H-1: the first client render must match the prerendered HTML, which
+  // is the LOADING skeleton (the prerender snapshots this page before the
+  // prayer fetch resolves — prayer data is location-specific, so it is
+  // never embedded). Render the skeleton on first paint and let the
+  // mount effects fill in cached/fresh data afterwards; a returning user
+  // with cached times would otherwise render resolved content against
+  // the skeleton DOM and hydration would discard it.
+  const [prayerData, setPrayerData] = useState<PrayerDayData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [detectingLocation, setDetectingLocation] = useState<boolean>(() => !initialPrefs.location);
   const [error, setError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -218,21 +221,30 @@ export function PrayerTimesPage() {
         />
       ) : (loading || detectingLocation) && !prayerData ? (
         <div className="space-y-3" aria-busy="true">
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          {/* H-1: the snapshot shows the "Loading…" text (detection had
+              finished by snapshot time); a fresh load starts in the
+              "Detecting…" state. Same line, same size — suppress the
+              hydration warning for this expected text difference. */}
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }} suppressHydrationWarning>
             {detectingLocation
               ? 'Detecting your location and fetching today’s prayer times…'
               : 'Loading today’s prayer times and Qibla bearing…'}
           </p>
+          {/* M-4: the skeleton boxes reserve the resolved content's space
+              (measured live: prayer section ~642px mobile / ~564px desktop,
+              Qibla column ~632px mobile / ~608px desktop). The old h-96
+              (384px) boxes were ~half the resolved height, so the column
+              grew by ~0.86 CLS when the data arrived. */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 animate-pulse">
             <div
-              className="lg:col-span-7 h-96 rounded-2xl border"
+              className="lg:col-span-7 min-h-[642px] lg:min-h-[564px] rounded-2xl border"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: 'var(--border-subtle)',
               }}
             />
             <div
-              className="lg:col-span-5 h-96 rounded-2xl border"
+              className="lg:col-span-5 min-h-[632px] lg:min-h-[608px] rounded-2xl border"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: 'var(--border-subtle)',

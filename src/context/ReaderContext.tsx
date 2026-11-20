@@ -16,6 +16,12 @@ import type {
   ThemeMode,
   TranslationResource,
 } from '../types/quran';
+import {
+  getEmbeddedChapters,
+  getEmbeddedJuzs,
+  getEmbeddedRecitations,
+  getEmbeddedTranslations,
+} from '../utils/prerenderData';
 import { SURAH_NAMES, SURAH_VERSE_COUNTS } from '../utils/surahCatalog';
 import { toSurahSlug } from '../utils/slugs';
 
@@ -90,101 +96,125 @@ function loadFromStorage<T>(key: string, legacyKey: string, fallback: T): T {
   }
 }
 
+// H-1: first-render parity with the prerendered HTML. The prerender
+// snapshot was rendered with DEFAULT settings and EMPTY stored state
+// (fresh browser), so the first client render must use exactly those —
+// stored settings/bookmarks/progress are applied in the mount effect
+// below (one post-hydration update). The migration logic lives here too
+// (it used to run inside the state initializer).
+function resolveStoredSettings(): ReaderSettings {
+  const stored = loadFromStorage<
+    Omit<Partial<ReaderSettings>, 'arabicFont'> & { arabicFont?: string }
+  >(STORAGE_KEYS.SETTINGS, LEGACY_KEYS.SETTINGS, {});
+  const normalizedFont: ReaderSettings['arabicFont'] =
+    stored.arabicFont === 'noto-naskh' || stored.arabicFont === 'lateef'
+      ? stored.arabicFont
+      : 'scheherazade';
+
+  let resolvedArabicSize =
+    typeof stored.arabicFontSize === 'number' && Number.isFinite(stored.arabicFontSize)
+      ? stored.arabicFontSize
+      : DEFAULT_SETTINGS.arabicFontSize;
+
+  try {
+    const migrated = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED);
+    if (!migrated) {
+      if (stored.arabicFontSize === undefined || stored.arabicFontSize < 28) {
+        resolvedArabicSize = DEFAULT_SETTINGS.arabicFontSize;
+      }
+      localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED, '1');
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const migratedV3 = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3);
+    if (!migratedV3) {
+      if (resolvedArabicSize < 28) {
+        resolvedArabicSize = 28;
+      }
+      localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3, '1');
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    arabicFont: normalizedFont,
+    arabicFontSize: resolvedArabicSize,
+  };
+}
+
+function loadStoredLastRead(): LastReadAyah | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LAST_READ);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<LastReadAyah>;
+    if (
+      typeof parsed?.chapterId === 'number' &&
+      typeof parsed?.verseNumber === 'number' &&
+      typeof parsed?.verseKey === 'string' &&
+      typeof parsed?.chapterName === 'string' &&
+      typeof parsed?.chapterSlug === 'string'
+    ) {
+      return {
+        chapterId: parsed.chapterId,
+        chapterName: parsed.chapterName,
+        chapterArabicName: parsed.chapterArabicName || '',
+        chapterSlug: parsed.chapterSlug,
+        verseNumber: parsed.verseNumber,
+        verseKey: parsed.verseKey,
+        totalVerses:
+          typeof parsed.totalVerses === 'number' && parsed.totalVerses > 0
+            ? parsed.totalVerses
+            : SURAH_VERSE_COUNTS[parsed.chapterId - 1] || 7,
+        updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function ReaderProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<ReaderSettings>(() => {
-    const stored = loadFromStorage<
-      Omit<Partial<ReaderSettings>, 'arabicFont'> & { arabicFont?: string }
-    >(STORAGE_KEYS.SETTINGS, LEGACY_KEYS.SETTINGS, {});
-    const normalizedFont: ReaderSettings['arabicFont'] =
-      stored.arabicFont === 'noto-naskh' || stored.arabicFont === 'lateef'
-        ? stored.arabicFont
-        : 'scheherazade';
+  // H-1: defaults on first render (= the prerendered HTML); stored state
+  // is applied by the mount effect below, after hydration.
+  const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [readingProgress, setReadingProgress] = useState<ReadingProgress | null>(null);
+  const [lastRead, setLastRead] = useState<LastReadAyah | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-    let resolvedArabicSize =
-      typeof stored.arabicFontSize === 'number' && Number.isFinite(stored.arabicFontSize)
-        ? stored.arabicFontSize
-        : DEFAULT_SETTINGS.arabicFontSize;
+  // H-1: apply stored state AFTER the first render (post-hydration), so
+  // the first render matches the prerendered HTML. The `hydrated` flag
+  // gates the persist effects below: without it they would write the
+  // mount-time defaults over the stored values before they are read
+  // (effects in the mount commit still see the pre-update state).
+  useEffect(() => {
+    setSettings(resolveStoredSettings());
+    setBookmarks(loadFromStorage<BookmarkItem[]>(STORAGE_KEYS.BOOKMARKS, LEGACY_KEYS.BOOKMARKS, []));
+    setReadingProgress(
+      loadFromStorage<ReadingProgress | null>(STORAGE_KEYS.PROGRESS, LEGACY_KEYS.PROGRESS, null)
+    );
+    setLastRead(loadStoredLastRead());
+    setHydrated(true);
+  }, []);
 
-    try {
-      const migrated = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED);
-      if (!migrated) {
-        if (stored.arabicFontSize === undefined || stored.arabicFontSize < 28) {
-          resolvedArabicSize = DEFAULT_SETTINGS.arabicFontSize;
-        }
-        localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED, '1');
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    try {
-      const migratedV3 = localStorage.getItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3);
-      if (!migratedV3) {
-        if (resolvedArabicSize < 28) {
-          resolvedArabicSize = 28;
-        }
-        localStorage.setItem(STORAGE_KEYS.ARABIC_SIZE_MIGRATED_V3, '1');
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    return {
-      ...DEFAULT_SETTINGS,
-      ...stored,
-      arabicFont: normalizedFont,
-      arabicFontSize: resolvedArabicSize,
-    };
-  });
-
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() =>
-    loadFromStorage<BookmarkItem[]>(STORAGE_KEYS.BOOKMARKS, LEGACY_KEYS.BOOKMARKS, [])
-  );
-
-  const [readingProgress, setReadingProgress] = useState<ReadingProgress | null>(() =>
-    loadFromStorage<ReadingProgress | null>(STORAGE_KEYS.PROGRESS, LEGACY_KEYS.PROGRESS, null)
-  );
-
-  const [lastRead, setLastRead] = useState<LastReadAyah | null>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.LAST_READ);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as Partial<LastReadAyah>;
-      if (
-        typeof parsed?.chapterId === 'number' &&
-        typeof parsed?.verseNumber === 'number' &&
-        typeof parsed?.verseKey === 'string' &&
-        typeof parsed?.chapterName === 'string' &&
-        typeof parsed?.chapterSlug === 'string'
-      ) {
-        return {
-          chapterId: parsed.chapterId,
-          chapterName: parsed.chapterName,
-          chapterArabicName: parsed.chapterArabicName || '',
-          chapterSlug: parsed.chapterSlug,
-          verseNumber: parsed.verseNumber,
-          verseKey: parsed.verseKey,
-          totalVerses:
-            typeof parsed.totalVerses === 'number' && parsed.totalVerses > 0
-              ? parsed.totalVerses
-              : SURAH_VERSE_COUNTS[parsed.chapterId - 1] || 7,
-          updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
-        };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  // H-1: metadata seeded from the embedded prerender data (the same
+  // responses the prerendered HTML was rendered from), so list pages
+  // hydrate with their content instead of a loading state.
+  const [chapters, setChapters] = useState<Chapter[]>(() => getEmbeddedChapters() ?? []);
   const chaptersRef = useRef<Chapter[]>([]);
   chaptersRef.current = chapters;
-  const [chaptersLoading, setChaptersLoading] = useState(true);
+  const [chaptersLoading, setChaptersLoading] = useState(() => getEmbeddedChapters() === null);
   const [chaptersError, setChaptersError] = useState<string | null>(null);
-  const [juzs, setJuzs] = useState<Juz[]>([]);
-  const [reciters, setReciters] = useState<Reciter[]>([]);
-  const [translations, setTranslations] = useState<TranslationResource[]>([]);
+  const [juzs, setJuzs] = useState<Juz[]>(() => getEmbeddedJuzs() ?? []);
+  const [reciters, setReciters] = useState<Reciter[]>(() => getEmbeddedRecitations() ?? []);
+  const [translations, setTranslations] = useState<TranslationResource[]>(() => getEmbeddedTranslations() ?? []);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -209,62 +239,88 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.theme]);
 
-  // Persist settings
+  // Persist settings (H-1: gated on `hydrated` — without the gate this
+  // effect would write the mount-time defaults over the stored values
+  // in the mount commit, before the hydration effect above reads them).
   useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     } catch {
       // ignore storage quota errors
     }
-  }, [settings]);
+  }, [settings, hydrated]);
 
   // Persist bookmarks
   useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(bookmarks));
     } catch {
       // ignore
     }
-  }, [bookmarks]);
+  }, [bookmarks, hydrated]);
 
   // Persist progress
   useEffect(() => {
-    if (!readingProgress) return;
+    if (!hydrated || !readingProgress) return;
     try {
       localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(readingProgress));
     } catch {
       // ignore
     }
-  }, [readingProgress]);
+  }, [readingProgress, hydrated]);
 
   // Persist last read ayah
   useEffect(() => {
-    if (!lastRead) return;
+    if (!hydrated || !lastRead) return;
     try {
       localStorage.setItem(STORAGE_KEYS.LAST_READ, JSON.stringify(lastRead));
     } catch {
       // ignore
     }
-  }, [lastRead]);
+  }, [lastRead, hydrated]);
 
   const loadMetadata = useCallback(async () => {
-    setChaptersLoading(true);
-    setChaptersError(null);
+    // H-1: chapters/juzs seeded from the embedded prerender data need no
+    // fetch (the data is static). Recitations/translations are ALWAYS
+    // refreshed in the background: the embedded copies come from the
+    // PUBLIC API host used by the local prerender server (14 reciters),
+    // while production serves the authenticated list (23 reciters) — the
+    // refresh swaps in the authoritative lists without touching the
+    // loading state, so list pages never flash.
+    const needChapters = getEmbeddedChapters() === null;
+    const needJuzs = getEmbeddedJuzs() === null;
+    if (needChapters || needJuzs) {
+      setChaptersLoading(true);
+      setChaptersError(null);
+      try {
+        const [chaptersData, juzsData] = await Promise.all([
+          needChapters ? fetchChapters() : Promise.resolve(null),
+          needJuzs ? fetchJuzs() : Promise.resolve(null),
+        ]);
+        if (chaptersData) setChapters(chaptersData);
+        if (juzsData) setJuzs(juzsData);
+      } catch (err) {
+        setChaptersError(err instanceof Error ? err.message : 'Unable to load Quran metadata');
+      } finally {
+        setChaptersLoading(false);
+      }
+    } else {
+      setChaptersLoading(false);
+    }
+    // Background refresh of the two lists that can differ between the
+    // public (prerender) and authenticated (production) hosts. Failures
+    // are silent — the seeded lists keep working.
     try {
-      const [chaptersData, juzsData, recitersData, translationsData] = await Promise.all([
-        fetchChapters(),
-        fetchJuzs(),
+      const [recitersData, translationsData] = await Promise.all([
         fetchRecitations(),
         fetchTranslations(),
       ]);
-      setChapters(chaptersData);
-      setJuzs(juzsData);
       setReciters(recitersData);
       setTranslations(translationsData);
-    } catch (err) {
-      setChaptersError(err instanceof Error ? err.message : 'Unable to load Quran metadata');
-    } finally {
-      setChaptersLoading(false);
+    } catch {
+      // ignore — seeded lists remain
     }
   }, []);
 

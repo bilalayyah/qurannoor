@@ -108,6 +108,82 @@ const LOADING_TEXTS = ['Loading...'];
 // Routes whose content is API-backed verses; readiness requires a rendered ayah.
 const VERSE_PAGE_PREFIXES = ['/surah/', '/juz/', '/ayah/', '/popular/'];
 
+// H-1 (Report C): prerender-data embedding. The snapshot's first render
+// fetches /api/* responses; recording them here and embedding them as JSON
+// in a <script id="__prerender-data__" type="application/json"> tag lets
+// hydration seed its initial state from the SAME responses the snapshot
+// was rendered from (first-render parity by construction), instead of
+// re-rendering a loading skeleton and discarding the prerendered DOM.
+// KEY FORMAT — must stay identical to src/utils/prerenderData.ts
+// (buildPrerenderDataKey there): the client builds the same keys from
+// its fetch parameters, so a key mismatch means the data is silently
+// ignored (fetch fallback) — it can never corrupt a render.
+//   chapters | chapter:<id> | juzs | recitations | translations
+//   verses:by_chapter:<id>:<page>:<perPage>:<translationParam>:<reciterId>
+//   verses:by_juz:<n>:<page>:<perPage>:<translationParam>:<reciterId>
+//   verses:by_key:<key>:<translationParam>:<reciterId>
+//   verses:keys:<keysCsv>:<translationParam>:<reciterId>
+// The translation param is the exact client-sent string (e.g. '20,234'
+// via buildTranslationsParam); the reciter id is the client's reciterId.
+// Only first-render data endpoints are recorded — never /api/push/*,
+// /api/contact, or anything with a body.
+const EMBEDDED_DATA_MAX_BYTES = 400 * 1024;
+
+function buildPrerenderDataKey(requestUrl) {
+  let u;
+  try {
+    u = new URL(requestUrl);
+  } catch {
+    return null;
+  }
+  const path = u.pathname;
+  if (!path.startsWith('/api/')) return null;
+  const q = u.searchParams;
+  const translationParam = q.get('translation') || '20,234';
+  const reciterId = q.get('reciter') || '7';
+  const page = q.get('page') || '1';
+  const perPage = q.get('per_page') || '15';
+  const segments = path.split('/').filter(Boolean); // ['api', ...]
+  const rest = segments.slice(1);
+  if (rest.length === 1 && rest[0] === 'chapters') return 'chapters';
+  if (rest.length === 2 && rest[0] === 'chapters') return `chapter:${rest[1]}`;
+  if (rest.length === 1 && rest[0] === 'juz') return 'juzs';
+  if (rest.length === 1 && rest[0] === 'recitations') return 'recitations';
+  if (rest.length === 1 && rest[0] === 'translations') return 'translations';
+  if (rest.length === 3 && rest[0] === 'verses' && rest[1] === 'by_chapter') {
+    return `verses:by_chapter:${rest[2]}:${page}:${perPage}:${translationParam}:${reciterId}`;
+  }
+  if (rest.length === 3 && rest[0] === 'verses' && rest[1] === 'by_juz') {
+    return `verses:by_juz:${rest[2]}:${page}:${perPage}:${translationParam}:${reciterId}`;
+  }
+  if (rest.length === 3 && rest[0] === 'verses' && (rest[1] === 'key' || rest[1] === 'by_key')) {
+    let key;
+    try {
+      key = decodeURIComponent(rest[2]);
+    } catch {
+      return null;
+    }
+    return `verses:by_key:${key}:${translationParam}:${reciterId}`;
+  }
+  if (rest.length === 2 && rest[0] === 'verses' && rest[1] === 'keys') {
+    const keys = q.get('keys');
+    if (!keys) return null;
+    return `verses:keys:${keys}:${translationParam}:${reciterId}`;
+  }
+  return null;
+}
+
+// Priority order for embedding when the total would exceed the cap:
+// metadata first (small, shared by every page), verses last (largest).
+function embedPriority(key) {
+  if (key === 'chapters') return 0;
+  if (key === 'juzs') return 1;
+  if (key.startsWith('chapter:')) return 2;
+  if (key === 'recitations') return 3;
+  if (key === 'translations') return 4;
+  return 5;
+}
+
 function parseArgs(argv) {
   const opts = { port: 4182, concurrency: 4, limit: 0, routes: null, rebuild: true, keepPreview: false, skipExisting: false, previewUrl: null, fullText: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -330,6 +406,25 @@ async function renderRoute(browser, baseUrl, routePath, opts, attempt) {
     });
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
+    // H-1: record the /api/* responses this page's first render fetches
+    // (first response per key wins) so they can be embedded in the
+    // snapshot for hydration seeding. Registered BEFORE goto so nothing
+    // is missed; the promises are awaited before the snapshot below.
+    const recorded = new Map();
+    const recording = [];
+    page.on('response', (response) => {
+      const key = buildPrerenderDataKey(response.url());
+      if (!key || recorded.has(key)) return;
+      recording.push((async () => {
+        try {
+          if (response.status() !== 200) return;
+          const json = await response.json();
+          if (!recorded.has(key)) recorded.set(key, json);
+        } catch {
+          // Non-JSON or aborted response — not embeddable, ignore.
+        }
+      })());
+    });
     await page.goto(`${baseUrl}${routePath}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     // Never wait for networkidle: fonts and the Quran API can keep the
     // network busy behind the proxy. Instead wait for the app to be
@@ -375,7 +470,59 @@ async function renderRoute(browser, baseUrl, routePath, opts, attempt) {
       await page.waitForTimeout(500);
     }
     await page.waitForTimeout(900);
-    const rawHtml = await page.evaluate(() => document.documentElement.outerHTML);
+    // H-1: embed the recorded first-render /api/* responses as JSON for
+    // hydration seeding (see the header comment on buildPrerenderDataKey).
+    // `<` is escaped as \u003c so a literal `</script>` can never appear
+    // inside the serialized tag. Total embedded JSON is capped at ~400KB:
+    // over the cap, entries are kept in priority order (metadata first)
+    // and the rest are skipped with a warning — a page without embedded
+    // data simply fetches, it never breaks.
+    await Promise.allSettled(recording);
+    let embeddedBytes = 0;
+    let embeddedSkipped = [];
+    if (recorded.size > 0) {
+      const entries = [...recorded.entries()].sort((a, b) => embedPriority(a[0]) - embedPriority(b[0]));
+      const kept = {};
+      for (const [key, value] of entries) {
+        const single = JSON.stringify({ [key]: value }).replace(/</g, '\\u003c');
+        const size = Buffer.byteLength(single, 'utf8');
+        // The wrapper braces/brackets are counted once below; per-entry
+        // sizes are close enough for the cap (small over-count is safe).
+        if (embeddedBytes + size > EMBEDDED_DATA_MAX_BYTES) {
+          embeddedSkipped.push(key);
+          continue;
+        }
+        kept[key] = value;
+        embeddedBytes += size;
+      }
+      const keys = Object.keys(kept);
+      if (keys.length > 0) {
+        const json = JSON.stringify(kept).replace(/</g, '\\u003c');
+        embeddedBytes = Buffer.byteLength(json, 'utf8');
+        await page.evaluate((payload) => {
+          const script = document.createElement('script');
+          script.id = '__prerender-data__';
+          script.type = 'application/json';
+          script.textContent = payload;
+          document.body.appendChild(script);
+        }, json);
+      }
+    }
+    if (embeddedSkipped.length > 0) {
+      console.log(`[prerender] ${routePath}: embedded data capped — skipped ${embeddedSkipped.join(', ')}`);
+    }
+    // H-1: the header countdown pill is async (prayer data resolves after
+    // mount) and its presence in snapshots is racy — strip it so NO
+    // snapshot contains it. The component also gates the pill behind
+    // mount, so the first client render never has it either. The strip
+    // runs INSIDE the same evaluate as the snapshot read: a separate
+    // strip-then-read leaves a window in which the prayer fetch can
+    // resolve and re-insert the pill (observed on 3/186 pages in the
+    // first run) — in one task the read is atomic with the removal.
+    const rawHtml = await page.evaluate(() => {
+      document.querySelector('header a[aria-label^="Next prayer:"]')?.remove();
+      return document.documentElement.outerHTML;
+    });
     const html = sanitizePrerenderedHtml(rawHtml, baseUrl);
     if (html.includes(baseUrl)) {
       throw new Error(`prerendered HTML still contains the preview origin ${baseUrl}`);
@@ -396,7 +543,7 @@ async function renderRoute(browser, baseUrl, routePath, opts, attempt) {
       const el = document.querySelector('h1');
       return el ? el.textContent.trim().slice(0, 120) : '';
     });
-    return { html, title, h1, errors, thin: !html.includes('<footer') || html.length < 8000 };
+    return { html, title, h1, errors, thin: !html.includes('<footer') || html.length < 8000, embeddedBytes };
   } finally {
     await page.close();
   }
@@ -500,13 +647,14 @@ async function main() {
     const results = [];
     let failures = [];
     let totalBytes = 0;
+    let totalEmbeddedBytes = 0;
     let done = 0;
     const renderOne = async (browser, baseUrl, routePath) => {
       const outFile = outPathFor(routePath);
       const routeStarted = Date.now();
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         try {
-          const { html, title, h1, errors, thin } = await renderRoute(browser, baseUrl, routePath, opts, attempt);
+          const { html, title, h1, errors, thin, embeddedBytes } = await renderRoute(browser, baseUrl, routePath, opts, attempt);
           if (!title) throw new Error('empty document.title after render');
           if (!h1) throw new Error('no <h1> after render');
           const doc = `<!doctype html>\n${html}\n`;
@@ -521,6 +669,7 @@ async function main() {
             throw new Error(`write verification failed for ${outFile}: wrote ${written} of ${Buffer.byteLength(doc)} bytes`);
           }
           totalBytes += Buffer.byteLength(doc);
+          totalEmbeddedBytes += embeddedBytes || 0;
           if (thin) console.warn(`[prerender] WARNING thin HTML for ${routePath} (${doc.length} bytes)`);
           if (errors.length) console.warn(`[prerender] WARNING pageerrors on ${routePath}: ${errors.slice(0, 2).join(' | ')}`);
           const routeSecs = ((Date.now() - routeStarted) / 1000).toFixed(1);
@@ -585,7 +734,7 @@ async function main() {
       if (remaining.length) console.log(`[prerender] pass ${pass} done, retrying ${remaining.length} failed routes with fresh browsers`);
     }
     const elapsedMin = ((Date.now() - startedAt) / 60000).toFixed(2);
-    console.log(`[prerender] DONE in ${elapsedMin} min: ${results.length} rendered, ${failures.length} failed, total ${totalBytes} bytes (${(totalBytes / 1048576).toFixed(1)} MB) across ${results.length} files`);
+    console.log(`[prerender] DONE in ${elapsedMin} min: ${results.length} rendered, ${failures.length} failed, total ${totalBytes} bytes (${(totalBytes / 1048576).toFixed(1)} MB) across ${results.length} files, embedded prerender data ${totalEmbeddedBytes} bytes (${(totalEmbeddedBytes / 1024).toFixed(0)} KB)`);
     if (failures.length) {
       for (const f of failures) console.error(`[prerender] FAILED ${f.routePath}: ${f.error}`);
     }

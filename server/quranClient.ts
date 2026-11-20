@@ -14,6 +14,10 @@ const SCOPES_CONTENT = [
   'content.translations.read',
   'content.audio.read',
   'content.tafsirs.read',
+  // M-2 (final audit): the search scope was approved in the Quran Console
+  // (Thu 19 Nov) but never requested here, so /api/search always returned
+  // granted:false. Local search stays the default; API search is an option.
+  'content.search.read',
 ].join(' ');
 
 interface TokenCache {

@@ -85,7 +85,7 @@ export async function fetchEnvStatus(): Promise<{
   return apiGet('/api/env-status');
 }
 
-function normalizeChapterMetadata(ch: Chapter): Chapter {
+export function normalizeChapterMetadata(ch: Chapter): Chapter {
   if (ch.id === 86 && ch.translated_name?.name === 'The Nightcommer') {
     return {
       ...ch,
@@ -102,7 +102,7 @@ function normalizeReciterDisplayName(name: string): string {
   return name.replace(/([^\s])\(/g, '$1 (');
 }
 
-function normalizeReciterMetadata(reciter: Reciter): Reciter {
+export function normalizeReciterMetadata(reciter: Reciter): Reciter {
   const fixedName = normalizeReciterDisplayName(reciter.reciter_name);
   const fixedTranslated = reciter.translated_name
     ? {
@@ -146,7 +146,7 @@ export async function fetchJuzs(): Promise<Juz[]> {
 export const DEFAULT_ENGLISH_TRANSLATION_ID = 20;
 export const URDU_TRANSLATION_ID = 234;
 
-function buildTranslationsParam(translationId: number): string {
+export function buildTranslationsParam(translationId: number): string {
   const enId =
     Number.isInteger(translationId) && translationId > 0
       ? translationId

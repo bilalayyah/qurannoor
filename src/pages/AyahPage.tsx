@@ -10,6 +10,7 @@ import { useAudio, type PlayableAyah } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVerseByKey } from '../services/quranApi';
+import { getEmbeddedVerseByKey } from '../utils/prerenderData';
 import type { Verse } from '../types/quran';
 import { POPULAR_SECTIONS, resolveChapterIdFromParam, toSurahSlug } from '../utils/slugs';
 import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
@@ -37,8 +38,14 @@ export function AyahPage() {
 
   const verseKey = chapterId && isValidVerseNum ? `${chapterId}:${verseNum}` : null;
 
-  const [verse, setVerse] = useState<Verse | null>(null);
-  const [loading, setLoading] = useState(true);
+  // H-1: seed the first render from the embedded prerender data (same
+  // pattern as the reader pages) — keyed to the default settings.
+  const seededVerse = verseKey
+    ? getEmbeddedVerseByKey(verseKey, settings.translationId, settings.reciterId)
+    : null;
+
+  const [verse, setVerse] = useState<Verse | null>(() => seededVerse);
+  const [loading, setLoading] = useState(() => seededVerse === null);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
@@ -48,6 +55,13 @@ export function AyahPage() {
         setError('Requested Ayah reference could not be found.');
         setLoading(false);
       }
+      return;
+    }
+
+    // H-1: seeded fast-path — apply the embedded verse without fetching.
+    if (seededVerse) {
+      setVerse(seededVerse);
+      setLoading(false);
       return;
     }
 
@@ -69,7 +83,7 @@ export function AyahPage() {
     } finally {
       setLoading(false);
     }
-  }, [verseKey, chapters.length, settings.translationId, settings.reciterId]);
+  }, [verseKey, chapters.length, settings.translationId, settings.reciterId, seededVerse]);
 
   useEffect(() => {
     loadAyah();

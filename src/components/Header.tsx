@@ -27,6 +27,16 @@ export function Header() {
   const { installed, handleInstallClick } = usePWAInstall();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // H-1: the header countdown pill is async (prayer data resolves after
+  // mount) and the prerender snapshots NEVER contain it (the script
+  // strips it for determinism — see scripts/prerender.cjs). Render it
+  // only after mount so the first client render matches the prerendered
+  // header exactly; before that the pill is absent, as in the snapshot.
+  const [pillMounted, setPillMounted] = useState(false);
+  useEffect(() => {
+    setPillMounted(true);
+  }, []);
+
   const [prayerData, setPrayerData] = useState<PrayerDayData | null>(() =>
     getActiveCachedPrayerDataForToday()
   );
@@ -158,7 +168,7 @@ export function Header() {
 
         {/* Zone 3: Live Prayer Countdown Pill + Reader Utilities & Mobile Drawer */}
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          {countdown && prayerData && (
+          {pillMounted && countdown && prayerData && (
             <Link
               to="/prayer-times"
               onClick={() => setMobileMenuOpen(false)}

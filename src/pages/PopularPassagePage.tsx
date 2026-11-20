@@ -11,6 +11,7 @@ import { useReader } from '../context/ReaderContext';
 import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVersesByChapter, fetchVersesByKeys } from '../services/quranApi';
+import { getEmbeddedVersesByKeys } from '../utils/prerenderData';
 import type { Verse } from '../types/quran';
 import { POPULAR_SECTIONS, toSurahSlug } from '../utils/slugs';
 import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
@@ -30,8 +31,15 @@ export function PopularPassagePage() {
   const { chapters, settings } = useReader();
   const { playAyah, updateQueue, activeVerseKey } = useAudio();
 
-  const [verses, setVerses] = useState<Verse[]>([]);
-  const [loading, setLoading] = useState(true);
+  // H-1: seed the first render from the embedded prerender data (keys
+  // branch only — the chapter-type branch fetches 50 verses and is not
+  // embedded). Keyed to the default settings.
+  const seededVerses = section?.verseKeys && section.verseKeys.length > 0
+    ? getEmbeddedVersesByKeys(section.verseKeys, settings.translationId, settings.reciterId)
+    : null;
+
+  const [verses, setVerses] = useState<Verse[]>(() => seededVerses ?? []);
+  const [loading, setLoading] = useState(() => seededVerses === null);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const { isVerseBlurred, revealVerse } = useHifzReader(
@@ -45,6 +53,13 @@ export function PopularPassagePage() {
   const loadPassage = useCallback(async () => {
     if (!section) {
       setError('Requested Quran passage not found.');
+      setLoading(false);
+      return;
+    }
+
+    // H-1: seeded fast-path — apply the embedded verses without fetching.
+    if (seededVerses) {
+      setVerses(seededVerses);
       setLoading(false);
       return;
     }
@@ -79,7 +94,7 @@ export function PopularPassagePage() {
     } finally {
       setLoading(false);
     }
-  }, [section, settings.translationId, settings.reciterId]);
+  }, [section, settings.translationId, settings.reciterId, seededVerses]);
 
   useEffect(() => {
     loadPassage();

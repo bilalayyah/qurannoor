@@ -24,6 +24,10 @@ const SCOPES_CONTENT = [
   'content.translations.read',
   'content.audio.read',
   'content.tafsirs.read',
+  // M-2 (final audit): the search scope was approved in the Quran Console
+  // (Thu 19 Nov) but never requested here, so /api/search always returned
+  // granted:false. Local search stays the default; API search is an option.
+  'content.search.read',
 ].join(' ');
 
 let tokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -252,7 +256,23 @@ export const onRequestGet = async (context: {
   // of 'quran/...' paths (e.g. 'quran/verses/key/2:255' -> 'quran/2:255',
   // which upstream rejected with 403/404/400). Every branch below now
   // matches the stripped path only.
-  const rawSubPath = (params.path || []).join('/');
+  // H-2 (final audit): Pages Functions passes path segments still
+  // percent-encoded — the app sends encodeURIComponent(verseKey), so the
+  // colon arrives as %3A and the allow-list regexes below (which expect a
+  // literal ':', e.g. verses/key/2:255) never matched: every encoded verse
+  // key 404'd with "Unknown API path." Decode each segment ONCE, before
+  // the 'quran/' strip and the allow-list test. A malformed segment falls
+  // back to its raw form (and then fails the allow-list → 404) — decode
+  // must never throw out of the handler.
+  const rawSubPath = (params.path || [])
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join('/');
   const subPath = rawSubPath.startsWith('quran/')
     ? rawSubPath.slice('quran/'.length)
     : rawSubPath;

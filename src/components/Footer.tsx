@@ -108,7 +108,9 @@ export function Footer() {
             color: 'var(--text-tertiary)',
           }}
         >
-          <p>© {year} QuranNoor.com. Original design &amp; interface. Sacred Quran text attributed to upstream sources.</p>
+          {/* H-1: the year is time-derived; suppress the hydration warning
+              if a prerender and a load ever straddle New Year. */}
+          <p suppressHydrationWarning>© {year} QuranNoor.com. Original design &amp; interface. Sacred Quran text attributed to upstream sources.</p>
           <p>Read. Listen. Reflect.</p>
         </div>
       </div>

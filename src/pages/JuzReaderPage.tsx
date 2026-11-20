@@ -25,6 +25,7 @@ import { useReader } from '../context/ReaderContext';
 import { useHifzReader } from '../hooks/useHifzReader';
 import { usePageMetadata } from '../hooks/usePageMetadata';
 import { fetchVersesByJuz } from '../services/quranApi';
+import { getEmbeddedVersesByJuz } from '../utils/prerenderData';
 import type { Verse } from '../types/quran';
 import { toSurahSlug } from '../utils/slugs';
 import { getEnglishTranslation, stripHtmlTags } from '../utils/text';
@@ -54,10 +55,24 @@ export function JuzReaderPage() {
     cancelPageAdvance,
   } = useAudio();
 
-  const [chunksByPage, setChunksByPage] = useState<Record<number, Verse[]>>({});
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalJuzVerses, setTotalJuzVerses] = useState<number>(0);
-  const [loadingInitial, setLoadingInitial] = useState(true);
+  // H-1: seed the first render from the embedded prerender data (the same
+  // responses the prerendered HTML was rendered from) — same pattern as
+  // SurahReaderPage; keyed to the default settings, so it only hits on
+  // the first render. Client-side navigation misses and fetches.
+  const seededVerses = isValidJuz
+    ? getEmbeddedVersesByJuz(juzId, 1, CHUNK_SIZE, settings.translationId, settings.reciterId)
+    : null;
+
+  const [chunksByPage, setChunksByPage] = useState<Record<number, Verse[]>>((): Record<number, Verse[]> =>
+    seededVerses ? { 1: seededVerses.verses } : {}
+  );
+  const [totalPages, setTotalPages] = useState(() =>
+    seededVerses ? Math.max(1, seededVerses.pagination?.total_pages || 1) : 1
+  );
+  const [totalJuzVerses, setTotalJuzVerses] = useState<number>(() =>
+    seededVerses?.pagination?.total_records || 0
+  );
+  const [loadingInitial, setLoadingInitial] = useState(() => seededVerses === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
@@ -65,7 +80,9 @@ export function JuzReaderPage() {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [jumpAyahInput, setJumpAyahInput] = useState('');
   const [highlightedVerseKey, setHighlightedVerseKey] = useState<string | null>(null);
-  const [forcedMountPage, setForcedMountPage] = useState<number | null>(null);
+  const [forcedMountPage, setForcedMountPage] = useState<number | null>(() =>
+    seededVerses ? 1 : null
+  );
 
   const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -143,6 +160,27 @@ export function JuzReaderPage() {
     }
 
     const reqVersion = ++requestVersionRef.current;
+
+    // H-1: seeded fast-path — apply the embedded payload without fetching.
+    // The state initializers already hold it; this marks the session
+    // loaded so the settings-refresh effect can re-fetch after hydration
+    // applies stored settings.
+    if (seededVerses) {
+      activeSettingsRef.current = {
+        translationId: settings.translationId,
+        reciterId: settings.reciterId,
+      };
+      loadedSessionJuzRef.current = juzId;
+      setChunksByPage({ 1: seededVerses.verses });
+      setTotalPages(Math.max(1, seededVerses.pagination?.total_pages || 1));
+      if (seededVerses.pagination?.total_records) {
+        setTotalJuzVerses(seededVerses.pagination.total_records);
+      }
+      setForcedMountPage(1);
+      setLoadingInitial(false);
+      return;
+    }
+
     setLoadingInitial(true);
     setLoadingMore(false);
     setLoadingEarlier(false);
