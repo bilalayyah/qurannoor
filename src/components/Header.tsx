@@ -121,10 +121,10 @@ export function Header() {
           aria-label="QuranNoor Home"
           className="inline-flex items-center whitespace-nowrap shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
         >
-          <span className="min-[380px]:hidden">
+          <span className="min-[480px]:hidden">
             <QuranNoorLogo variant="compact" size="sm" />
           </span>
-          <span className="hidden min-[380px]:inline-flex sm:hidden">
+          <span className="hidden min-[480px]:inline-flex sm:hidden">
             <QuranNoorLogo variant="horizontal" size="sm" />
           </span>
           <span className="hidden sm:inline-flex">
@@ -180,7 +180,7 @@ export function Header() {
               />
               <span className="hidden sm:inline">{countdown.countdownWithSecondsText}</span>
               <span className="sm:hidden">
-                {countdown.nextPrayer} · {countdown.remainingText}
+                {countdown.nextPrayer} · {countdown.remainingWithSecondsText}
               </span>
             </Link>
           )}
