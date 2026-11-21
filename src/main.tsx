@@ -39,7 +39,21 @@ if (rootEl.children.length > 0) {
       hydrateRoot(rootEl, <App />);
     });
 } else {
-  createRoot(rootEl).render(<App />);
+  // SPA shell (no prerendered HTML: /search, /bookmarks, 404): preload
+  // the current route's chunk BEFORE the first render, exactly like the
+  // hydration path above. Without this, the first paint is the 148px
+  // "Loading..." Suspense fallback and the footer jumps when the real
+  // page renders — /search mobile CLS 0.29 (footer shift 0.28), /search
+  // with a query up to 0.58, /bookmarks 0.42. The route chunk is small
+  // (SearchPage ~3 KB + shared deps), so the first paint waits only
+  // for that fetch; if the preload fails, render anyway and the lazy
+  // import retries, exactly as the hydration path does.
+  // Search CLS fix (2026-11-21).
+  preloadRouteForPath(window.location.pathname)
+    .catch(() => undefined)
+    .then(() => {
+      createRoot(rootEl).render(<App />);
+    });
 }
 
 if ('serviceWorker' in navigator) {

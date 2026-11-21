@@ -45,7 +45,14 @@ export function SearchPage() {
   const [results, setResults] = useState<LocalQuranSearchMatch[]>([]);
   const [totalMatches, setTotalMatches] = useState(0);
   const [isCapped, setIsCapped] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // Search CLS fix (2026-11-21): with a query in the URL, a search is
+  // already running on mount — start in the loading (skeleton) state so
+  // the first paint does not flash the "No results found" card and then
+  // jump to the skeleton (footer shift ~0.16 on mobile). The skeleton
+  // is ~928px tall, which keeps the footer below the fold while results
+  // load; when results arrive the footer is still below the fold, so
+  // the content growth causes no shift.
+  const [loading, setLoading] = useState(Boolean(initialQuery));
   const [error, setError] = useState<string | null>(null);
 
   const matchingSurahs = useMemo(() => {
