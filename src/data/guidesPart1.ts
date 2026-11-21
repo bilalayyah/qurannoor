@@ -288,7 +288,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
         heading: 'What Tafsir Actually Means and Why Translation Alone Is Not Enough',
         paragraphs: [
           'Arabic words often carry rich semantic layers that no single English word can fully reproduce. Furthermore, the Quran frequently addresses real historical situations in Makkah and Madinah, refers to earlier prophets concisely, or lays down principles refined across multiple surahs. Without context, a modern reader can easily misread a brief phrase or miss the comforting backdrop of a revelation.',
-          'Tafsir resolves those questions carefully by examining grammar, vocabulary, rhetorical structure, and historical background (Asbab al-Nuzul—occasions of revelation) so the verse is understood within its true framework rather than isolated from it. Reading an English or Urdu translation gives you the wording of an ayah; Tafsir unfolds the fuller picture behind it.',
+          'Tafsir resolves those questions carefully by examining grammar, vocabulary, rhetorical structure, and historical background (Asbab al-Nuzul—occasions of revelation) so the verse is understood within its true framework rather than isolated from it. Reading an English translation gives you the wording of an ayah; Tafsir unfolds the fuller picture behind it.',
         ],
       },
       {
@@ -302,7 +302,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
         heading: 'Famous Classical Tafsirs Such as Ibn Kathir',
         paragraphs: [
           'Among the most widely studied commentaries in the Muslim world is Tafsir al-Qur’an al-Azim by the fourteenth-century scholar Imam Isma’il ibn Kathir. Readers appreciate Ibn Kathir because he brings together related Quranic cross-references, authentic hadith narrations, and clear explanations of key verses in straightforward language.',
-          'Other celebrated works serve different study needs—such as Imam at-Tabari’s monumental early compilation of narrations, Imam al-Qurtubi’s focus on legal rulings and ethics, Imam al-Baghawi’s concise clarity, or concise modern study companions. On QuranNoor, per-ayah Tafsir Ibn Kathir is accessible right beneath any verse in Arabic, English, and Urdu so readers can consult commentary without leaving the reader.',
+          'Other celebrated works serve different study needs—such as Imam at-Tabari’s monumental early compilation of narrations, Imam al-Qurtubi’s focus on legal rulings and ethics, Imam al-Baghawi’s concise clarity, or concise modern study companions. On QuranNoor, per-ayah Tafsir Ibn Kathir is accessible right beneath any verse in Arabic and English so readers can consult commentary without leaving the reader.',
         ],
       },
       {
@@ -340,7 +340,7 @@ export const GUIDES_PART_1: GuideArticle[] = [
       {
         question: 'How do I read Tafsir on QuranNoor?',
         answer:
-          'Open any Surah or Ayah page and expand the Tafsir section beneath the verse to read Tafsir Ibn Kathir directly in Arabic, English, or Urdu.',
+          'Open any Surah or Ayah page and expand the Tafsir section beneath the verse to read Tafsir Ibn Kathir directly in Arabic or English.',
       },
       {
         question: 'Should beginners read multi-volume Tafsir from cover to cover?',

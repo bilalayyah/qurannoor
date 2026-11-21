@@ -225,9 +225,23 @@ function buildUpstreamVersesParams(
   }
 
   if (!qs.has('translations')) {
-    const translation = qs.get('translation') || '20,234';
+    const translation = qs.get('translation') || '20';
     qs.set('translations', translation);
   }
+  // Urdu removed (2026-11-21): resource 234 (Fateh Muhammad Jalandhari)
+  // must never be requested — drop it from an explicit translations list
+  // too, so a stale cached client cannot bring Urdu back.
+  const cleanedTranslations = qs
+    .get('translations')
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '' && s !== '234');
+  qs.set(
+    'translations',
+    cleanedTranslations && cleanedTranslations.length > 0
+      ? cleanedTranslations.join(',')
+      : '20'
+  );
   qs.delete('translation');
 
   if (!qs.has('audio')) {
@@ -726,7 +740,7 @@ export const onRequestGet = async (context: {
                 granted: false,
                 missing_scope: 'content.search.read',
                 message:
-                  'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic, English, and Urdu.',
+                  'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic and English.',
               },
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -5,7 +5,6 @@ import { useReader } from '../context/ReaderContext';
 import type { ArabicFontFamily, QuranScript, ThemeMode } from '../types/quran';
 import { usePushNotifications } from '../utils/pushNotifications';
 import { getArabicFontClass } from '../utils/text';
-import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
 import { ThemedSelect, type ThemedSelectOption } from './ThemedSelect';
 
@@ -457,40 +456,6 @@ export function ReaderSettings() {
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     settings.autoPlayNext ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <span className="block text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Play Urdu translation after Arabic
-                </span>
-                <span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {URDU_AUDIO_CREDIT}
-                </span>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-label="Play Urdu translation after Arabic"
-                aria-checked={settings.autoPlayUrduAfterArabic}
-                onClick={() =>
-                  updateSettings({
-                    autoPlayUrduAfterArabic: !settings.autoPlayUrduAfterArabic,
-                  })
-                }
-                className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
-                style={{
-                  backgroundColor: settings.autoPlayUrduAfterArabic
-                    ? 'var(--accent)'
-                    : 'var(--border-strong)',
-                }}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    settings.autoPlayUrduAfterArabic ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>

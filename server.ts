@@ -198,12 +198,12 @@ const handleVersesByChapter = async (req: express.Request, res: express.Response
 
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(50, Math.max(1, Number(req.query.per_page) || 30));
-  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const rawTranslations = String(req.query.translations || req.query.translation || '20');
   const translationIds = rawTranslations
     .split(',')
     .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0);
-  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
+    .filter((n) => Number.isInteger(n) && n > 0 && n !== 234);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
@@ -290,12 +290,12 @@ const handleVersesByJuz = async (req: express.Request, res: express.Response) =>
 
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(50, Math.max(1, Number(req.query.per_page) || 30));
-  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const rawTranslations = String(req.query.translations || req.query.translation || '20');
   const translationIds = rawTranslations
     .split(',')
     .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0);
-  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
+    .filter((n) => Number.isInteger(n) && n > 0 && n !== 234);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
@@ -545,7 +545,7 @@ const handleSearch = async (req: express.Request, res: express.Response) => {
           granted: false,
           missing_scope: 'content.search.read',
           message:
-            'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic, English, and Urdu.',
+            'The upstream search scope is not active on this client; QuranNoor provides local full-text search across Arabic and English.',
         },
       });
       return;
@@ -577,12 +577,12 @@ const handleVerseByKey = async (req: express.Request, res: express.Response) => 
     return;
   }
 
-  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const rawTranslations = String(req.query.translations || req.query.translation || '20');
   const translationIds = rawTranslations
     .split(',')
     .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0);
-  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
+    .filter((n) => Number.isInteger(n) && n > 0 && n !== 234);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({
@@ -624,12 +624,12 @@ const handleVersesByKeys = async (req: express.Request, res: express.Response) =
     return;
   }
 
-  const rawTranslations = String(req.query.translations || req.query.translation || '20,234');
+  const rawTranslations = String(req.query.translations || req.query.translation || '20');
   const translationIds = rawTranslations
     .split(',')
     .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0);
-  const translation = translationIds.length > 0 ? translationIds.join(',') : '20,234';
+    .filter((n) => Number.isInteger(n) && n > 0 && n !== 234);
+  const translation = translationIds.length > 0 ? translationIds.join(',') : '20';
   const reciter = Number(req.query.reciter) || 7;
 
   const query = new URLSearchParams({

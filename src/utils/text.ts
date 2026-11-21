@@ -44,20 +44,15 @@ export function getArabicFontClass(
   }
 }
 
-export const URDU_RESOURCE_ID = 234;
-
 export function getEnglishTranslation<
   T extends { resource_id: number; text: string }
 >(translations?: T[] | null, preferredId?: number): T | undefined {
   if (!translations || translations.length === 0) return undefined;
-  if (preferredId && preferredId !== URDU_RESOURCE_ID) {
+  if (preferredId) {
     const exact = translations.find((t) => t.resource_id === preferredId);
     if (exact) return exact;
   }
-  return (
-    translations.find((t) => t.resource_id !== URDU_RESOURCE_ID) ||
-    translations[0]
-  );
+  return translations[0];
 }
 
 // Strips only the trailing ayah-end marker (whitespace/NBSP + Arabic-Indic
@@ -104,11 +99,4 @@ export function getWordArabicText(
     return word.text_indopak;
   }
   return word.text_qpc_hafs || word.text_uthmani || word.text || '';
-}
-
-export function getUrduTranslation<
-  T extends { resource_id: number; text: string }
->(translations?: T[] | null): T | undefined {
-  if (!translations || translations.length === 0) return undefined;
-  return translations.find((t) => t.resource_id === URDU_RESOURCE_ID);
 }

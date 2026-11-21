@@ -5,7 +5,7 @@ import type { TafsirContent } from '../types/quran';
 import { getEmbeddedTafsir } from '../utils/prerenderData';
 import { getShortTafsirSlice, parseTafsirBlocks } from '../utils/tafsir';
 
-export type TafsirLanguage = 'arabic' | 'english' | 'urdu';
+export type TafsirLanguage = 'arabic' | 'english';
 
 export const TAFSIR_LANG_STORAGE_KEY = 'qurannoor_tafsir_language_v1';
 const TAFSIR_LANG_EVENT = 'qurannoor:tafsir-language-change';
@@ -31,19 +31,12 @@ export const TAFSIR_LANGUAGE_OPTIONS: ReadonlyArray<{
     title: 'Tafsir Ibn Kathir (Abridged) · English',
     defaultSourceName: 'Tafsir Ibn Kathir (Abridged)',
   },
-  {
-    id: 'urdu',
-    label: 'Urdu',
-    resourceId: 160,
-    title: 'Tafsir Ibn Kathir · Urdu',
-    defaultSourceName: 'Tafsir Ibn Kathir (Urdu)',
-  },
 ];
 
 function getStoredTafsirLanguage(): TafsirLanguage {
   try {
     const saved = localStorage.getItem(TAFSIR_LANG_STORAGE_KEY);
-    if (saved === 'arabic' || saved === 'english' || saved === 'urdu') {
+    if (saved === 'arabic' || saved === 'english') {
       return saved;
     }
   } catch {
@@ -103,7 +96,7 @@ export function AyahTafsirSection({
   useEffect(() => {
     const handleSync = (ev: Event) => {
       const next = (ev as CustomEvent<TafsirLanguage>).detail;
-      if (next === 'arabic' || next === 'english' || next === 'urdu') {
+      if (next === 'arabic' || next === 'english') {
         setLanguage(next);
       }
     };
@@ -296,7 +289,7 @@ export function AyahTafsirSection({
       ) : (
         <div
           dir={language === 'english' ? 'ltr' : 'rtl'}
-          lang={language === 'arabic' ? 'ar' : language === 'urdu' ? 'ur' : 'en'}
+          lang={language === 'arabic' ? 'ar' : 'en'}
           className="space-y-3"
         >
           {visible.map((block, idx) => {
@@ -337,33 +330,6 @@ export function AyahTafsirSection({
                   lang="ar"
                   translate="no"
                   className="notranslate font-quran-scheherazade quran-arabic-text text-base sm:text-lg leading-[1.85] !py-0"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {block.text}
-                </p>
-              );
-            }
-
-            if (language === 'urdu') {
-              if (block.type === 'heading') {
-                return (
-                  <h4
-                    key={idx}
-                    dir="rtl"
-                    lang="ur"
-                    className="font-urdu text-base sm:text-lg font-semibold pt-1 leading-[2.2]"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {block.text}
-                  </h4>
-                );
-              }
-              return (
-                <p
-                  key={idx}
-                  dir="rtl"
-                  lang="ur"
-                  className="font-urdu text-base sm:text-[18px] leading-[2.3]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   {block.text}

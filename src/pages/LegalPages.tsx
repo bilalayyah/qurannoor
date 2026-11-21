@@ -197,7 +197,7 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             <strong>Google Fonts:</strong> Typography files (Scheherazade New, Noto Naskh Arabic,
-            Lateef, Noto Nastaliq Urdu, Plus Jakarta Sans, and Source Serif 4) are requested by
+            Lateef, Plus Jakarta Sans, and Source Serif 4) are requested by
             your browser from Google Fonts CDN.
           </li>
           <li>
@@ -521,8 +521,8 @@ export function CopyrightPage() {
 
       <LegalSection heading="3. Open-Source Typography Licensing">
         <p>
-          Arabic and Urdu Quranic fonts (Scheherazade New, Noto Naskh Arabic, Lateef, and Noto
-          Nastaliq Urdu) and English typefaces (Plus Jakarta Sans and Source Serif 4) are served
+          Arabic Quranic fonts (Scheherazade New, Noto Naskh Arabic, and Lateef)
+          and English typefaces (Plus Jakarta Sans and Source Serif 4) are served
           under open-source SIL Open Font License (OFL 1.1) terms.
         </p>
       </LegalSection>

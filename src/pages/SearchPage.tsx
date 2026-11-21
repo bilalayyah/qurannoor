@@ -17,7 +17,6 @@ import { toSurahSlug } from '../utils/slugs';
 import {
   getArabicFontClass,
   getEnglishTranslation,
-  getUrduTranslation,
   getVerseArabicText,
   stripHtmlTags,
   toArabicIndicDigits,
@@ -32,7 +31,7 @@ export function SearchPage() {
       ? `Search: ${initialQuery} – QuranNoor`
       : 'Search the Noble Quran – QuranNoor',
     description:
-      'Search the Noble Quran on QuranNoor.com by Surah name, Ayah reference (e.g. 2:255), Arabic text, English, or Urdu keywords.',
+      'Search the Noble Quran on QuranNoor.com by Surah name, Ayah reference (e.g. 2:255), Arabic text, or English keywords.',
     canonicalPath: '/search',
     noindex: true,
   });
@@ -145,7 +144,7 @@ export function SearchPage() {
           Search the Quran
         </h1>
         <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Search by Surah name, Ayah reference (e.g. 2:255), Arabic text, English, or Urdu keywords.
+          Search by Surah name, Ayah reference (e.g. 2:255), Arabic text, or English keywords.
         </p>
       </div>
 
@@ -272,7 +271,6 @@ export function SearchPage() {
                 </p>
                 {(() => {
                   const enTr = getEnglishTranslation(directVerse.translations, settings.translationId);
-                  const urTr = getUrduTranslation(directVerse.translations);
                   return (
                     <>
                       {enTr && (
@@ -281,16 +279,6 @@ export function SearchPage() {
                           style={{ color: 'var(--text-secondary)' }}
                         >
                           {stripHtmlTags(enTr.text)}
-                        </p>
-                      )}
-                      {urTr && (
-                        <p
-                          dir="rtl"
-                          lang="ur"
-                          className="mt-3 font-urdu w-full text-right text-[15px] leading-[2.05] [word-spacing:0.06em]"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {stripHtmlTags(urTr.text)}
                         </p>
                       )}
                     </>
@@ -325,8 +313,8 @@ export function SearchPage() {
             No results found for “{activeQuery}”
           </h2>
           <p className="mt-2 mx-auto max-w-md text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            No matching Surahs or Ayahs were found. Try a different keyword in English, Arabic, or
-            Urdu, search by Surah name, or jump directly to an Ayah reference such as 2:255.
+            No matching Surahs or Ayahs were found. Try a different keyword in English or Arabic,
+            search by Surah name, or jump directly to an Ayah reference such as 2:255.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -423,17 +411,6 @@ export function SearchPage() {
                         Saheeh International
                       </p>
                     </div>
-                  )}
-
-                  {(item.matchedField === 'urdu' || settings.showTranslation) && item.textUrdu && (
-                    <p
-                      dir="rtl"
-                      lang="ur"
-                      className="mt-3 font-urdu w-full text-right text-[15px] leading-[2.05] [word-spacing:0.06em]"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {item.textUrdu}
-                    </p>
                   )}
                 </article>
               );

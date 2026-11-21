@@ -224,7 +224,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
         heading: 'The Quiet Power of Comparing Two Translations',
         paragraphs: [
           'Whenever an ayah feels dense or sparks a question, reading that single verse across two different translators immediately deepens insight—showing where one phrase emphasizes nuance while another highlights grammatical connection. Comparing a literal version beside an interpretive rendering clarifies subtle shifts in tone without requiring advanced Arabic study.',
-          'Inside QuranNoor Reader Settings, you can switch English translations in seconds alongside reading Urdu translation and Tafsir Ibn Kathir. Over a few weeks of calm exploration, you will quickly recognize which voice reads most clearly for your heart while keeping trustworthy reference editions close by for deeper study. Even reading one daily page calmly in a preferred English edition while glancing at a second version on difficult ayahs gives everyday readers the balance of clarity, reverence, and scholarly grounding.',
+          'Inside QuranNoor Reader Settings, you can switch English translations in seconds alongside reading Tafsir Ibn Kathir. Over a few weeks of calm exploration, you will quickly recognize which voice reads most clearly for your heart while keeping trustworthy reference editions close by for deeper study. Even reading one daily page calmly in a preferred English edition while glancing at a second version on difficult ayahs gives everyday readers the balance of clarity, reverence, and scholarly grounding.',
         ],
       },
     ],
@@ -391,7 +391,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
         heading: 'Choosing Renowned Qaris for Different Moments of the Day',
         paragraphs: [
           'Matching the voice and pacing to your activity makes listening far more effective. Crisp, balanced Murattal recitations by Mishary Rashid Alafasy, Saad Al-Ghamdi, or Maher al-Muaiqly keep pace smoothly while you read along on screen or focus on daily work. Their clear cadence helps keep your eyes synchronized verse by verse without straining to keep up.',
-          'For deeply moving evening reflection, classical recordings by AbdulBaset AbdulSamad and Mohamed Siddiq al-Minshawi in Mujawwad style allow every verse to breathe slowly, letting you dwell on meanings—especially when paired with English or Urdu translation playback. Switching between two voices across morning and night also keeps daily listening fresh and engaging.',
+          'For deeply moving evening reflection, classical recordings by AbdulBaset AbdulSamad and Mohamed Siddiq al-Minshawi in Mujawwad style allow every verse to breathe slowly, letting you dwell on meanings—especially when paired with English translation playback. Switching between two voices across morning and night also keeps daily listening fresh and engaging.',
         ],
       },
       {
@@ -399,7 +399,7 @@ export const GUIDES_PART_3: GuideArticle[] = [
         paragraphs: [
           'Whenever possible, give recited Quran your real attention rather than playing it beneath loud conversations or chaotic multitasking. Even ten attentive minutes where you follow along on screen with translation—or sit quietly with your eyes closed—carries far deeper impact than hours of ignored background audio.',
           'If you are driving or walking outdoors alone, choose a familiar Surah such as Yasin, Al-Mulk, or Ar-Rahman so your heart can follow the recurring themes calmly without needing to glance down at a screen. Turning commutes into quiet listening anchors transforms wasted transit time into daily spiritual renewal.',
-          'When listening at home, following the Urdu or English translation alongside Arabic recitation—especially using QuranNoor’s sequential Urdu audio playback or reading the text underneath each playing ayah—bridges sound and reflection effortlessly. Even busy parents or students who only spare a single short Surah before sleep discover that ending the night with calm recitation steadies the mind, nurtures gratitude, and keeps their heart closely attached to the Quran all week long.',
+          'When listening at home, following the English translation alongside Arabic recitation—especially using QuranNoor’s English translation audio or reading the text underneath each playing ayah—bridges sound and reflection effortlessly. Even busy parents or students who only spare a single short Surah before sleep discover that ending the night with calm recitation steadies the mind, nurtures gratitude, and keeps their heart closely attached to the Quran all week long.',
         ],
       },
     ],
@@ -421,9 +421,9 @@ export const GUIDES_PART_3: GuideArticle[] = [
           'Many listeners love AbdulBaset AbdulSamad (Mujawwad), Mohamed Siddiq al-Minshawi, or Hani ar-Rifai for serene, heartfelt contemplation.',
       },
       {
-        question: 'Can QuranNoor play Urdu translation audio after Arabic recitation?',
+        question: 'Can QuranNoor play the English translation audio after Arabic recitation?',
         answer:
-          'Yes. You can toggle "Play Urdu translation after Arabic" in Reader Settings, or tap the dedicated Urdu audio button on any Ayah card.',
+          'Yes. Tap “Listen English” on any Ayah card to hear the English translation spoken aloud, or use the English mode in the audio player.',
       },
       {
         question: 'Can I listen to an entire Surah continuously on QuranNoor?',

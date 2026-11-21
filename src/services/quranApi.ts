@@ -144,14 +144,15 @@ export async function fetchJuzs(): Promise<Juz[]> {
 }
 
 export const DEFAULT_ENGLISH_TRANSLATION_ID = 20;
-export const URDU_TRANSLATION_ID = 234;
 
+// Urdu removed (2026-11-21): only the selected English translation is
+// requested. A stored legacy value of 234 (Urdu) falls back to English.
 export function buildTranslationsParam(translationId: number): string {
   const enId =
-    Number.isInteger(translationId) && translationId > 0
+    Number.isInteger(translationId) && translationId > 0 && translationId !== 234
       ? translationId
       : DEFAULT_ENGLISH_TRANSLATION_ID;
-  return enId === URDU_TRANSLATION_ID ? String(enId) : `${enId},${URDU_TRANSLATION_ID}`;
+  return String(enId);
 }
 
 export async function fetchVersesByChapter(params: {

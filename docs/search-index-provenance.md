@@ -8,14 +8,24 @@
 - **Generation script:** `scripts/regenerate-search-index.mjs`
 - **Generated / last verified:** 2026-11-18
 - **Schema:** one JSON array of 6,236 rows; each row is
-  `[verseKey, arabic, english, urdu]`
+  `[verseKey, arabic, english]`
   - `arabic` — `text_qpc_hafs` with the trailing ayah-end marker (whitespace +
     Arabic-Indic digits, e.g. ` ٥`) stripped, exactly as the readers display
     it (same rule as `stripQpcHafsEndMarker` in `src/utils/text.ts`). The verse
     text itself is never edited, typed, or paraphrased.
-  - `english` — Saheeh International; `urdu` — Fateh Muhammad Jalandhari.
-    Both translations are preserved byte-for-byte by the script; only the
-    Arabic element is rebuilt from the API.
+  - `english` — Saheeh International, preserved byte-for-byte by the script;
+    only the Arabic element is rebuilt from the API.
+
+## Urdu removal (2026-11-21)
+
+The Urdu element (Fateh Muhammad Jalandhari, element [3] of the old
+4-element rows) was removed: rows are now 3 elements
+`[verseKey, arabic, english]`. The strip was done locally from the
+committed file (no API fetch) with Arabic + English verified byte-identical
+to the pre-strip file (6,236 rows, 0 U+06DF, 2:5/2:6 spot checks unchanged).
+File size: 3,731,816 → 2,305,487 bytes. The regenerate script
+(`scripts/regenerate-search-index.mjs`) still works on 3-element rows — it
+only ever replaces element [1] (Arabic) and preserves the rest.
 
 ## Verification (2026-11-18)
 

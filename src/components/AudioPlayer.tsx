@@ -12,7 +12,6 @@ import {
 import { useAudio } from '../context/AudioContext';
 import { useReader } from '../context/ReaderContext';
 import { getReciterArabicName } from '../utils/reciters';
-import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import { ReciterSelector } from './ReciterSelector';
 
 function formatSeconds(sec: number): string {
@@ -111,8 +110,6 @@ export function AudioPlayer() {
               ? error
               : audioMode === 'english'
               ? 'English Translation · Speech Synthesis'
-              : audioMode === 'urdu'
-              ? URDU_AUDIO_CREDIT
               : `Arabic Recitation · ${activeReciter?.reciter_name || 'Reciter'}${
                   activeReciterArabic ? ` — ${activeReciterArabic}` : ''
                 }${activeReciter?.style ? ` (${activeReciter.style})` : ''}`}
@@ -173,7 +170,7 @@ export function AudioPlayer() {
             </span>
           )}
 
-          {/* Mode Toggle: Arabic Recitation, English Translation, Urdu Audio */}
+          {/* Mode Toggle: Arabic Recitation, English Translation */}
           {playbackKind !== 'surah' && (
             <div
               className="hidden md:inline-flex rounded-lg p-0.5"
@@ -202,18 +199,6 @@ export function AudioPlayer() {
                 }}
               >
                 English
-              </button>
-              <button
-                type="button"
-                onClick={() => setAudioMode('urdu')}
-                title={URDU_AUDIO_CREDIT}
-                className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap"
-                style={{
-                  backgroundColor: audioMode === 'urdu' ? 'var(--bg-surface)' : 'transparent',
-                  color: audioMode === 'urdu' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                }}
-              >
-                Urdu
               </button>
             </div>
           )}

@@ -134,12 +134,6 @@ textarea:focus-visible {
   font-family: 'Lateef', 'Scheherazade New', serif;
 }
 
-.font-urdu {
-  font-family: 'Noto Nastaliq Urdu', serif;
-  direction: rtl;
-  unicode-bidi: isolate;
-}
-
 .quran-arabic-text {
   direction: rtl;
   unicode-bidi: isolate;

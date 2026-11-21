@@ -178,7 +178,6 @@ export interface ReaderSettings {
   reciterId: number;
   showTranslation: boolean;
   autoPlayNext: boolean;
-  autoPlayUrduAfterArabic: boolean;
   repeatAyah: boolean;
   hifzMode: boolean;
   tajweedColors: boolean;

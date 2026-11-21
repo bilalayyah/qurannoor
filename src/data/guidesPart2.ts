@@ -52,7 +52,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
         paragraphs: [
           'Inside QuranNoor, you can switch reciters directly from the Listen page, the reader toolbar, Reader Settings, or the bottom audio bar whenever Arabic playback is active. Every reciter shows both their English and Arabic name along with style labels so you can immediately pick Murattal, Mujawwad, Muallim, or Kids teaching tracks. Try pairing Murattal during your morning portion with Mujawwad when unwinding at night.',
           'Note also the distinction between verse-by-verse audio and full-Surah streaming recordings. Verse-by-verse recitations allow repeating an individual ayah for memorization or pausing seamlessly between translations, while full-Surah recordings give you uninterrupted flow across an entire chapter just like listening in congregation.',
-          'If you prefer listening to translation alongside recitation, you can also enable Urdu audio playback after each Arabic ayah inside Reader Settings so both understanding and listening stay unified. Taking time during the first week to sample three or four Qaris for ten minutes each usually reveals one voice that brings immediate calm and concentration to your daily session.',
+          'If you prefer listening to translation alongside recitation, you can also listen to the English translation after each Arabic ayah so both understanding and listening stay unified. Taking time during the first week to sample three or four Qaris for ten minutes each usually reveals one voice that brings immediate calm and concentration to your daily session.',
         ],
       },
     ],
@@ -146,7 +146,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
     keyTakeaways: [
       'One Juz a day completes all 30 Juz across a 30-day Ramadan schedule.',
       'Splitting twenty pages into four pages around each of the five daily prayers keeps reading calm and achievable.',
-      'Previewing a Juz’s English or Urdu translation by day deepens focus during nightly Taraweeh recitation.',
+      'Previewing a Juz’s English translation by day deepens focus during nightly Taraweeh recitation.',
       'If life interrupts, pick a slower sustainable pace or catch up gradually without sacrificing reflection.',
     ],
     faqs: [
@@ -337,7 +337,7 @@ export const GUIDES_PART_2: GuideArticle[] = [
       {
         question: 'How can I learn their meanings quickly?',
         answer:
-          'Open Juz 30 or browse Surahs 105–114 individually on QuranNoor, listen to one short surah a day in Arabic with English or Urdu translation turned on, and focus on its main theme before praying.',
+          'Open Juz 30 or browse Surahs 105–114 individually on QuranNoor, listen to one short surah a day in Arabic with English translation turned on, and focus on its main theme before praying.',
       },
     ],
     relatedLinks: [

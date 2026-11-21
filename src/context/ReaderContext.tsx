@@ -50,7 +50,6 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   reciterId: 7, // Mishary Rashid al-Afasy
   showTranslation: true,
   autoPlayNext: true,
-  autoPlayUrduAfterArabic: false,
   repeatAyah: false,
   hifzMode: false,
   tajweedColors: false,

@@ -455,10 +455,6 @@ export function QiblaCompass({ qiblaDirection, locationLabel }: QiblaCompassProp
             </p>
             <div className="mt-0.5 flex items-center justify-center gap-2">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
-              <p dir="rtl" lang="ur" className="font-urdu text-base leading-[1.8]">
-                قبلہ یہیں ہے
-              </p>
-              <span aria-hidden="true" className="text-white/70">·</span>
               <p className="text-base sm:text-lg font-bold tracking-tight">
                 Qibla is here ✓
               </p>

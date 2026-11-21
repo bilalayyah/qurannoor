@@ -124,7 +124,7 @@ const VERSE_PAGE_PREFIXES = ['/surah/', '/juz/', '/ayah/', '/popular/'];
 //   verses:by_key:<key>:<translationParam>:<reciterId>
 //   verses:keys:<keysCsv>:<translationParam>:<reciterId>
 //   tafsirs:<tafsirId>:by_ayah:<verseKey>
-// The translation param is the exact client-sent string (e.g. '20,234'
+// The translation param is the exact client-sent string (e.g. '20'
 // via buildTranslationsParam); the reciter id is the client's reciterId.
 // Only first-render data endpoints are recorded — never /api/push/*,
 // /api/contact, or anything with a body.
@@ -140,7 +140,7 @@ function buildPrerenderDataKey(requestUrl) {
   const path = u.pathname;
   if (!path.startsWith('/api/')) return null;
   const q = u.searchParams;
-  const translationParam = q.get('translation') || '20,234';
+  const translationParam = q.get('translation') || '20';
   const reciterId = q.get('reciter') || '7';
   const page = q.get('page') || '1';
   const perPage = q.get('per_page') || '15';

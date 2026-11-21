@@ -11,7 +11,6 @@ import {
   Play,
   Repeat,
   Share2,
-  Square,
   Volume2,
 } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
@@ -21,11 +20,9 @@ import { useReader } from '../context/ReaderContext';
 import type { Verse, VerseWord } from '../types/quran';
 import { toSurahSlug } from '../utils/slugs';
 import { renderTajweedNodes } from '../utils/tajweed';
-import { URDU_AUDIO_CREDIT } from '../utils/urduAudio';
 import {
   getArabicFontClass,
   getEnglishTranslation,
-  getUrduTranslation,
   getVerseArabicText,
   getWordArabicText,
   stripHtmlTags,
@@ -67,14 +64,11 @@ export function AyahCard({
   } = useReader();
   const {
     isPlaying,
-    isLoading,
     audioMode,
     activeVerseKey,
     playAyah,
     playEnglishTranslation,
-    playUrduTranslation,
     togglePlayPause,
-    stopAudio,
     ttsSupported,
   } = useAudio();
 
@@ -98,8 +92,6 @@ export function AyahCard({
   const isThisPlaying = activeVerseKey === verse.verse_key && isPlaying;
   const isThisArabicActive =
     activeVerseKey === verse.verse_key && audioMode === 'arabic' && isPlaying;
-  const isThisUrduActive =
-    activeVerseKey === verse.verse_key && audioMode === 'urdu' && (isPlaying || isLoading);
   const isThisEnglishActive =
     activeVerseKey === verse.verse_key && audioMode === 'english' && isPlaying;
 
@@ -109,8 +101,6 @@ export function AyahCard({
 
   const englishTranslation = getEnglishTranslation(verse.translations, settings.translationId);
   const cleanTranslation = stripHtmlTags(englishTranslation?.text ?? '');
-  const urduTranslation = getUrduTranslation(verse.translations);
-  const cleanUrdu = stripHtmlTags(urduTranslation?.text ?? '');
 
   const playableItem: PlayableAyah = {
     verseKey: verse.verse_key,
@@ -255,14 +245,6 @@ export function AyahCard({
     }
   };
 
-  const handleToggleUrduPlay = () => {
-    if (isThisUrduActive) {
-      stopAudio();
-    } else {
-      playUrduTranslation(playableItem, queue);
-    }
-  };
-
   return (
     <article
       ref={cardRef}
@@ -327,33 +309,6 @@ export function AyahCard({
               <Play className="h-4 w-4 fill-current shrink-0" />
             )}
             <span>{isThisArabicActive ? 'Pause' : 'Play'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleToggleUrduPlay}
-            aria-label={
-              isThisUrduActive
-                ? `Stop Urdu audio for Ayah ${verse.verse_key} (${URDU_AUDIO_CREDIT})`
-                : `Listen Urdu audio for Ayah ${verse.verse_key} (${URDU_AUDIO_CREDIT})`
-            }
-            aria-pressed={isThisUrduActive}
-            title={URDU_AUDIO_CREDIT}
-            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-semibold transition-colors hover:opacity-90 active:scale-[0.98] whitespace-nowrap"
-            style={{
-              backgroundColor: isThisUrduActive ? 'var(--accent)' : 'var(--accent-soft)',
-              borderColor: isThisUrduActive
-                ? 'var(--accent)'
-                : 'color-mix(in srgb, var(--accent) 30%, transparent)',
-              color: isThisUrduActive ? '#FFFFFF' : 'var(--accent-text)',
-            }}
-          >
-            {isThisUrduActive ? (
-              <Square className="h-3.5 w-3.5 fill-current shrink-0" />
-            ) : (
-              <Volume2 className="h-4 w-4 shrink-0" />
-            )}
-            <span>{isThisUrduActive ? 'Stop Urdu' : 'Urdu'}</span>
           </button>
 
           <button
@@ -645,42 +600,24 @@ export function AyahCard({
         )}
       </div>
 
-      {/* Below Arabic: English & Urdu Translations */}
-      {settings.showTranslation && (cleanTranslation || cleanUrdu) && (
+      {/* Below Arabic: English Translation */}
+      {settings.showTranslation && cleanTranslation && (
         <div className="mb-4 space-y-1.5">
-          {cleanTranslation && (
-            <p
-              dir="ltr"
-              className="font-editorial max-w-3xl text-left leading-[1.72]"
-              style={{
-                fontSize: `${settings.translationFontSize}px`,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              {cleanTranslation}
-            </p>
-          )}
-          {cleanUrdu && (
-            <p
-              dir="rtl"
-              lang="ur"
-              className={`font-urdu w-full text-right leading-[2.0] [word-spacing:0.08em] ${
-                cleanTranslation ? 'border-t pt-1.5' : ''
-              }`}
-              style={{
-                fontSize: `${Math.max(13, settings.translationFontSize - 2)}px`,
-                color: 'var(--text-secondary)',
-                borderColor: cleanTranslation ? 'var(--border-subtle)' : undefined,
-              }}
-            >
-              {cleanUrdu}
-            </p>
-          )}
+          <p
+            dir="ltr"
+            className="font-editorial max-w-3xl text-left leading-[1.72]"
+            style={{
+              fontSize: `${settings.translationFontSize}px`,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {cleanTranslation}
+          </p>
         </div>
       )}
 
       {/* Translation unavailable note */}
-      {settings.showTranslation && !cleanTranslation && !cleanUrdu && (
+      {settings.showTranslation && !cleanTranslation && (
         <p
           className="mb-4 text-xs italic"
           style={{ color: 'var(--text-tertiary)' }}

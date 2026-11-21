@@ -136,8 +136,8 @@ export function MethodologyPage() {
             QuranNoor&apos;s Production content and audio integrations are live and active, serving all <Link to="/surahs" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>114 Surahs</Link>, <Link to="/juz" className="underline underline-offset-4" style={{ color: 'var(--accent-text)' }}>30 Juz</Link>, and 6,236 Ayahs—alongside translations, Ibn Kathir tafsir, and audio recitations—without
             any chapter restrictions. Because the separate upstream search endpoint (
             <code className="font-ui text-xs">content.search.read</code>) is not active on this
-            client, keyword search runs locally in the browser across the complete Arabic text,
-            English (Saheeh International), and Urdu (Fateh Muhammad Jalandhari) translations.
+            client, keyword search runs locally in the browser across the complete Arabic text
+            and the English (Saheeh International) translation.
           </p>
         </section>
 
@@ -150,10 +150,10 @@ export function MethodologyPage() {
             KFGQPC Uthmanic Script Hafs — the Madinah Mushaf style — loaded from the official
             Quran Foundation font CDN), with <strong>Scheherazade New</strong> as the fallback and
             optional <strong>Noto Naskh Arabic</strong> and <strong>Lateef</strong> (IndoPak style)
-            fonts, and Urdu rendered in <strong>Noto Nastaliq Urdu</strong>. The displayed Arabic
+            fonts. The displayed Arabic
             text comes from the official Quran Foundation API field <code className="font-ui text-xs">text_qpc_hafs</code>. UthmanicHafs is provided under
             the KFGQPC licence (free to use, copy and distribute; not to be sold or modified),
-            while Scheherazade New, Noto Naskh Arabic, Lateef and Noto Nastaliq Urdu are licensed
+            while Scheherazade New, Noto Naskh Arabic and Lateef are licensed
             under the open-source SIL Open Font License (OFL 1.1). Every Arabic verse enforces
             right-to-left Unicode isolation (
             <code className="font-ui text-xs">dir="rtl"</code>) and carries <code className="font-ui text-xs">translate="no"</code> attributes to prevent automated
@@ -168,8 +168,7 @@ export function MethodologyPage() {
           <p>
             English translations are displayed directly beneath each Ayah in <strong>Source Serif 4</strong> so they remain visually distinct from the Arabic
             revelation. The English translation is selectable inside Reader Settings, where
-            each translation&apos;s translator name is clearly displayed; the Urdu translation
-            is fixed to Fateh Muhammad Jalandhari.
+            each translation&apos;s translator name is clearly displayed.
           </p>
           {translations.length > 0 && (
             <div

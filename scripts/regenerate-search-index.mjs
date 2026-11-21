@@ -17,9 +17,10 @@
  * ---------------------
  * 1. Fetches every ayah's `text_qpc_hafs` from the API (all 6,236 ayahs).
  * 2. Loads the existing index and replaces ONLY the Arabic text (element [1]
- *    of each [verseKey, arabic, en, ur] row). The English (Saheeh
- *    International) and Urdu (Fateh Muhammad Jalandhari) translations are
- *    preserved byte-for-byte, and no row is added, removed, or reordered.
+ *    of each [verseKey, arabic, en] row). The English (Saheeh
+ *    International) translation is preserved byte-for-byte, and no row is
+ *    added, removed, or reordered. (Urdu was element [3] until its removal
+ *    on 2026-11-21; rows are 3 elements since then.)
  * 3. Strips the trailing ayah-end marker (whitespace + Arabic-Indic digits,
  *    e.g. " ٥") from the API text with the same rule the reader uses
  *    (see stripQpcHafsEndMarker in src/utils/text.ts), so search/bookmark

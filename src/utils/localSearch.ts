@@ -4,9 +4,8 @@ export interface LocalQuranSearchMatch {
   verseNumber: number;
   textArabic: string;
   textEnglish: string;
-  textUrdu: string;
   englishSnippet: string;
-  matchedField: 'english' | 'urdu' | 'arabic';
+  matchedField: 'english' | 'arabic';
 }
 
 export interface LocalQuranSearchResponse {
@@ -16,7 +15,7 @@ export interface LocalQuranSearchResponse {
   capped: boolean;
 }
 
-type RawIndexRow = [string, string, string, string];
+type RawIndexRow = [string, string, string];
 
 interface IndexedVerse {
   verseKey: string;
@@ -24,10 +23,8 @@ interface IndexedVerse {
   verseNumber: number;
   ar: string;
   en: string;
-  ur: string;
   arNorm: string;
   enNorm: string;
-  urNorm: string;
 }
 
 export const MAX_LOCAL_SEARCH_RESULTS = 50;
@@ -56,17 +53,6 @@ export function normalizeArabicForSearch(input: string): string {
     .trim();
 }
 
-export function normalizeUrduForSearch(input: string): string {
-  return input
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '')
-    .replace(/[ٱأإآ]/g, 'ا')
-    .replace(/[يیى]/g, 'ی')
-    .replace(/[كک]/g, 'ک')
-    .replace(/[هہۃھ]/g, 'ہ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 async function loadSearchIndex(): Promise<IndexedVerse[]> {
   if (!cachedIndexPromise) {
     cachedIndexPromise = (async () => {
@@ -75,7 +61,7 @@ async function loadSearchIndex(): Promise<IndexedVerse[]> {
         throw new Error(`Unable to load Quran search index (${res.status})`);
       }
       const rows = (await res.json()) as RawIndexRow[];
-      return rows.map(([verseKey, ar, en, ur]) => {
+      return rows.map(([verseKey, ar, en]) => {
         const [chStr, vStr] = verseKey.split(':');
         return {
           verseKey,
@@ -83,10 +69,8 @@ async function loadSearchIndex(): Promise<IndexedVerse[]> {
           verseNumber: Number(vStr),
           ar,
           en,
-          ur,
           arNorm: normalizeArabicForSearch(ar),
           enNorm: normalizeLatinForSearch(en),
-          urNorm: normalizeUrduForSearch(ur),
         };
       });
     })().catch((err) => {
@@ -147,19 +131,17 @@ export async function searchLocalQuran(
   const latinTerms = latinQuery.split(' ').filter(Boolean);
   const arabicQuery = normalizeArabicForSearch(trimmed);
   const arabicTerms = arabicQuery.split(' ').filter(Boolean);
-  const urduQuery = normalizeUrduForSearch(trimmed);
-  const urduTerms = urduQuery.split(' ').filter(Boolean);
 
   const hasArabicChars = /[\u0600-\u06FF]/.test(trimmed);
   const hasLatinChars = /[a-z0-9]/i.test(latinQuery);
 
   const wholeWordRegexes = latinTerms.map((t) => new RegExp(`\\b${escapeRegExp(t)}\\b`, 'i'));
 
-  const scored: Array<{ score: number; item: IndexedVerse; matchedField: 'english' | 'urdu' | 'arabic' }> = [];
+  const scored: Array<{ score: number; item: IndexedVerse; matchedField: 'english' | 'arabic' }> = [];
 
   for (const item of index) {
     let score = 0;
-    let matchedField: 'english' | 'urdu' | 'arabic' | null = null;
+    let matchedField: 'english' | 'arabic' | null = null;
 
     if (hasLatinChars && latinTerms.length > 0) {
       const allEnMatch = latinTerms.every((term) => item.enNorm.includes(term));
@@ -182,10 +164,6 @@ export async function searchLocalQuran(
         score += item.arNorm.includes(arabicQuery) ? 35 : 20;
         if (!matchedField) matchedField = 'arabic';
       }
-      if (urduTerms.length > 0 && urduTerms.every((term) => item.urNorm.includes(term))) {
-        score += item.urNorm.includes(urduQuery) ? 30 : 18;
-        if (!matchedField) matchedField = 'urdu';
-      }
     }
 
     if (matchedField && score > 0) {
@@ -207,7 +185,6 @@ export async function searchLocalQuran(
     verseNumber: item.verseNumber,
     textArabic: item.ar,
     textEnglish: item.en,
-    textUrdu: item.ur,
     englishSnippet: buildEnglishSnippet(item.en, latinTerms),
     matchedField,
   }));

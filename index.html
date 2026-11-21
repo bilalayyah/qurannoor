@@ -52,7 +52,7 @@
       crossorigin
       href="https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2"
     />
-    <!-- Preload the translation fonts (Source Serif 4 latin + Noto Nastaliq Urdu arabic, the variable-font files that cover all used weights) so they are ready before first paint whenever the connection allows: with font-display: optional they are then used immediately; otherwise the fallback renders with no swap and no layout shift (H-1, iteration 6 — the same treatment iteration 5 applied to UthmanicHafs; the late swap of these two fonts was the remaining ayah mobile CLS ~0.15–0.18). -->
+    <!-- Preload the translation font (Source Serif 4 latin, the variable-font file that covers all used weights) so it is ready before first paint whenever the connection allows: with font-display: optional it is then used immediately; otherwise the fallback renders with no swap and no layout shift (H-1, iteration 6 — the same treatment iteration 5 applied to UthmanicHafs; the late swap of this font was part of the remaining ayah mobile CLS ~0.15–0.18). -->
     <link
       rel="preload"
       as="font"
@@ -60,27 +60,13 @@
       crossorigin
       href="https://fonts.gstatic.com/s/sourceserif4/v15/vEFI2_tTDB4M7-auWDN0ahZJW1gb8tc.woff2"
     />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      crossorigin
-      href="https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhW4MUPbN-oZdNFcBy1-DJYsEoTq5pu3SvoMC9Y.woff2"
-    />
-    <!-- Preload the EXTENDED subsets too (iteration 6, probe run 1): the cold-load diagnostic (qn-iter6-font-timing.mjs) proved the remaining 0.15–0.18 shift is NOT the latin/arabic files above — they arrive before first paint — but four files the browser only discovers at first layout, finishing ~1450–1510 ms, just after first paint (1352 ms), and swapping in: Source Serif 4 latin-ext (the translation's macrons ā ī ū and ʿ/ʾ live there), Noto Nastaliq Urdu latin (Latin digits/punctuation inside the Urdu block), and Scheherazade New arabic + latin (per-glyph fallback for the Quran/tafsir Arabic). Preloading them the same way makes them arrive before first paint, so nothing swaps after it. -->
+    <!-- Preload the EXTENDED subsets too (iteration 6, probe run 1): the cold-load diagnostic (qn-iter6-font-timing.mjs) proved the remaining 0.15–0.18 shift is NOT the latin file above — it arrives before first paint — but three files the browser only discovers at first layout, finishing ~1450–1510 ms, just after first paint (1352 ms), and swapping in: Source Serif 4 latin-ext (the translation's macrons ā ī ū and ʿ/ʾ live there), and Scheherazade New arabic + latin (per-glyph fallback for the Quran/tafsir Arabic). Preloading them the same way makes them arrive before first paint, so nothing swaps after it. -->
     <link
       rel="preload"
       as="font"
       type="font/woff2"
       crossorigin
       href="https://fonts.gstatic.com/s/sourceserif4/v15/vEFI2_tTDB4M7-auWDN0ahZJW1gV8tenXg.woff2"
-    />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      crossorigin
-      href="https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhW4MUPbN-oZdNFcBy1-DJYsEoTq5pu3T_oM.woff2"
     />
     <link
       rel="preload"
@@ -116,12 +102,6 @@
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Lateef:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-      crossorigin="anonymous"
-    />
-    <!-- Noto Nastaliq Urdu (Urdu translation font) loads with display=optional, NOT swap — same reason as Source Serif 4 above (H-1, iteration 6). Slow first visit: fallback serif renders (correct text, different style); fast/cached: Nastaliq as before. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=optional"
       rel="stylesheet"
       crossorigin="anonymous"
     />

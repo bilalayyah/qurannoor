@@ -36,7 +36,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
       {
         heading: 'Structure Your 10 Minutes Simply',
         paragraphs: [
-          'Having a simple two-part rhythm makes ten minutes feel surprisingly rich. Spend the first six or seven minutes reading your daily ayahs slowly in Arabic alongside English or Urdu translation—listening to a gentle reciter if that keeps your mind from wandering.',
+          'Having a simple two-part rhythm makes ten minutes feel surprisingly rich. Spend the first six or seven minutes reading your daily ayahs slowly in Arabic alongside English translation—listening to a gentle reciter if that keeps your mind from wandering.',
           'Spend the remaining three minutes pausing on one verse that stood out: open its Tafsir section if you want context, bookmark it if it comforted you, or make a quiet dua around what you just read. Meaning and presence turn ten brief minutes into the calmest part of your day.',
         ],
       },
@@ -168,7 +168,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
       {
         question: 'Where can I read Surah Al-Fatiha with word meanings and Tafsir?',
         answer:
-          'Open Surah Al-Fatiha directly in the QuranNoor reader to inspect Arabic, English and Urdu translations, word-by-word meanings, audio recitations, and Tafsir Ibn Kathir.',
+          'Open Surah Al-Fatiha directly in the QuranNoor reader to inspect Arabic and English translations, word-by-word meanings, audio recitations, and Tafsir Ibn Kathir.',
       },
     ],
     relatedLinks: [
@@ -395,7 +395,7 @@ export const GUIDES_PART_4: GuideArticle[] = [
         heading: 'Mistake 5: Reading Fluent Sounds Without Ever Checking the Meaning',
         paragraphs: [
           'Many devoted readers build wonderful Arabic fluency yet read chapter after chapter without glancing at what Allah is actually telling them in those verses. While reciting Arabic carries immense reward, reflection (tadabbur) unlocks guidance for daily patience, humility, and gratitude.',
-          'The Fix: Keep English or Urdu translation turned on beneath the Arabic script, read at a pace where your heart understands the message, and check Tafsir Ibn Kathir whenever an ayah raises a sincere question. Even pausing on a single meaningful ayah at the end of your reading page connects accurate pronunciation directly with lived guidance.',
+          'The Fix: Keep English translation turned on beneath the Arabic script, read at a pace where your heart understands the message, and check Tafsir Ibn Kathir whenever an ayah raises a sincere question. Even pausing on a single meaningful ayah at the end of your reading page connects accurate pronunciation directly with lived guidance.',
           'Combining these five small adjustments requires zero extra hours—only slightly slower reading speed, attentive listening whenever an unfamiliar word appears, and keeping translation visible beside the script. Within a few calm weeks, noticeable clarity replaces rushed autopilot habits across every Surah you open, letting each daily session feel steadier, cleaner, more reflective, and far more spiritually rewarding.',
         ],
       },
