@@ -103,7 +103,7 @@ export function QuranNoorMark({
 export interface QuranNoorLogoProps {
   variant?: 'horizontal' | 'compact' | 'stacked';
   tone?: 'auto' | 'light' | 'dark' | 'emerald';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   showTagline?: boolean;
   className?: string;
 }
@@ -115,7 +115,7 @@ export function QuranNoorLogo({
   showTagline = false,
   className = '',
 }: QuranNoorLogoProps) {
-  const markSize = size === 'sm' ? 24 : size === 'lg' ? 38 : 28;
+  const markSize = size === 'sm' ? 24 : size === 'lg' ? 38 : size === 'xl' ? 32 : 28;
 
   const textColor =
     tone === 'light'
@@ -186,6 +186,8 @@ export function QuranNoorLogo({
               ? 'text-base'
               : size === 'lg'
               ? 'text-xl sm:text-2xl'
+              : size === 'xl'
+              ? 'text-lg sm:text-xl'
               : 'text-[17px] sm:text-[18px]'
           }`}
           style={{ color: textColor }}

@@ -132,13 +132,13 @@ export function Header() {
           className="inline-flex items-center whitespace-nowrap shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6B4B]"
         >
           <span className="min-[480px]:hidden">
-            <QuranNoorLogo variant="compact" size="sm" />
+            <QuranNoorLogo variant="compact" size="md" />
           </span>
           <span className="hidden min-[480px]:inline-flex sm:hidden">
-            <QuranNoorLogo variant="horizontal" size="sm" />
+            <QuranNoorLogo variant="horizontal" size="md" />
           </span>
           <span className="hidden sm:inline-flex">
-            <QuranNoorLogo variant="horizontal" size="md" />
+            <QuranNoorLogo variant="horizontal" size="xl" />
           </span>
         </Link>
 
