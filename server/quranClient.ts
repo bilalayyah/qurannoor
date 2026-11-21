@@ -14,10 +14,12 @@ const SCOPES_CONTENT = [
   'content.translations.read',
   'content.audio.read',
   'content.tafsirs.read',
-  // M-2 (final audit): the search scope was approved in the Quran Console
-  // (Thu 19 Nov) but never requested here, so /api/search always returned
-  // granted:false. Local search stays the default; API search is an option.
-  'content.search.read',
+  // NOTE (Sat 21 Nov 2026): 'content.search.read' was added here in f90a344
+  // (final-audit M-2) and REVERTED the same day: requesting it made the OAuth
+  // token request fail (invalid_scope), so the proxy silently fell back to
+  // the public host — reciters dropped 23 -> 16 and Bridges 149 appeared.
+  // Local search stays the default; API search stays dormant. Do NOT re-add
+  // this scope without first proving a token request with it succeeds.
 ].join(' ');
 
 interface TokenCache {
