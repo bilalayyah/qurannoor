@@ -301,7 +301,16 @@ export function SearchPage() {
       {error ? (
         <ErrorBanner message={error} onRetry={() => executeSearch(activeQuery)} />
       ) : loading ? (
-        <VerseListSkeleton count={4} />
+        // Search CLS fix (2026-11-21): 2 skeleton items (~464px) instead
+        // of 4 (~928px). The skeleton only needs to keep the footer
+        // below the fold while results load; a 4-item skeleton makes the
+        // page shrink ~580px when a short result (e.g. one direct Ayah
+        // card, ~350px) replaces it, and the footer jumping back up into
+        // view costs CLS ~0.10 on mobile. 2 items keeps the footer just
+        // below the fold during loading, so the swap to a short result
+        // moves it only ~114px (CLS ~0.02), and long result lists grow
+        // past the fold either way (no shift).
+        <VerseListSkeleton count={2} />
       ) : activeQuery && results.length === 0 && !directVerse && matchingSurahs.length === 0 ? (
         <div
           className="rounded-2xl border p-8 sm:p-10 text-center"
